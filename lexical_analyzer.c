@@ -1,4 +1,6 @@
 #include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
 
 typedef struct
 {
@@ -16,7 +18,7 @@ typedef struct
 
 typedef struct 
 {
-	Token * Tokenized_code;
+	Token ** Tokenized_code;
 	int num_tokens;
 } TokenStream;
 
@@ -26,18 +28,61 @@ int lineNum = 0;
 // char *buffer;		//Twin Buffer
 
 
-TokenStream lexer(FILE * fp)	//read prog into buffer
+TokenStream * lexer(char *filename, int* lexical_err)	//read prog into buffer
 {
-	while(/*condition*/)
+	char *buffer;
+	int startptr=0;
+	FILE * fp = fopen(filename,"r");
+
+	if(fp == NULL)
 	{
-		if(nextToken()==NULL)
+		printf("Error opening file");
+		return NULL;
+	}
+
+	fseek(fp,0L,SEEK_END);
+	int len = ftell(fp);
+	fseek(fp,0L,SEEK_SET);
+	buffer = (char*)malloc(sizeof(char)*len);
+
+	for(int i = 0 ; i<len ; i++)
+	{
+		fscanf(fp,"%c",&buffer[i]);
+	}
+	buffer[len-1] = '\0';		
+	
+	int size_tknStream = 10;
+	Token *tkn;
+	TokenStream *tknStream = (TokenStream*)malloc(sizeof(TokenStream)); 
+	tknStream->Tokenized_code = (Token**)malloc(sizeof(Token*)*size_tknStream);
+	tknStream->num_tokens = 0;                                                         
+	while(buffer[startptr]!='\0')
+	{
+		if(nextToken(buffer,&startptr)==NULL)
 			continue;
 		else 
-		{
-		
+		{ 	
+
+			if(tknStream->num_tokens == size_tknStream)
+			{
+				size_tknStream *= 2;
+				tknStream->Tokenized_code = (Token**)realloc(tknStream->Tokenized_code,sizeof(Token*)*size_tknStream);  
+			}
+			tkn = nextToken(buffer,&startptr);
+			if(strcmp(tkn->token,"ERR"))
+			{
+				tknStream->Tokenized_code[tknStream->num_tokens] = tkn;
+				tknStream->num_tokens++;
+			}
+			else
+			{
+				*lexical_err = 1;
+				printf("%s\n",tkn->lexeme); 
+			}
+				
 		}
 	}
-	
+	return tknStream;
 }
 
 int lexeme2int(char *s)
@@ -45,19 +90,21 @@ int lexeme2int(char *s)
 	int i=0, val=0;
 	while(s[i]!='\0')
 	{
-		i++ ;
+		i++;
 		val = 10*val + (s[i]-'0');
 	}
 	return val;
 }
 
-int lexeme2real(char *s)
+float lexeme2real(char *s)
 {
+	
 	int i=0, j=0, flag=0, sign=1, exp_pow=0;
 	float val=0.0, frac=0.0, exp=0.0;
+
 	while(s[i]!='\0')
 	{
-		i++ ;
+		
 		if(s[i]=='.')
 		{
 			flag = 1;
@@ -85,12 +132,14 @@ int lexeme2real(char *s)
 		else if(flag==1)
 		{
 			j++;
-			frac = frac + pow(10,-j)*(s[i]-'0');							
+			frac = frac + pow(10,(-1)*j)*(s[i]-'0');							
 		}
 		else if(flag==2)
 		{
 			exp_pow = exp_pow*10 + (s[i]-'0');
 		}
+
+		i++ ;
 	}
 	
 	exp = pow(10,sign*exp_pow);
@@ -162,9 +211,10 @@ Token * nextToken(char *buffer, int *startptr)
 	else if(buffer[ptr] == '\n')
 	{
 		//Ignoring as many newlines, just keep incrementing the line count
-		while(buffer[ptr]=='\n')
+		while(buffer[ptr] == '\n')
 		{
-			lineNum++; ptr++;
+			lineNum++; 
+			ptr++;
 		}
 		
 		//We will start at the beginning of the DFA, from a non new line character
@@ -203,7 +253,7 @@ Token * nextToken(char *buffer, int *startptr)
 		char * tokenName = (char *)malloc(sizeof(char)*6);
 		strcpy(tokenName, "MINUS");
 		tokenName[5] = '\0';
-		tkn->lexeme = lexeme;	tkn->lineNum = lineNum; 	tkn->token = tokenName;
+		tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
 		tkn->value = (void *)NULL;
 		ptr++;
 		*startptr = ptr;
@@ -307,7 +357,9 @@ Token * nextToken(char *buffer, int *startptr)
 				lexeme[22]='\0';
 				tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
 				tkn->value = (void *) NULL;
-			}			
+				*startptr = ptr;
+				return tkn;
+			}	
 			
 			// Finally set the start to current pointer because here the comment terminated 
 			*starptr = ptr;
@@ -395,9 +447,9 @@ Token * nextToken(char *buffer, int *startptr)
 		ptr++;
 		if(buffer[ptr]=='=')
 		{
-			tkn = (Token *)malloc(char)*3);
+			tkn = (Token *)malloc(sizeof(char))*3;
 			lexeme[0] = '!'; lexeme[1] = '='; lexeme[2] = '\0';
-			char * tokenName = (char *)sizeof(Token));
+			char * tokenName = (char *)sizeof(Token);
 			lexeme = (char *) malloc(sizeof(malloc(sizeof(char)*3);
 			strcpy(tokenName, "NE");
 			tokenName[2] = '\0';
@@ -431,7 +483,7 @@ Token * nextToken(char *buffer, int *startptr)
 	{
 		tkn = (Token *)malloc(sizeof(Token));
 		ptr++;
-		if(buffer[ptr]=='=')
+		if(buffer[ptr] == '=')
 		{
 			// EQ token
 			
@@ -621,6 +673,7 @@ Token * nextToken(char *buffer, int *startptr)
 			ptr++;
 			if(buffer[ptr] == '.')
 			{
+				//RangeOp .. operator is encountered
 				ptr--;
 				int length = ptr - (*startptr) + 1;
 				lexeme = (char *)malloc(sizeof(char)*length);
@@ -635,15 +688,19 @@ Token * nextToken(char *buffer, int *startptr)
 				char * tokenName = (char *)malloc(sizeof(char)*4);
 				strcpy(tokenName, "NUM");
 				tokenName[3] = '\0';
+
+				int * result = (int *)malloc(sizeof(int));
+				*result = lexeme2int(lexeme);
 				tkn->lexeme = lexeme;
 				tkn->token = tokenName;
-				tkn->value = lexeme2int(lexeme);
+				tkn->value = (void *)result;
 				tkn->lineNum = lineNum;
 				*startptr = ptr;
 				return tkn;
 			}
 			else if(isnum(buffer[ptr]))
 			{
+				//Post decimal number has started
 				ptr++;
 				while(isnum(buffer[ptr]))
 				{
@@ -651,9 +708,11 @@ Token * nextToken(char *buffer, int *startptr)
 				}
 				if(buffer[ptr] == 'E')
 				{
+					//The power of 10 is being parsed
 					ptr++;
 					if(isnum(buffer[ptr]))
 					{
+						//There is a number after the E symbol
 						ptr++;
 						while(isnum(buffer[ptr]))
 						{
@@ -662,6 +721,7 @@ Token * nextToken(char *buffer, int *startptr)
 					}
 					else if(buffer[ptr] == '+' || buffer[ptr] == '-')
 					{
+						//There is a sign after the E symbol
 						ptr++;
 						if(isnum(buffer[ptr]))
 						{
@@ -673,25 +733,43 @@ Token * nextToken(char *buffer, int *startptr)
 						}
 						else
 						{
-							//ERROR
+							//There should have been a number after E+ or E-
+							tkn = (Token *)malloc(sizeof(Token));
+							char * tokenName = (char *)malloc(sizeof(char)*4);
+							tokenName[0] = 'E'; tokenName[1] = 'R'; tokenName[2] = 'R'; tokenName[3] = '\0';
+							char * lexeme = (char *)malloc(sizeof(char)*28);
+							strcpy(lexeme, "Expected NUM after E+ or E-");		
+							lexeme[27]='\0';
+							tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
+							tkn->value = (void *) NULL;	
+							return tkn;
 						}
 					}
 					else
 					{
-						//ERROR
+						//There is no number or +- after the E symbol. So it's an error
+						tkn = (Token *)malloc(sizeof(Token));
+						char * tokenName = (char *)malloc(sizeof(char)*4);
+						tokenName[0] = 'E'; tokenName[1] = 'R'; tokenName[2] = 'R'; tokenName[3] = '\0';
+						char * lexeme = (char *)malloc(sizeof(char)*31);
+						strcpy(lexeme, "Expected NUM or + or - after E");		
+						lexeme[30]='\0';
+						tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
+						tkn->value = (void *) NULL;	
+						return tkn;
 					}
 				}
+				
 				ptr--;
 				int length = ptr - (*startptr) + 2;
 				lexeme = (char *)malloc(sizeof(char)*length);
 
 				int i = 0, trav = *startptr;
-
+				//Put the number as it is in the lexeme
 				while(i < length-1)
 				{
 					lexeme[i] = buffer[trav];
-					trav++;
-					i++;
+					trav++; i++;
 				}
 				lexeme[length-1] = '\0';
 
@@ -700,22 +778,39 @@ Token * nextToken(char *buffer, int *startptr)
 				char * tokenName = (char *)malloc(sizeof(char)*5);
 				strcpy(tokenName, "RNUM");
 				tokenName[4] = '\0';
+				
+				//lexeme2real is returning a float value. So take it and caste to a void*
 
-				tkn->lexeme = lexeme;
-				tkn->token = tokenName;
-				tkn->value = lexeme2real(lexeme);
-				tkn->lineNum = lineNum;
+				tkn->lexeme = lexeme; tkn->token = tokenName;
+				float * var = (float *)malloc(sizeof(float));
+				*var = lexeme2real(lexeme);	tkn->value = (void *) var; tkn->lineNum = lineNum;
 
 				return tkn;
 			}
 			else
 			{
-				//ERROR
+				//We have a number, then a dot, but after that no dot or number
+				//So num.nonumdot
+				//Hence error
+				
+				tkn = (Token *)malloc(sizeof(Token));
+				char * tokenName = (char *)malloc(sizeof(char)*4);
+				tokenName[0] = 'E'; tokenName[1] = 'R'; tokenName[2] = 'R'; tokenName[3] = '\0';
+				char * lexeme = (char *)malloc(sizeof(char)*21);
+				strcpy(lexeme, "Expected NUM after .");		
+				lexeme[20]='\0';
+				tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
+				tkn->value = (void *) NULL;	
+				return tkn;
 			}
 		}
-		else /*the character piinted at is not an alpha*/
+		else if(!isaplha(buffer[ptr]) &&  (buffer[ptr] != '_'))
 		{
-			int length = 0;
+			//after the integers there is no dot but a word boundary
+			//This "word boundary" may be a space, \n or \t, or 
+			//anything but an underscore or alphanet
+			
+			int length=0;
 			if(buffer[ptr] == '\0')
 				length = ptr - (*startptr) + 1;
 			else
@@ -725,26 +820,29 @@ Token * nextToken(char *buffer, int *startptr)
 			}
 			lexeme = (char *)malloc(sizeof(char)*length);
 			int trav = *startptr, i=0;
+
 			while(i < length)
 			{
 				lexeme[i] = buffer[trav];
-				i++;
-				trav++;
+				i++; trav++;
 			}
 			lexeme[length-1] = '\0';
+			
 			char * tokenName = (char *)malloc(sizeof(char)*4);
 			strcpy(tokenName, "NUM");
 			tokenName[3] = '\0';
-			tkn->lexeme = lexeme;
-			tkn->token = tokenName;
-			tkn->value = lexeme2int(lexeme);
-			tkn->lineNum = lineNum;
+
+			int * result = (int *)malloc(sizeof(int));
+			*result = lexeme2int(lexeme);
+
+			tkn->lexeme = lexeme; tkn->token = tokenName; 
+			tkn->value = (void *)result; tkn->lineNum = lineNum;
 			*startptr = ptr;
 			return tkn;
 		}
-		else
+		else if 
 		{
-			//ERROR code
+			//ERROR code. This is the 123aryan or 123_. Ask mam how to give error
 		}
 	}
 	
