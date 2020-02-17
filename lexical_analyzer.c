@@ -1,6 +1,101 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
+#include<math.h>
+#include<ctype.h>
+
+char *keyhash[30] ;
+
+
+void uppertoken(char *str)
+{
+	int i=0;
+	while(str[i] != '\0')
+	{
+		str[i]=str[i]-32;
+		i++;
+	}
+}
+
+
+void populate_keyhash()
+{
+    
+    keyhash[0] = (char*) malloc(sizeof(char)* (8) ) ;
+    strcpy(keyhash[0], "integer") ;
+    keyhash[1] = (char*) malloc(sizeof(char)* (5) ) ;
+    strcpy(keyhash[1], "real"); 
+    keyhash[2] = (char*) malloc(sizeof(char)* (8) ) ;
+    strcpy(keyhash[2], "boolean"); 
+    keyhash[3] = (char*) malloc(sizeof(char)* (3) ) ;
+    strcpy(keyhash[3], "of") ;
+    keyhash[4] = (char*) malloc(sizeof(char)* (6) ) ;
+    strcpy(keyhash[4],"array") ;
+    keyhash[5] = (char*) malloc(sizeof(char)* (6) ) ;
+    strcpy(keyhash[5], "start") ;
+    keyhash[6] = (char*) malloc(sizeof(char)* (4) ) ;
+    strcpy(keyhash[6], "end") ;
+    keyhash[7] = (char*) malloc(sizeof(char)* (7) ) ;
+    strcpy(keyhash[7], "declare");  
+    keyhash[8] = (char*) malloc(sizeof(char)* (7) ) ;
+    strcpy(keyhash[8], "module") ;
+    keyhash[9] = (char*) malloc(sizeof(char)* (7) ) ;
+    strcpy(keyhash[9], "driver") ;
+    keyhash[10] = (char*) malloc(sizeof(char)* (8) ) ;
+    strcpy(keyhash[10], "program") ;
+    keyhash[11] = (char*) malloc(sizeof(char)* (10) ) ;
+    strcpy(keyhash[11], "get_value") ;
+    keyhash[12] = (char*) malloc(sizeof(char)* (6) ) ;
+    strcpy(keyhash[12], "print") ;
+    keyhash[13] = (char*) malloc(sizeof(char)* (4) ) ;
+    strcpy(keyhash[13], "use") ;
+    keyhash[14] = (char*) malloc(sizeof(char)* (5) ) ;
+    strcpy(keyhash[14], "with") ;
+    keyhash[15] = (char*) malloc(sizeof(char)* (11) ) ;
+    strcpy(keyhash[15], "parameters") ;
+    keyhash[16] = (char*) malloc(sizeof(char)* (5) ) ;
+    strcpy(keyhash[16], "true") ;
+    keyhash[17] = (char*) malloc(sizeof(char)* (6) ) ;
+    strcpy(keyhash[17], "false") ;
+    keyhash[18] = (char*) malloc(sizeof(char)* (6) ) ;
+    strcpy(keyhash[18], "takes") ;
+    keyhash[19] = (char*) malloc(sizeof(char)* (6) ) ;
+    strcpy(keyhash[19], "input") ;
+    keyhash[20] = (char*) malloc(sizeof(char)* (8) ) ;
+    strcpy(keyhash[20], "returns") ;
+    keyhash[21] = (char*) malloc(sizeof(char)* (4) ) ;
+    strcpy(keyhash[21], "AND") ;
+    keyhash[22] = (char*) malloc(sizeof(char)* (3) ) ;
+    strcpy(keyhash[22], "OR") ;
+    keyhash[23] = (char*) malloc(sizeof(char)* (4) ) ;
+    strcpy(keyhash[23], "for") ;
+    keyhash[24] = (char*) malloc(sizeof(char)* (3) ) ;
+    strcpy(keyhash[24], "in") ;
+    keyhash[25] = (char*) malloc(sizeof(char)* (7) ) ;
+    strcpy(keyhash[25], "switch") ;
+    keyhash[26] = (char*) malloc(sizeof(char)* (5) ) ;
+    strcpy(keyhash[26], "case") ;
+    keyhash[27] = (char*) malloc(sizeof(char)* (6) ) ;
+    strcpy(keyhash[27], "break") ;
+    keyhash[28] = (char*) malloc(sizeof(char)* (8) ) ;
+    strcpy(keyhash[28], "default") ;
+    keyhash[29] = (char*) malloc(sizeof(char)* (6) ) ;
+    strcpy(keyhash[29], "while") ;
+}
+
+int keyhash_find(char * str)
+{
+    int i=0;
+    while(i!=30)
+    {
+        if(strcmp(str,keyhash[i])==0)
+        return 1;
+        i++;
+    }
+
+    return 0;
+}
+
 
 typedef struct
 {
@@ -27,8 +122,9 @@ int lineNum = 0;
 // char *startPtr = NULL, *currentPtr = NULL;
 // char *buffer;		//Twin Buffer
 
+Token * nextToken(char *, int *);
 
-TokenStream * lexer(char *filename, int* lexical_err)	//read prog into buffer
+TokenStream * lexer(char * filename, int * lexical_err)	//read prog into buffer
 {
 	char *buffer;
 	int startptr=0;
@@ -43,9 +139,10 @@ TokenStream * lexer(char *filename, int* lexical_err)	//read prog into buffer
 	fseek(fp,0L,SEEK_END);
 	int len = ftell(fp);
 	fseek(fp,0L,SEEK_SET);
+	len++;
 	buffer = (char*)malloc(sizeof(char)*len);
 
-	for(int i = 0 ; i<len ; i++)
+	for(int i = 0 ; i<len-1 ; i++)
 	{
 		fscanf(fp,"%c",&buffer[i]);
 	}
@@ -55,22 +152,23 @@ TokenStream * lexer(char *filename, int* lexical_err)	//read prog into buffer
 	Token *tkn;
 	TokenStream *tknStream = (TokenStream*)malloc(sizeof(TokenStream)); 
 	tknStream->Tokenized_code = (Token**)malloc(sizeof(Token*)*size_tknStream);
-	tknStream->num_tokens = 0;                                                         
+	tknStream->num_tokens = 0;   
+
 	while(buffer[startptr]!='\0')
 	{
-		if(nextToken(buffer,&startptr)==NULL)
+		tkn = nextToken(buffer, &startptr);
+		if(tkn == NULL)
 			continue;
 		else 
-		{ 	
-
+		{
 			if(tknStream->num_tokens == size_tknStream)
 			{
 				size_tknStream *= 2;
 				tknStream->Tokenized_code = (Token**)realloc(tknStream->Tokenized_code,sizeof(Token*)*size_tknStream);  
 			}
-			tkn = nextToken(buffer,&startptr);
 			if(strcmp(tkn->token,"ERR"))
 			{
+				// printf("No error\n");
 				tknStream->Tokenized_code[tknStream->num_tokens] = tkn;
 				tknStream->num_tokens++;
 			}
@@ -90,15 +188,14 @@ int lexeme2int(char *s)
 	int i=0, val=0;
 	while(s[i]!='\0')
 	{
-		i++;
 		val = 10*val + (s[i]-'0');
+		i++;
 	}
 	return val;
 }
 
 float lexeme2real(char *s)
 {
-	
 	int i=0, j=0, flag=0, sign=1, exp_pow=0;
 	float val=0.0, frac=0.0, exp=0.0;
 
@@ -151,14 +248,15 @@ float lexeme2real(char *s)
 
 Token * nextToken(char *buffer, int *startptr)
 {
-	int ptr = startptr;
+	int ptr = *startptr;
 	char *lexeme = NULL;
 	Token *tkn = (Token*) malloc(sizeof(Token));
 	
+	// printf("Inside token()\n");
 	if(isalpha(buffer[ptr]))
 	{
 		ptr++;
-		while(buffer[ptr] != '\0' && (isalpnum(buffer[ptr]) || buffer[ptr] == '_'))
+		while(buffer[ptr] != '\0' && (isalnum(buffer[ptr]) || buffer[ptr] == '_'))
 		{
 			ptr++;
 		}
@@ -174,24 +272,25 @@ Token * nextToken(char *buffer, int *startptr)
 		lexeme[lex_len-1] = '\0';
 		*startptr = ptr;
 
-		// TODO : Check from hashtable if keyword matching
-
-		// If not matching
-		tkn->token = (char*) malloc(sizeof(char) * 3);
-		strcpy(tkn->token , "ID");
-		tkn->lexeme = lexeme; tkn->value = NULL; tkn->lineNum = lineNum;
-		
-		// TODO : If keyword 
-		tkn->token = (char*) malloc(sizeof(char) * ());
-		strcpy(tkn->token , );
-		tkn->lexeme = lexeme; tkn->value = NULL; tkn->lineNum = lineNum;
-		
+		if(keyhash_find(lexeme)==1)
+		{
+			tkn->token = (char*) malloc(sizeof(char) * lex_len);	
+			uppertoken(lexeme);	
+			strcpy(tkn->token , lexeme);
+			tkn->lexeme = lexeme; tkn->value = NULL; tkn->lineNum = lineNum;
+		}
+		else
+		{
+			tkn->token = (char*) malloc(sizeof(char) * 3);
+			strcpy(tkn->token , "ID");
+			tkn->lexeme = lexeme; tkn->value = NULL; tkn->lineNum = lineNum;
+		}
 		return tkn;
 	}
 
 	/* 	SPACES	*/
 
-	if(buffer[ptr] == ' ' || buffer[ptr] == '\t')
+	else if(buffer[ptr] == ' ' || buffer[ptr] == '\t')
 	{
 		ptr++;
 
@@ -216,7 +315,6 @@ Token * nextToken(char *buffer, int *startptr)
 			lineNum++; 
 			ptr++;
 		}
-		
 		//We will start at the beginning of the DFA, from a non new line character
 		*startptr = ptr; 
 		return NULL;
@@ -226,6 +324,7 @@ Token * nextToken(char *buffer, int *startptr)
 	
 	else if(buffer[ptr] == '+')
 	{
+		// printf("Inside +\n");
 		//Simple single layer condition, no branches, no ambiguity
 
 		tkn = (Token *)malloc(sizeof(Token));
@@ -246,7 +345,7 @@ Token * nextToken(char *buffer, int *startptr)
 	else if(buffer[ptr] == '-')
 	{
 		//Simple single layer condition, no branches, no ambiguity
-		
+		// printf("Minus\n");
 		tkn = (Token *)malloc(sizeof(Token));
 		lexeme = (char *)malloc(sizeof(char)*2);
 		lexeme[0] = '-'; lexeme[1] = '\0';
@@ -257,6 +356,7 @@ Token * nextToken(char *buffer, int *startptr)
 		tkn->value = (void *)NULL;
 		ptr++;
 		*startptr = ptr;
+		// printf("%s\t%d\n",tkn->lexeme, tkn->lineNum);
 		return tkn;
 	}
 
@@ -362,7 +462,7 @@ Token * nextToken(char *buffer, int *startptr)
 			}	
 			
 			// Finally set the start to current pointer because here the comment terminated 
-			*starptr = ptr;
+			*startptr = ptr;
 		}
 	}
 
@@ -447,15 +547,15 @@ Token * nextToken(char *buffer, int *startptr)
 		ptr++;
 		if(buffer[ptr]=='=')
 		{
-			tkn = (Token *)malloc(sizeof(char))*3;
+			tkn = (Token *)malloc(sizeof(Token)*3);
 			lexeme[0] = '!'; lexeme[1] = '='; lexeme[2] = '\0';
 			char * tokenName = (char *)sizeof(Token);
-			lexeme = (char *) malloc(sizeof(malloc(sizeof(char)*3);
+			lexeme = (char *) malloc(sizeof(char)*3);
 			strcpy(tokenName, "NE");
 			tokenName[2] = '\0';
 			tkn->lexeme = lexeme; tkn->lineNum = lineNum;	tkn->token = tokenName;
 			tkn->value = (void *) NULL;
-			
+			ptr++;
 		}
 		else //There is an error 
 		{
@@ -471,7 +571,6 @@ Token * nextToken(char *buffer, int *startptr)
 		
 	//In case there was an error, I am at the char after ! symbol
 		
-		ptr++;
 		*startptr = ptr;
 		return tkn;
 		
@@ -660,13 +759,14 @@ Token * nextToken(char *buffer, int *startptr)
 
 	//Number parsing
 
-	else if(isnum(buffer[ptr]))
+	else if(isdigit(buffer[ptr]))
 	{
 		ptr++;
-		while(isnum(buffer[ptr]))
+		while(isdigit(buffer[ptr]))
 		{
 			ptr++;
 		}
+		// printf("Here: %c\n",buffer[ptr]);
 		tkn = (Token *)malloc(sizeof(Token));
 		if(buffer[ptr] == '.')
 		{
@@ -674,6 +774,7 @@ Token * nextToken(char *buffer, int *startptr)
 			if(buffer[ptr] == '.')
 			{
 				//RangeOp .. operator is encountered
+				ptr--;
 				ptr--;
 				int length = ptr - (*startptr) + 1;
 				lexeme = (char *)malloc(sizeof(char)*length);
@@ -698,11 +799,11 @@ Token * nextToken(char *buffer, int *startptr)
 				*startptr = ptr;
 				return tkn;
 			}
-			else if(isnum(buffer[ptr]))
+			else if(isdigit(buffer[ptr]))
 			{
 				//Post decimal number has started
 				ptr++;
-				while(isnum(buffer[ptr]))
+				while(isdigit(buffer[ptr]))
 				{
 					ptr++;
 				}
@@ -710,11 +811,11 @@ Token * nextToken(char *buffer, int *startptr)
 				{
 					//The power of 10 is being parsed
 					ptr++;
-					if(isnum(buffer[ptr]))
+					if(isdigit(buffer[ptr]))
 					{
 						//There is a number after the E symbol
 						ptr++;
-						while(isnum(buffer[ptr]))
+						while(isdigit(buffer[ptr]))
 						{
 							ptr++;
 						}
@@ -723,10 +824,10 @@ Token * nextToken(char *buffer, int *startptr)
 					{
 						//There is a sign after the E symbol
 						ptr++;
-						if(isnum(buffer[ptr]))
+						if(isdigit(buffer[ptr]))
 						{
 							ptr++;
-							while(isnum(buffer[ptr]))
+							while(isdigit(buffer[ptr]))
 							{
 								ptr++;
 							}
@@ -757,11 +858,9 @@ Token * nextToken(char *buffer, int *startptr)
 						tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
 						tkn->value = (void *) NULL;	
 						return tkn;
-					}
+					} 
 				}
-				
-				ptr--;
-				int length = ptr - (*startptr) + 2;
+				int length = ptr - (*startptr) + 1;
 				lexeme = (char *)malloc(sizeof(char)*length);
 
 				int i = 0, trav = *startptr;
@@ -784,7 +883,7 @@ Token * nextToken(char *buffer, int *startptr)
 				tkn->lexeme = lexeme; tkn->token = tokenName;
 				float * var = (float *)malloc(sizeof(float));
 				*var = lexeme2real(lexeme);	tkn->value = (void *) var; tkn->lineNum = lineNum;
-
+				*startptr = ptr;
 				return tkn;
 			}
 			else
@@ -804,7 +903,7 @@ Token * nextToken(char *buffer, int *startptr)
 				return tkn;
 			}
 		}
-		else if(!isaplha(buffer[ptr]) &&  (buffer[ptr] != '_'))
+		else //if(!isdigit(buffer[ptr]) &&  (buffer[ptr] != '_'))
 		{
 			//after the integers there is no dot but a word boundary
 			//This "word boundary" may be a space, \n or \t, or 
@@ -814,10 +913,8 @@ Token * nextToken(char *buffer, int *startptr)
 			if(buffer[ptr] == '\0')
 				length = ptr - (*startptr) + 1;
 			else
-			{
-				ptr--;
-				length = ptr - (*startptr) + 2;
-			}
+				length = ptr - (*startptr) + 1;
+			// printf("%d\n",ptr);
 			lexeme = (char *)malloc(sizeof(char)*length);
 			int trav = *startptr, i=0;
 
@@ -839,10 +936,6 @@ Token * nextToken(char *buffer, int *startptr)
 			tkn->value = (void *)result; tkn->lineNum = lineNum;
 			*startptr = ptr;
 			return tkn;
-		}
-		else if 
-		{
-			//ERROR code. This is the 123aryan or 123_. Ask mam how to give error
 		}
 	}
 	
@@ -900,7 +993,7 @@ Token * nextToken(char *buffer, int *startptr)
 		}
 		else
 		{
-			// Colon :, simple branch
+			// Colon : simple branch
 			lexeme = (char *)malloc(sizeof(char)*2);
 			lexeme[0] = ':'; lexeme[1] = '\0';
 			char *tokenName = (char *)malloc(sizeof(char)*6);
@@ -914,4 +1007,32 @@ Token * nextToken(char *buffer, int *startptr)
 		*startptr = ptr;
 		return tkn;
 	}
+	return NULL;
+}
+
+int main(int argc, char * argv[])
+{
+	if(argc != 2)
+	{
+		printf("Wrong number of arguments\n");
+		exit(-1);
+	}
+
+	int error = 0;
+	// printf("Hello\n");
+	// printf("%s", argv[1]);
+	TokenStream * tknstr = lexer(argv[1], &error);
+
+	printf("%d\n",tknstr->num_tokens);
+	Token ** stream = tknstr->Tokenized_code;
+	for(int i=0; i < tknstr->num_tokens; i++)
+	{
+		Token * tkn = stream[i];
+		printf("%s\n",(tkn)->lexeme);
+		printf("%s\n",(tkn)->token);
+		printf("%d\n",(tkn)->lineNum);
+		// float * x = (float *)(tkn->value);
+		// printf("%lf\n",*x);
+	}
+	return 0;
 }
