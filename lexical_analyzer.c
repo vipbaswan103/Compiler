@@ -5,8 +5,9 @@
 #include<ctype.h>
 
 #define BUFFERSIZE 30
+#define KEYWORDSIZE 32
 
-char *keyhash[32] ;
+char *keyhash[KEYWORDSIZE] ;
 
 
 void uppertoken(char *str)
@@ -92,7 +93,7 @@ void populate_keyhash()
 int keyhash_find(char * str)
 {
     int i=0;
-    while(i!=30)
+    while(i!=KEYWORDSIZE)
     {
         if(strcmp(str,keyhash[i])==0)
         	return 1;
