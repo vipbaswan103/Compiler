@@ -23,7 +23,7 @@ type REAL
 type BOOLEAN
 moduleDef START statements END
 statements statement statements 
-statements ε
+statements EPSILON
 statement ioStmt 
 statement simpleStmt 
 statement declareStmt 
