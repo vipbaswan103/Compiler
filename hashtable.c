@@ -1,4 +1,5 @@
 #include<stdio.h>
+#include<stdlib.h>
 #include<string.h>
 
 #define HASHSIZE 1000
@@ -83,7 +84,13 @@ Element* hash_find(char * str, Hashtable * hash_tb)
 
 void hash_insert(Element * ele, Hashtable * hash_tb)
 {
-    if(hash_find(ele,hash_tb) != NULL)
+    char * str;
+    if(ele->tag == 1)
+        str = ele->type.nt.str;
+    else
+        str = ele->type.t.str;
+
+    if(hash_find(str,hash_tb) != NULL)
         return; 
 
     int hash;
@@ -192,7 +199,10 @@ void insertInLinkedList(Grammar * grammar, Hashtable *hash_tb, char * str, int T
         enumTerminal++;
         strcpy(t.str, str);
         type.t = t;
-
+        
+        if(strcmp(str, "EPSILON") == 0)
+            epsilonENUM = t.enumcode;
+        
         ele.tag = 2;
         ele.type = type;
 
@@ -205,7 +215,7 @@ void insertInLinkedList(Grammar * grammar, Hashtable *hash_tb, char * str, int T
     }
 }
 
-void read_grammar(char * filename)
+Grammar * read_grammar(char * filename)
 {
     Grammar * grammar = (Grammar *)malloc(sizeof(Grammar));
     grammar->size = 0;
@@ -215,7 +225,7 @@ void read_grammar(char * filename)
     if(fp == NULL)
     {
         printf("Error in opening the grammar file\n");
-        return;
+        return NULL;
     }
     
     //first pass
@@ -284,23 +294,103 @@ void read_grammar(char * filename)
         }
         
     }  
+    return grammar;
+}
 
+void printGrammar(Grammar * grammar)
+{
+    Node * trav = NULL;
+    for(int i=0; i<grammar->size; i++)
+    {
+        trav = grammar->arr[i].head;
+
+        while(trav->next != NULL)
+        {
+            if(trav->ele.tag == 1)
+                printf("%s (%d) -> ",trav->ele.type.nt.str, trav->ele.type.nt.enumcode);
+            else if(trav->ele.tag == 2)
+                printf("%s (%d) -> ",trav->ele.type.t.str, trav->ele.type.t.enumcode);
+            
+            trav = trav->next;
+        }
+        if(trav->ele.tag == 1)
+                printf("%s (%d)\n",trav->ele.type.nt.str, trav->ele.type.nt.enumcode);
+        else if(trav->ele.tag == 2)
+                printf("%s (%d)\n",trav->ele.type.t.str, trav->ele.type.t.enumcode);
+    }
+}
+
+int main(int argc, char * argv[])
+{
+    if(argc != 2)
+    {
+        printf("Wrong number of args\n");
+    }
+
+    Grammar * grammar = read_grammar(argv[1]);
+
+    printGrammar(grammar);
+}
+
+int ** initializeFirst()
+{
+    int ** firstSet = (int **)malloc(sizeof(int*)*enumNonTerminal);
+    for(int i=0; i<enumNonTerminal; i++)
+    {
+        firstSet[i] = (int *)malloc(sizeof(int)*(enumTerminal+3));
+        memset(firstSet[i],0,sizeof(int)*(enumTerminal+3));
+        firstSet[i][enumTerminal+1] = -1;  //Indicates whether we have calculated follow set or not, special
+        firstSet[i][enumTerminal+2] = -1;  //Indicates whether we have traversed this NT before or not, special
+    }
+    return firstSet;
 }
 
 
-
-int ** calculateFirstSet(Grammar *grammar)
+int * calculateFirstSet(Grammar *grammar, int nonTerminal, int **firstSet)
 {
-    int rules = grammar->size;
-    int **boolarray = (int **) malloc(sizeof(int*)*enumNonTerminal);
-    for(int i=0; i<enumNonTerminal; i++)
+    if(firstSet[nonTerminal][enumTerminal+1]==1)
+        return firstSet[nonTerminal];
+    if(firstSet[nonTerminal][enumTerminal+2]==1)
     {
-        boolarray[i] = (int *)malloc(sizeof(int)*enumTerminal);
+        int * arr = (int *)malloc(sizeof(int)*(enumTerminal+3));
+        memset(arr, 0, sizeof(int)*(enumTerminal+3));
+        return arr;
+    }    
+
+    for(int i = 0 ; i < grammar->size ; i++)
+    {
+        Node *trav = grammar->arr[i].head;
+        if(trav->ele.type.nt.enumcode == nonTerminal)
+        {
+            while(trav!=NULL)
+            {
+                if(trav->next->ele.tag == 2) // A->XB and X is a Terminal 
+                {
+                    firstSet[nonTerminal][trav->next->ele.type.t.enumcode] = 1;
+                    break;
+                }
+                else //A->XB and X is a NonTerminal
+                {
+                    firstSet[nonTerminal][enumTerminal+2] = 1;
+                    int *arr = calculateFirstSet(grammar, trav->next->ele.type.nt.enumcode, firstSet);
+                    setOR(firstSet[nonTerminal], arr);
+                    if(arr[epsilonENUM])
+                    {
+                        trav = trav->next;
+                    }
+                    else
+                    {
+                        break;
+                    }                   
+                }
+            }
+            if(trav == NULL)
+                firstSet[nonTerminal][epsilonENUM] = 1;
+        }
     }
-
-
-    memset(boolarray,0,enumNonTerminal*enumTerminal);
-    
+    firstSet[nonTerminal][enumTerminal+1] = 1;
+    firstSet[nonTerminal][enumTerminal+2] = 1;
+    return firstSet[nonTerminal];
 }
 
 int ** initializeFollow()
@@ -309,6 +399,7 @@ int ** initializeFollow()
     for(int i=0; i<enumNonTerminal; i++)
     {
         followSet[i] = (int *)malloc(sizeof(int)*(enumTerminal+3));
+        memset(followSet[i],0,sizeof(int)*(enumTerminal+3));
         followSet[i][enumTerminal+1] = -1;  //Indicates whether we have calculated follow set or not, special
         followSet[i][enumTerminal+2] = -1;  //Indicates whether we have traversed this NT before or not, special
     }
@@ -316,18 +407,14 @@ int ** initializeFollow()
     return followSet;
 }
 
-
-//flag = 1 means find arr1 OR (arr2 - EPSILON)
-//flag = 0 means find arr1 OR arr2
-void setOR(int * arr1, int * arr2, int flag)
+void setOR(int * arr1, int * arr2)
 {
     int tmp = arr1[epsilonENUM];
     for(int i=0; i<=enumTerminal; i++)
     {
         arr1[i] = (arr1[i]==1 || arr2[i]==1) ? 1 : 0;
     }
-    if(flag == 1)
-        arr1[epsilonENUM] = tmp;
+    arr1[epsilonENUM] = tmp;
 }
 
 
@@ -364,7 +451,7 @@ int * calculateFollowSet(Grammar * grammar, int nonTerminal, int ** followSet, i
                 {
                     if(trav->next == NULL)  //Rule is of type A -> XB
                     {
-                        followSet[nonTerminal] = calculateFollowSet(grammar, grammar->arr[i].head->ele.type.nt.enumcode, followSet, firstSet);
+                        setOR(followSet[nonTerminal], calculateFollowSet(grammar, grammar->arr[i].head->ele.type.nt.enumcode, followSet, firstSet));
                     }
                     else    //Rule is of type A -> XBY
                     {
@@ -374,11 +461,11 @@ int * calculateFollowSet(Grammar * grammar, int nonTerminal, int ** followSet, i
                         }
                         else   //If Y is a non-terminal
                         {
-                            setOR(followSet[nonTerminal], firstSet[trav->next->ele.type.nt.enumcode], 1);
+                            setOR(followSet[nonTerminal], firstSet[trav->next->ele.type.nt.enumcode]);
                             if (firstSet[trav->next->ele.type.nt.enumcode][epsilonENUM] == 1) //First set contains EPSILON
                             {
                                 followSet[nonTerminal][enumTerminal+2] = 1;
-                                setOR(followSet[nonTerminal], calculateFollowSet(grammar, trav->next->ele.type.nt.enumcode, followSet, firstSet), 1);
+                                setOR(followSet[nonTerminal], calculateFollowSet(grammar, trav->next->ele.type.nt.enumcode, followSet, firstSet));
                             }
                         }
                     }
