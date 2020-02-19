@@ -60,12 +60,12 @@ int hash_func(char *str)
 }
 
 
-Element* hash_find(char * str, Hashtable hash_tb)
+Element* hash_find(char * str, Hashtable * hash_tb)
 {
     int hash;
     hash = hash_func(str);
     
-    Node *trav = hash_tb.arr[hash].head; 
+    Node *trav = hash_tb->arr[hash].head; 
     char * lexeme;
     while(trav != NULL)
     {
@@ -81,7 +81,7 @@ Element* hash_find(char * str, Hashtable hash_tb)
     return NULL;
 }
 
-void hash_insert(Element * ele, Hashtable hash_tb)
+void hash_insert(Element * ele, Hashtable * hash_tb)
 {
     if(hash_find(ele,hash_tb) != NULL)
         return; 
@@ -97,17 +97,17 @@ void hash_insert(Element * ele, Hashtable hash_tb)
     temp->ele = *ele ;
     temp->next = NULL ;
 
-    if( hash_tb.arr[hash].head == NULL)
+    if( hash_tb->arr[hash].head == NULL)
     {
-        hash_tb.arr[hash].head = temp ;
-        hash_tb.arr[hash].tail = temp ;
-        hash_tb.arr[hash].size = 1 ;
+        hash_tb->arr[hash].head = temp ;
+        hash_tb->arr[hash].tail = temp ;
+        hash_tb->arr[hash].size = 1 ;
     }
     else
     {
-        hash_tb.arr[hash].tail->next = temp ;
-        hash_tb.arr[hash].tail = temp ;
-        hash_tb.arr[hash].size++ ;
+        hash_tb->arr[hash].tail->next = temp ;
+        hash_tb->arr[hash].tail = temp ;
+        hash_tb->arr[hash].size++ ;
     }
     
     return ;
@@ -121,7 +121,7 @@ typedef struct
 
 void populateGrammarArray(Grammar * grammar, Hashtable * hash_tb, char * str, int TorNT, int index)
 {
-    Element * ele = hash_find(str, *hash_tb);
+    Element * ele = hash_find(str, hash_tb);
 
     Node * newHead = (Node *)malloc(sizeof(Node));
     Node * newTail = (Node *)malloc(sizeof(Node));
@@ -160,7 +160,7 @@ void populateGrammarArray(Grammar * grammar, Hashtable * hash_tb, char * str, in
         list.tail = newTail;
         list.size = 0;
         
-        hash_insert(&(newHead->ele), *hash_tb);
+        hash_insert(&(newHead->ele), hash_tb);
         grammar->arr[index] = list;
     }
 }
@@ -173,7 +173,7 @@ void insertInLinkedList(Grammar * grammar, Hashtable *hash_tb, char * str, int T
 
     Node * newNode = (Node *)malloc(sizeof(Node));
     
-    Element * ele = hash_find(str, *hash_tb);
+    Element * ele = hash_find(str, hash_tb);
     
     tail->next = newNode;
     if(ele != NULL)     //Found in hash table, can be a T or a NT
@@ -200,6 +200,8 @@ void insertInLinkedList(Grammar * grammar, Hashtable *hash_tb, char * str, int T
         newNode->next = NULL;
         tail->next = newNode;
         grammar->arr[index].tail = tail->next;
+
+        hash_insert(&ele, hash_tb);        
     }
 }
 
@@ -230,7 +232,7 @@ void read_grammar(char * filename)
     int rulecount = 0;
     while(fscanf(fp,"%s%*[^\n]",temp)!=0)
     {
-        grammar = populateGrammarArray(grammar,hash_tb, temp,1,rulecount);
+        populateGrammarArray(grammar,hash_tb, temp,1,rulecount);
         rulecount++;
         fgetc(fp);
     }
@@ -240,7 +242,7 @@ void read_grammar(char * filename)
         
     while(fscanf(fp,"%s%*[^\n]",temp)!=0)
     {
-        grammar = populateGrammarArray(grammar, hash_tb, temp, 1, rulecount);
+        populateGrammarArray(grammar, hash_tb, temp, 1, rulecount);
         rulecount++;
         fgetc(fp);
     }
@@ -262,7 +264,7 @@ void read_grammar(char * filename)
         {
             //give temp to vipin
             //check that it is a non terminal or not
-            Element *ele = hash_find(temp);
+            Element *ele = hash_find(temp, hash_tb);
             if(ele==NULL)
             {
                 insertInLinkedList(grammar, hash_tb, temp, 2, rulenum);
