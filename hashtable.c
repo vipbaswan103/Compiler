@@ -9,7 +9,7 @@
 #define NTSIZE 60
 
 /**************************************LEXER********************************************************/
-#define BUFFERSIZE 30
+#define BUFFERSIZE 35
 
 char *keyhash[32] ;
 
@@ -139,14 +139,15 @@ Token * nextToken(FILE *, char *, char * , char *, int *, int *, int *);
 
 void readBuffer(FILE *fp, char * buffer)
 {
+    memset(buffer, '\0', sizeof(char)*BUFFERSIZE);
 	int read = fread(buffer,1,BUFFERSIZE,fp);
 	if(ferror(fp))
 	{
 		printf("Error in reading the file\n");
 		exit(-1);
 	}
-	if(read<BUFFERSIZE)
-		buffer[read]='\0';
+	// if(read<BUFFERSIZE)
+	// 	buffer[read]='\0';
 }
 
 void initializeLexer(char * filename)
@@ -344,7 +345,7 @@ char * fillLexeme(char * buffer1, char * buffer2, int reading, int toRead, int s
 	else		//Lexeme spans two buffers
 	{
 		//Calculating length of the buffer
-		len = BUFFERSIZE-startptr+1;
+		len = BUFFERSIZE-startptr;
 		len += (ptr+1);
 
 		//Firstly read from the initial buffer
@@ -2041,9 +2042,17 @@ TreeNode * parser(Grammar * grammar, int ** parsetable)
 
     // tkn = tempo_tokens[index];
     tkn = getNextToken();       //Make 1 lookahead
+    printf("%s\n", tkn->token);
+
+    int j;
     while(mainStack->size != 0)
     {
         //top of the stack is terminal
+
+        if(mainStack->top->trnode->ele.tag == 2)
+        {
+
+        }
         if(mainStack->top->trnode->ele.tag == 2)    
         {
             //get the next token from the lexer if the top of stack is a non terminal
@@ -2054,11 +2063,13 @@ TreeNode * parser(Grammar * grammar, int ** parsetable)
                 // index++;
                 // tkn = tempo_tokens[index];
                 tkn = getNextToken();
+                printf("%s\n", tkn->token);
             }
             //throw an error
             else
             {
                 printf("\nSyntactical Error - Irrelevant occurance of %s", tkn->token);
+                return NULL;
                 //Syntax Error
             }
         }
@@ -2066,16 +2077,23 @@ TreeNode * parser(Grammar * grammar, int ** parsetable)
         {
             //pop the NT and find its enumerated code in hash table
             node = pop(mainStack);
+
             ele = hash_find(tkn->token, hash_tb);
 
-            if(ele == NULL)
+            if(ele == NULL && (strcmp(tkn->token,"EOF") != 0))
             {
                 //Problem in grammar parsing
                 printf(" \n The top of the stack was an unidentified terminal ! This error should not occur actually");
+                return NULL;
             }
             else
             {
-                ruleNum = parsetable[node->ele.type.nt.enumcode][ele->type.t.enumcode];
+                if(strcmp(tkn->token, "EOF") == 0)
+                    j = enumTerminal;
+                else
+                    j = ele->type.t.enumcode;
+                
+                ruleNum = parsetable[node->ele.type.nt.enumcode][j];
                 Node * trav;
                 if(ruleNum==(-1))
                 {
@@ -2118,7 +2136,20 @@ TreeNode * parser(Grammar * grammar, int ** parsetable)
 }
 
 
+void seeTokenization()
+{
+    Token * tkn = NULL;
 
+    tkn = getNextToken();
+
+    while(strcmp(tkn->token, "EOF")!=0)
+    {
+        printf("%s\n", tkn->token);
+        tkn = getNextToken();
+    }
+
+    printf("%s\n", tkn->token);
+}
 /*******************************************************************/
 int main(int argc, char * argv[])
 {
@@ -2160,7 +2191,8 @@ int main(int argc, char * argv[])
     initializeLexer(argv[2]);
     // printGrammar(grammar);
     map(grammar);
-
+    populate_keyhash();
+    // seeTokenization();
     int ** firstSet = initializeFirst();
     int ** followSet = initializeFollow();
     // printf("%d\n", enumNonTerminal);
@@ -2173,14 +2205,14 @@ int main(int argc, char * argv[])
     {
         calculateFollowSet(grammar, i, followSet, firstSet);
     }
-    printf("\n\n----------- FIRST SET -----------\n");
-    printFirst(firstSet);
-    printf("\n----------- FOLLOW SET -----------\n");
-    printFollow(followSet);
+    // printf("\n\n----------- FIRST SET -----------\n");
+    // printFirst(firstSet);
+    // printf("\n----------- FOLLOW SET -----------\n");
+    // printFollow(followSet);
 
     int ** parseTable = intializeParseTable();
     createParseTable(grammar,parseTable,firstSet,followSet);
-    printParseTable(grammar,parseTable);
+    // printParseTable(grammar,parseTable);
 
     //ID + ID + ID ; EOF
     tempo_tokens = (char **)malloc(sizeof(char*)*7);
@@ -2198,8 +2230,9 @@ int main(int argc, char * argv[])
     strcpy(tempo_tokens[4], "ID");
     strcpy(tempo_tokens[5], "SEMICOLON");
     strcpy(tempo_tokens[6], "EOF");
-    printGrammar(grammar);
+    // printGrammar(grammar);
     TreeNode * parseTree = parser(grammar, parseTable);
     preOrder(parseTree);
+    printf("\n");
     return 0;
 }
