@@ -232,28 +232,28 @@ void insertInLinkedList(Grammar * grammar, Hashtable *hash_tb, char * str, int T
 
 // Use this function to print the grammar as interpreted in the linked list array
 
-// void printGrammar(Grammar * grammar)
-// {
-//     Node * trav = NULL;
-//     for(int i=0; i<grammar->size; i++)
-//     {
-//         trav = grammar->arr[i].head;
+void printGrammar(Grammar * grammar)
+{
+    Node * trav = NULL;
+    for(int i=0; i<grammar->size; i++)
+    {
+        trav = grammar->arr[i].head;
 
-//         while(trav != NULL && trav->next != NULL)
-//         {
-//             if(trav->ele.tag == 1)
-//                 printf("%s (%d) -> ",trav->ele.type.nt.str, trav->ele.type.nt.enumcode);
-//             else if(trav->ele.tag == 2)
-//                 printf("%s (%d) -> ",trav->ele.type.t.str, trav->ele.type.t.enumcode);
+        while(trav != NULL && trav->next != NULL)
+        {
+            if(trav->ele.tag == 1)
+                printf("%s (%d) -> ",trav->ele.type.nt.str, trav->ele.type.nt.enumcode);
+            else if(trav->ele.tag == 2)
+                printf("%s (%d) -> ",trav->ele.type.t.str, trav->ele.type.t.enumcode);
             
-//             trav = trav->next;
-//         }
-//         if(trav->ele.tag == 1)
-//                 printf("%s (%d)\n",trav->ele.type.nt.str, trav->ele.type.nt.enumcode);
-//         else if(trav->ele.tag == 2)
-//                 printf("%s (%d)\n",trav->ele.type.t.str, trav->ele.type.t.enumcode);
-//     }
-// }
+            trav = trav->next;
+        }
+        if(trav->ele.tag == 1)
+                printf("%s (%d)\n",trav->ele.type.nt.str, trav->ele.type.nt.enumcode);
+        else if(trav->ele.tag == 2)
+                printf("%s (%d)\n",trav->ele.type.t.str, trav->ele.type.t.enumcode);
+    }
+}
 
 
 Grammar * read_grammar(char * filename)
@@ -375,6 +375,7 @@ int * calculateFirstSet(Grammar *grammar, int nonTerminal, int ** firstSet)
 {
     if(firstSet[nonTerminal][enumTerminal+1]==1)
         return firstSet[nonTerminal];
+        
     if(firstSet[nonTerminal][enumTerminal+2]==1)
     {
         int * arr = (int *)malloc(sizeof(int)*(enumTerminal+3));
@@ -461,11 +462,14 @@ int * calculateFollowSet(Grammar * grammar, int nonTerminal, int ** followSet, i
         return followSet[nonTerminal];
     
     //Cycle detected
+    //But now, don't recurse. Just return whatever has been collected in the followset till now
+    //Don't return all zeros (if A -> B and B -> A, then A must have "atleast" what B has and vice-versa)
     if(followSet[nonTerminal][enumTerminal+2] == 1)     
     {
-        int * arr = (int *)malloc(sizeof(int)*(enumTerminal+3));
-        memset(arr, 0, sizeof(int)*(enumTerminal+3));
-        return arr;
+        // int * arr = (int *)malloc(sizeof(int)*(enumTerminal+3));
+        // memset(arr, 0, sizeof(int)*(enumTerminal+3));
+
+        return followSet[nonTerminal];      
     }
     followSet[nonTerminal][enumTerminal+2] = 1;
     for(int i=0; i<grammar->size; i++)
@@ -478,13 +482,13 @@ int * calculateFollowSet(Grammar * grammar, int nonTerminal, int ** followSet, i
             {
                 if(trav->ele.type.nt.enumcode == nonTerminal)   //We found the matching non-terminal
                 {
-                    if(trav->next == NULL)  //Rule is of type A -> XB
+                    trav = trav->next;
+                    if(trav == NULL)  //Rule is of type A -> XB
                     {
                         setOR(followSet[nonTerminal], calculateFollowSet(grammar, grammar->arr[i].head->ele.type.nt.enumcode, followSet, firstSet));
                     }
                     else    //Rule is of type A -> XBY
                     {
-                        trav = trav->next;
                         while(trav != NULL)
                         {
                             if(trav->ele.tag == 2)    //If Y is a terminal
@@ -513,7 +517,6 @@ int * calculateFollowSet(Grammar * grammar, int nonTerminal, int ** followSet, i
                             setOR(followSet[nonTerminal], calculateFollowSet(grammar, grammar->arr[i].head->ele.type.nt.enumcode, followSet, firstSet));
                         }
                     }
-                    
                 }
             }
             if(trav != NULL)
@@ -521,6 +524,7 @@ int * calculateFollowSet(Grammar * grammar, int nonTerminal, int ** followSet, i
         }
     }
     //We are done with this non-terminal
+    
     followSet[nonTerminal][enumTerminal+2] = 1;     //Marked as already traversed
     followSet[nonTerminal][enumTerminal+1] = 1;     //Mark 1 as follow set already calculated
     return followSet[nonTerminal];
@@ -602,7 +606,7 @@ int main(int argc, char * argv[])
     }
     Grammar * grammar = read_grammar(argv[1]);
 
-    // printGrammar(grammar);
+    printGrammar(grammar);
     map(grammar);
     // printMap();
     int ** firstSet = initializeFirst();
@@ -618,6 +622,8 @@ int main(int argc, char * argv[])
     {
         calculateFollowSet(grammar, i, followSet, firstSet);
     }
-    // printFirst(firstSet);
+    printf("\n\n----------- FIRST SET -----------\n");
+    printFirst(firstSet);
+    printf("\n----------- FOLLOW SET -----------\n");
     printFollow(followSet);
 } 
