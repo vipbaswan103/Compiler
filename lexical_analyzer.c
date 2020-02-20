@@ -377,518 +377,468 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 
 	int ptr = *startptr; //NOTE: Combination of reading and ptr together defines the buffer
 	char *lexeme = NULL;
+	char *tokenName = NULL;
 	Token *tkn = (Token*) malloc(sizeof(Token));
+	int state = 0;
 
-	if(isalpha(buffer[ptr]))
+	while(1)
 	{
-		incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
-		while(buffer[ptr] != '\0' && (isalnum(buffer[ptr]) || buffer[ptr] == '_'))
+		switch(state)
 		{
-			incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
-		}
-
-		lexeme = fillLexeme(buffer1, buffer2, *reading, *toRead, *startptr, ptr);
-		int lex_len = strlen(lexeme) + 1;
-		tkn->lexeme = (char *)malloc(sizeof(char)*lex_len);
-		strcpy(tkn->lexeme, lexeme);
-
-		if(keyhash_find(lexeme)==1)
-		{
-			tkn->token = (char*) malloc(sizeof(char) * lex_len);
-			uppertoken(lexeme);	
-			strcpy(tkn->token , lexeme);
-			tkn->value = NULL; tkn->lineNum = lineNum;
-		}
-		else
-		{
-			tkn->token = (char*) malloc(sizeof(char) * 3);
-			strcpy(tkn->token , "ID");
-			tkn->value = NULL; tkn->lineNum = lineNum;
-		}
-
-		//reading is the buffer we are reading and ptr is the ending location of the lexeme in that buffer
-		//Now, make toRead same as reading, since we must start reading from the ptr
-		*toRead = *reading;
-		*startptr = ptr;
-		return tkn;
-	}
-
-	/* 	SPACES	*/
-
-	else if(buffer[ptr] == ' ' || buffer[ptr] == '\t')
-	{
-		incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
-		//Ignoring as many spaces in a loop
-		while(buffer[ptr] == ' ' || buffer[ptr] == '\t')
-		{
-			incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
-		}
-		//We will start from the next non space/tab character at the beginning of the DFA
-		*toRead = *reading;
-		*startptr = ptr;
-		return NULL;
-	}
-	
-	/* 	NEWLINE	*/
-
-	else if(buffer[ptr] == '\n')
-	{
-		//Ignoring as many newlines, just keep incrementing the line count
-		while(buffer[ptr] == '\n')
-		{
-			lineNum++; 
-			incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
-		}
-		//We will start at the beginning of the DFA, from a non new line character
-		*toRead = *reading;
-		*startptr = ptr; 
-		return NULL;
-	}
-
-	/* 	PLUS */
-	
-	else if(buffer[ptr] == '+')
-	{
-		// printf("Inside +\n");
-		//Simple single layer condition, no branches, no ambiguity
-
-		tkn = (Token *)malloc(sizeof(Token));
-		lexeme = (char *)malloc(sizeof(char)*2);
-		lexeme[0] = '+'; lexeme[1] = '\0';
-		char * tokenName = (char *)malloc(sizeof(char)*5);
-		strcpy(tokenName, "PLUS");
-		tokenName[4] = '\0';
-		tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
-		tkn->value = (void *)NULL;
-		incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
-		*toRead = *reading;
-		*startptr = ptr;
-		return tkn;
-	}
-
-	/* 	MINUS */
-
-	else if(buffer[ptr] == '-')
-	{
-		//Simple single layer condition, no branches, no ambiguity
-		// printf("Minus\n");
-		tkn = (Token *)malloc(sizeof(Token));
-		lexeme = (char *)malloc(sizeof(char)*2);
-		lexeme[0] = '-'; lexeme[1] = '\0';
-		char * tokenName = (char *)malloc(sizeof(char)*6);
-		strcpy(tokenName, "MINUS");
-		tokenName[5] = '\0';
-		tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
-		tkn->value = (void *)NULL;
-		incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
-		*toRead = *reading;
-		*startptr = ptr;
-		// printf("%s\t%d\n",tkn->lexeme, tkn->lineNum);
-		return tkn;
-	}
-
-	/* DIV */
-	
-	else if(buffer[ptr] == '/')
-	{
-		//Simple single layer condition, no branches, no ambiguity
-		tkn = (Token *)malloc(sizeof(Token));
-		lexeme = (char *)malloc(sizeof(char)*2);
-		lexeme[0] = '/'; lexeme[1] = '\0';
-		char * tokenName = (char *)malloc(sizeof(char)*4);
-		strcpy(tokenName, "DIV");
-		tokenName[3] = '\0';
-		tkn->lexeme = lexeme;
-		tkn->lineNum = lineNum;
-		tkn->token = tokenName;
-		tkn->value = (void *)NULL;
-		incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
-		*toRead = *reading;
-		*startptr = ptr;
-		return tkn;
-	}
-
-	/* MUL and COMMMENTS */
-
-	else if(buffer[ptr] == '*')
-	{
-		
-		//The first character is *. 
-		//I need to look ahead now.
-		incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
-
-		if(buffer[ptr] != '*')
-		{
-			//If the next is not a *. 
-			//Treat the previous * as a multiply
-			tkn = (Token *)malloc(sizeof(Token));
-			lexeme = (char *)malloc(sizeof(char)*2);
-			lexeme[0] = '*';	lexeme[1] = '\0';
-			char * tokenName = (char *)malloc(sizeof(char)*4);
-			strcpy(tokenName, "MUL");
-			tokenName[3] = '\0';
-			tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
-			tkn->value = (void *)NULL;
-			*toRead = *reading;
-			*startptr = ptr;
-			return tkn;
-		}
-		else
-		{
-			//Since the next is also a *, start the comments. 
-			incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
-
-			// Untill my program ends, look for end of comments  
-			while(buffer[ptr] != '\0')
-			{
-				// I am looking for **. Ignore the rest.
-				if(buffer[ptr] != '*' &&  buffer[ptr] != '\n')
+			case 0:
+				switch (buffer[ptr])
 				{
-					incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
-					continue;
-				}
+					case '=':
+						state = 1;
+						break;
+					
+					case '[':
+						state = 3;
+						break;
 
-				// If the line changes, move on but increment line count.
-				else if(buffer[ptr] == '\n')
-				{
-					lineNum++;
-					incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
-					continue;		
-				}
+					case ']':
+						state = 4;
+						break;
 
-				// Encountered a *. Look for one more.
-				else if(buffer[ptr] == '*')
-				{
-					incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
-					if(buffer[ptr] == '*')
-					{
-						// Finally return NULL.
-						incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
-						*toRead = *reading;
-						*startptr = ptr;
-						return NULL;
-					}
+					case '(':
+						state = 5;
+						break;
+						
+					case ')':
+						state = 6;
+						break;	
+						
+					case '\n':
+						state = 9;
+						break;
+						
+					case '+':
+						state = 13;
+						break;
+						
+					case '-':
+						state = 14;
+						break;
+						
+					case '/':
+						state = 15;
+						break;
+						
+					case '*':
+						state = 16;
+						break;
+						
+					case ',':
+						state = 21;
+						break;
+						
+					case '<':
+						state = 22;
+						break;
+						
+					case '>':
+						state = 26;
+						break;
+						
+					case '!':
+						state = 38;
+						break;
+						
+					case ':':
+						state = 40;
+						break;
+						
+					case '.':
+						state = 43;
+						break;
+						
+					case ';':
+						state = 45;
+						break;
+
+					default:
+						if(buffer[ptr]==' ' || buffer[ptr]=='\t')
+							state = 7;
+						else if(isalpha(buffer[ptr]))
+							state = 10;
+						else if(isdigit(buffer[ptr]))
+							state = 30;
+						else
+						{
+							tokenName = (char *)malloc(sizeof(char)*4);
+							tokenName[0] = 'E'; tokenName[1] = 'R'; tokenName[2] = 'R'; tokenName[3] = '\0';
+							char * lexeme = (char *)malloc(sizeof(char)*21);
+							strcpy(lexeme, "Not a valid alphabet");		
+							lexeme[20]='\0';
+							tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
+							tkn->value = (void *) NULL;
+							*toRead = *reading;
+							*startptr = ptr;
+							return tkn;
+						}
+						break;
 				}
-			}
-			
-			if(buffer[ptr]=='\0')
-			{
-				//ERROR HANDLING: Comment not terminated
-				tkn = (Token *)malloc(sizeof(Token));
-				char * tokenName = (char *)malloc(sizeof(char)*4);
-				tokenName[0] = 'E'; tokenName[1] = 'R'; tokenName[2] = 'R'; tokenName[3] = '\0';
-				char * lexeme = (char *)malloc(sizeof(char)*23);
-				strcpy(lexeme, "Comment not terminated");		
-				lexeme[22]='\0';
+				break;
+			case 1:
+				if(buffer[ptr]=='=')
+					state = 2;
+				else
+				{
+					tokenName = (char *)malloc(sizeof(char)*4);
+					tokenName[0] = 'E'; tokenName[1] = 'R'; tokenName[2] = 'R'; tokenName[3] = '\0';
+					char * lexeme = (char *)malloc(sizeof(char)*19);
+					strcpy(lexeme, "Expected !=, got !");		
+					lexeme[18]='\0';
+					tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
+					tkn->value = (void *) NULL;
+					*toRead = *reading;
+					*startptr = ptr;
+					return tkn;
+				}
+				break;
+			case 2:
+				lexeme = (char *)malloc(sizeof(char)*3);
+				lexeme[0] = '='; lexeme[1] = '='; lexeme[2] = '\0';
+				tokenName = (char *)malloc(sizeof(char)*3);
+				strcpy(tokenName, "EQ");
+				tokenName[2] = '\0';
 				tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
-				tkn->value = (void *) NULL;
+				tkn->value = (void *)NULL;
+				// incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
 				*toRead = *reading;
 				*startptr = ptr;
 				return tkn;
-			}	
-			
+				break;
+			case 3:
+				lexeme = (char *)malloc(sizeof(char)*2);
+				lexeme[0] = '['; lexeme[1] = '\0';
+				tokenName = (char *)malloc(sizeof(char)*5);
+				strcpy(tokenName, "SQBO");
+				tokenName[4] = '\0';
+				tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
+				tkn->value = (void *)NULL;
+				// incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
+				*toRead = *reading;
+				*startptr = ptr;
+				return tkn;
+				break;
+			case 4:
+				lexeme = (char *)malloc(sizeof(char)*2);
+				lexeme[0] = ']'; lexeme[1] = '\0';
+				tokenName = (char *)malloc(sizeof(char)*5);
+				strcpy(tokenName, "SQBC");
+				tokenName[4] = '\0';
+				tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
+				tkn->value = (void *)NULL;
+				// incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
+				*toRead = *reading;
+				*startptr = ptr;
+				return tkn;
+				break;
+			case 5:
+				lexeme = (char *)malloc(sizeof(char)*2);
+				lexeme[0] = '(';
+				lexeme[1] = '\0';
+				tokenName = (char *)malloc(sizeof(char)*3);
+				strcpy(tokenName, "BO");
+				tokenName[2] = '\0';
+				tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
+				tkn->value = (void *)NULL;
+				// incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
+				*toRead = *reading;
+				*startptr = ptr;
+				return tkn;
+				break;
+			case 6:
+				lexeme = (char *)malloc(sizeof(char)*2);
+				lexeme[0] = ')'; lexeme[1] = '\0';
+				tokenName = (char *)malloc(sizeof(char)*3);
+				strcpy(tokenName, "BC");
+				tokenName[2] = '\0';
+				tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
+				tkn->value = (void *)NULL;
+				// incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
+				*toRead = *reading;
+				*startptr = ptr;
+				return tkn;				
+				break;
+			case 7:
+				if(buffer[ptr]==' ' || buffer[ptr]=='\t')
+					state = 7;
+				else
+				{
+					*toRead = *reading;
+					*startptr = ptr;
+					return NULL;
+				}
+				break;
+			case 9:
+				lineNum++;
+				*toRead = *reading;
+				*startptr = ptr; 
+				return NULL;
+			case 10:
+				if(isalnum(buffer[ptr]) || buffer[ptr]=='_')
+					state = 10;
+				else
+				{
+					lexeme = fillLexeme(buffer1, buffer2, *reading, *toRead, *startptr, ptr);
+					int lex_len = strlen(lexeme) + 1;
+					tkn->lexeme = (char *)malloc(sizeof(char)*lex_len);
+					strcpy(tkn->lexeme, lexeme);
 
-			//DEAD CODE, verify once
-			// Finally set the start to current pointer because here the comment terminated 
-			*toRead = *reading;
-			*startptr = ptr;
-			return NULL;
-		}
-	}
+					if(keyhash_find(lexeme)==1)
+					{
+						tkn->token = (char*) malloc(sizeof(char) * lex_len);
+						uppertoken(lexeme);	
+						strcpy(tkn->token , lexeme);
+						tkn->value = NULL; tkn->lineNum = lineNum;
+					}
+					else
+					{
+						tkn->token = (char*) malloc(sizeof(char) * 3);
+						strcpy(tkn->token , "ID");
+						tkn->value = NULL; tkn->lineNum = lineNum;
+					}
 
-	/* SQBO */
-	
-	else if(buffer[ptr] == '[')
-	{
-		// Single branch, no branches, no ambiguity
-		tkn = (Token *)malloc(sizeof(Token));
-		lexeme = (char *)malloc(sizeof(char)*2);
-		lexeme[0] = '['; lexeme[1] = '\0';
-		char * tokenName = (char *)malloc(sizeof(char)*5);
-		strcpy(tokenName, "SQBO");
-		tokenName[4] = '\0';
-		tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
-		tkn->value = (void *)NULL;
-		incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
-		*toRead = *reading;
-		*startptr = ptr;
-		return tkn;
-	}
-	
-	/* SQBC */
-	
-	else if(buffer[ptr] == ']')
-	{
-		// Single branch, no branches, no ambiguity
-		tkn = (Token *)malloc(sizeof(Token));
-		lexeme = (char *)malloc(sizeof(char)*2);
-		lexeme[0] = ']'; lexeme[1] = '\0';
-		char * tokenName = (char *)malloc(sizeof(char)*5);
-		strcpy(tokenName, "SQBC");
-		tokenName[4] = '\0';
-		tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
-		tkn->value = (void *)NULL;
-		incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
-		*toRead = *reading;
-		*startptr = ptr;
-		return tkn;
-	}
-
-	/* BO */
-
-	else if(buffer[ptr] == '(')
-	{
-		// Single branch, no branches, no ambiguity
-		
-		tkn = (Token *)malloc(sizeof(Token));
-		lexeme = (char *)malloc(sizeof(char)*2);
-		lexeme[0] = '(';
-		lexeme[1] = '\0';
-		char * tokenName = (char *)malloc(sizeof(char)*3);
-		strcpy(tokenName, "BO");
-		tokenName[2] = '\0';
-		tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
-		tkn->value = (void *)NULL;
-		incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
-		*toRead = *reading;
-		*startptr = ptr;
-		return tkn;
-	}
-
-	/* BC */
-	
-	else if(buffer[ptr] == ')')
-	{
-		// Single branch, no branches, no ambiguity
-		tkn = (Token *)malloc(sizeof(Token));
-		lexeme = (char *)malloc(sizeof(char)*2);
-		lexeme[0] = ')'; lexeme[1] = '\0';
-		char * tokenName = (char *)malloc(sizeof(char)*3);
-		strcpy(tokenName, "BC");
-		tokenName[2] = '\0';
-		tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
-		tkn->value = (void *)NULL;
-		incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
-		*toRead = *reading;
-		*startptr = ptr;
-		return tkn;
-	}
-	
-	/* NOT EQUAL */
-	
-	else if(buffer[ptr] == '!')
-	{
-		incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
-		if(buffer[ptr]=='=')
-		{
-			tkn = (Token *)malloc(sizeof(Token)*3);
-			lexeme[0] = '!'; lexeme[1] = '='; lexeme[2] = '\0';
-			char * tokenName = (char *)sizeof(Token);
-			lexeme = (char *) malloc(sizeof(char)*3);
-			strcpy(tokenName, "NE");
-			tokenName[2] = '\0';
-			tkn->lexeme = lexeme; tkn->lineNum = lineNum;	tkn->token = tokenName;
-			tkn->value = (void *) NULL;
-			incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
-		}
-		else //There is an error 
-		{
-			tkn = (Token *)malloc(sizeof(Token));
-			char * tokenName = (char *)malloc(sizeof(char)*4);
-			tokenName[0] = 'E'; tokenName[1] = 'R'; tokenName[2] = 'R'; tokenName[3] = '\0';
-			char * lexeme = (char *)malloc(sizeof(char)*19);
-			strcpy(lexeme, "Expected !=, got !");		
-			lexeme[18]='\0';
-			tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
-			tkn->value = (void *) NULL;
-		}
-		
-	//In case there was an error, I am at the char after ! symbol
-		*toRead = *reading;
-		*startptr = ptr;
-		return tkn;
-	}
-	
-	/* Branch with = */
-	
-	else if(buffer[ptr] == '=')
-	{
-		tkn = (Token *)malloc(sizeof(Token));
-		incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
-		if(buffer[ptr] == '=')
-		{
-			// EQ token
-			
-			lexeme = (char *)malloc(sizeof(char)*3);
-			lexeme[0] = '='; lexeme[1] = '='; lexeme[2] = '\0';
-			char *tokenName = (char *)malloc(sizeof(char)*3);
-			strcpy(tokenName, "EQ");
-			tokenName[2] = '\0';
-			tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
-			tkn->value = (void *)NULL;
-			incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
-		}
-		else
-		{
-			//Error because = is nothing else.
-
-			tkn = (Token *)malloc(sizeof(Token));
-			char * tokenName = (char *)malloc(sizeof(char)*4);
-			tokenName[0] = 'E'; tokenName[1] = 'R'; tokenName[2] = 'R'; tokenName[3] = '\0';
-			char * lexeme = (char *)malloc(sizeof(char)*19);
-			strcpy(lexeme, "Expected ==, got =");
-			lexeme[18]='\0';
-			tkn->lexeme = lexeme; tkn->lineNum = lineNum;	tkn->token = tokenName;
-			tkn->value = (void *) NULL;		
-		}
-
-		// my pointer points at the next character that was not =. 
-		*toRead = *reading;
-		*startptr = ptr;
-		return tkn;
-	}	
-
-	/* COMMA */
-
-	else if(buffer[ptr] == ',')
-	{
-		// Single branch, no branches, no ambiguity
-		tkn = (Token *)malloc(sizeof(Token));
-		lexeme = (char *)malloc(sizeof(char)*2);
-		lexeme[0] = ','; lexeme[1] = '\0';
-		char * tokenName = (char *)malloc(sizeof(char)*6);
-		strcpy(tokenName, "COMMA");
-		tokenName[5] = '\0';
-		tkn->lexeme = lexeme; tkn->lineNum = lineNum;	tkn->token = tokenName;
-		tkn->value = (void *)NULL;
-		incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
-		*toRead = *reading;
-		*startptr = ptr;
-		return tkn;
-	}
-
-
-	else if(buffer[ptr] == '<')
-	{
-		incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
-		if(buffer[ptr] == '=')
-		{
-			// Less than equal to
-
-			tkn = (Token *)malloc(sizeof(Token));
-			lexeme = (char *)malloc(sizeof(char)*3);
-			lexeme[0] = '<'; lexeme[1] = '=';lexeme[2] = '\0';
-			
-			char * tokenName = (char *)malloc(sizeof(char)*3);
-			strcpy(tokenName, "LE");
-			tokenName[2] = '\0';
-			tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
-			tkn->value = (void *)NULL;
-			incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
-			*toRead = *reading;
-			*startptr = ptr;
-			return tkn;
- 		}
-		else if(buffer[ptr] == '<')
-		{
-			// Definition << Symbol
-			incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
-			if(buffer[ptr] == '<')
-			{
-				tkn = (Token *)malloc(sizeof(Token));
+					//reading is the buffer we are reading and ptr is the ending location of the lexeme in that buffer
+					//Now, make toRead same as reading, since we must start reading from the ptr
+					*toRead = *reading;
+					*startptr = ptr;
+					return tkn;
+				}
+				break;
+			case 13:
+				lexeme = (char *)malloc(sizeof(char)*2);
+				lexeme[0] = '+'; lexeme[1] = '\0';
+				tokenName = (char *)malloc(sizeof(char)*5);
+				strcpy(tokenName, "PLUS");
+				tokenName[4] = '\0';
+				tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
+				tkn->value = (void *)NULL;
+				// incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
+				*toRead = *reading;
+				*startptr = ptr;
+				return tkn;
+				break;
+			case 14:
+				lexeme = (char *)malloc(sizeof(char)*2);
+				lexeme[0] = '/'; lexeme[1] = '\0';
+				tokenName = (char *)malloc(sizeof(char)*4);
+				strcpy(tokenName, "DIV");
+				tokenName[3] = '\0';
+				tkn->lexeme = lexeme;
+				tkn->lineNum = lineNum;
+				tkn->token = tokenName;
+				tkn->value = (void *)NULL;
+				// incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
+				*toRead = *reading;
+				*startptr = ptr;
+				return tkn;
+				break;
+			case 15:
+				lexeme = (char *)malloc(sizeof(char)*2);
+				lexeme[0] = '-'; lexeme[1] = '\0';
+				tokenName = (char *)malloc(sizeof(char)*6);
+				strcpy(tokenName, "MINUS");
+				tokenName[5] = '\0';
+				tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
+				tkn->value = (void *)NULL;
+				// incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
+				*toRead = *reading;
+				*startptr = ptr;
+				// printf("%s\t%d\n",tkn->lexeme, tkn->lineNum);
+				return tkn;
+				break;
+			case 16:
+				if(buffer[ptr]=='*')
+					state = 18;
+				else
+				{
+					lexeme = (char *)malloc(sizeof(char)*2);
+					lexeme[0] = '*';	lexeme[1] = '\0';
+					tokenName = (char *)malloc(sizeof(char)*4);
+					strcpy(tokenName, "MUL");
+					tokenName[3] = '\0';
+					tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
+					tkn->value = (void *)NULL;
+					*toRead = *reading;
+					*startptr = ptr;
+					return tkn;
+				}
+				break;
+			case 18:
+				if(buffer[ptr]=='*')
+					state = 19;
+				else if(buffer[ptr]=='\n')
+				{
+					state = 18;
+					lineNum++;
+				}
+				else if(buffer[ptr]=='\0')
+				{
+					//ERROR HANDLING: Comment not terminated
+					// tkn = (Token *)malloc(sizeof(Token));
+					tokenName = (char *)malloc(sizeof(char)*4);
+					tokenName[0] = 'E'; tokenName[1] = 'R'; tokenName[2] = 'R'; tokenName[3] = '\0';
+					char * lexeme = (char *)malloc(sizeof(char)*23);
+					strcpy(lexeme, "Comment not terminated");		
+					lexeme[22]='\0';
+					tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
+					tkn->value = (void *) NULL;
+					*toRead = *reading;
+					*startptr = ptr;
+					return tkn;	
+				}
+				else
+					state = 18;	
+				break;
+			case 19:
+				if(buffer[ptr]=='*')
+				{
+					*toRead = *reading;
+					*startptr = ptr;
+					return NULL;
+				}
+				else if(buffer[ptr]=='\n')
+				{
+					state = 18;
+					lineNum++;
+				}
+				else if(buffer[ptr]=='\0')
+				{
+					//ERROR HANDLING: Comment not terminated
+					// tkn = (Token *)malloc(sizeof(Token));
+					tokenName = (char *)malloc(sizeof(char)*4);
+					tokenName[0] = 'E'; tokenName[1] = 'R'; tokenName[2] = 'R'; tokenName[3] = '\0';
+					char * lexeme = (char *)malloc(sizeof(char)*23);
+					strcpy(lexeme, "Comment not terminated");		
+					lexeme[22]='\0';
+					tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
+					tkn->value = (void *) NULL;
+					*toRead = *reading;
+					*startptr = ptr;
+					return tkn;	
+				}	
+				else
+					state = 18;
+				break;
+			case 21:
+				lexeme = (char *)malloc(sizeof(char)*2);
+				lexeme[0] = ','; lexeme[1] = '\0';
+				tokenName = (char *)malloc(sizeof(char)*6);
+				strcpy(tokenName, "COMMA");
+				tokenName[5] = '\0';
+				tkn->lexeme = lexeme; tkn->lineNum = lineNum;	tkn->token = tokenName;
+				tkn->value = (void *)NULL;
+				// incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
+				*toRead = *reading;
+				*startptr = ptr;
+				return tkn;
+				break;
+			case 22:
+				if(buffer[ptr]=='<')
+					state = 23;
+				else if(buffer[ptr]=='=')
+					state = 25;
+				else 
+				{
+					lexeme = (char *)malloc(sizeof(char)*2);
+					lexeme[0] = '<';lexeme[1] = '\0';
+					tokenName = (char *)malloc(sizeof(char)*3);
+					strcpy(tokenName, "LT");
+					tokenName[2] = '\0';
+					tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
+					tkn->value = (void *)NULL;
+					*toRead = *reading;
+					*startptr = ptr;
+					return tkn;
+				}		
+				break;			
+			case 23:
+				if(buffer[ptr]=='<')
+					state = 24;
+				else
+				{
+					lexeme = (char *)malloc(sizeof(char)*3);
+					lexeme[0] = '<'; lexeme[1] = '<'; lexeme[2] = '\0';
+					tokenName = (char *)malloc(sizeof(char)*4);
+					strcpy(tokenName, "DEF");
+					tokenName[3] = '\0';
+					tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
+					tkn->value = (void *)NULL;
+					*toRead = *reading;
+					*startptr = ptr;
+					return tkn;
+				}
+				break;
+			case 24:
 				lexeme = (char *)malloc(sizeof(char)*4);
 				lexeme[0] = '<'; lexeme[1] = '<'; lexeme[2] = '<'; lexeme[3] = '\0';
-				char * tokenName = (char *)malloc(sizeof(char)*10);
+				tokenName = (char *)malloc(sizeof(char)*10);
 				strcpy(tokenName, "DRIVERDEF");
 				tokenName[9] = '\0';
 				tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
 				tkn->value = (void *)NULL;
-				incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
+				// incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
 				*toRead = *reading;
 				*startptr = ptr;
 				return tkn;
-
-			}
-			else
-			{
-				tkn = (Token *)malloc(sizeof(Token));
+				break;
+			case 25:
 				lexeme = (char *)malloc(sizeof(char)*3);
-				lexeme[0] = '<'; lexeme[1] = '<'; lexeme[2] = '\0';
-				char * tokenName = (char *)malloc(sizeof(char)*4);
-				strcpy(tokenName, "DEF");
-				tokenName[3] = '\0';
+				lexeme[0] = '<'; lexeme[1] = '=';lexeme[2] = '\0';
+				tokenName = (char *)malloc(sizeof(char)*3);
+				strcpy(tokenName, "LE");
+				tokenName[2] = '\0';
 				tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
 				tkn->value = (void *)NULL;
+				// incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
 				*toRead = *reading;
 				*startptr = ptr;
 				return tkn;
-			}
-		}
-		else
-		{
-			// Branch for Less than relational operator
-
-			tkn = (Token *)malloc(sizeof(Token));
-			lexeme = (char *)malloc(sizeof(char)*2);
-			lexeme[0] = '<';lexeme[1] = '\0';
-			
-			char * tokenName = (char *)malloc(sizeof(char)*3);
-			strcpy(tokenName, "LT");
-			tokenName[2] = '\0';
-			tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
-			tkn->value = (void *)NULL;
-			*toRead = *reading;
-			*startptr = ptr;
-			return tkn;
-		}
-	}
-	else if(buffer[ptr] == ';')
-	{
-		// Single branch, no branches, no ambiguity
-		tkn = (Token *)malloc(sizeof(Token));
-		lexeme = (char *)malloc(sizeof(char)*2);
-		lexeme[0] = ';';	lexeme[1] = '\0';
-		char * tokenName = (char *)malloc(sizeof(char)*8);
-		strcpy(tokenName, "SEMICOL");
-		tokenName[7] = '\0';
-		tkn->lexeme = lexeme; tkn->lineNum = lineNum;	tkn->token = tokenName;
-		tkn->value = (void *)NULL;
-		incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
-		*toRead = *reading;
-		*startptr = ptr;
-		return tkn;
-	}
-	else if(buffer[ptr] == '>')
-	{
-		incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
-		if(buffer[ptr] == '=')
-		{
-			// Greater than equal to
-			tkn = (Token *)malloc(sizeof(Token));
-			lexeme = (char *)malloc(sizeof(char)*3);
-			lexeme[0] = '>'; lexeme[1] = '='; lexeme[2] = '\0';
-			
-			char * tokenName = (char *)malloc(sizeof(char)*3);
-			strcpy(tokenName, "GE");
-			tokenName[2] = '\0';
-			tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
-			tkn->value = (void *)NULL;
-			incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
-			*toRead = *reading;
-			*startptr = ptr;
-			return tkn;
- 		}
-		else if(buffer[ptr] == '>')
-		{
-			//Definition ending >>
-			incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
-			if(buffer[ptr] == '>')
-			{
-				incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
+				break;						
+			case 26:	
+				if(buffer[ptr]=='>')
+					state = 27;
+				else if(buffer[ptr]=='=')
+					state = 29;
+				else 
+				{
+					lexeme = (char *)malloc(sizeof(char)*2);
+					lexeme[0] = '>';lexeme[1] = '\0';
+					tokenName = (char *)malloc(sizeof(char)*3);
+					strcpy(tokenName, "GT");
+					tokenName[2] = '\0';
+					tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
+					tkn->value = (void *)NULL;
+					*toRead = *reading;
+					*startptr = ptr;
+					return tkn;
+				}		
+				break;
+			case 27:
+				if(buffer[ptr]=='>')
+					state = 28;
+				else
+				{
+					lexeme = (char *)malloc(sizeof(char)*3);
+					lexeme[0] = '>'; lexeme[1] = '>'; lexeme[2] = '\0';
+					tokenName = (char *)malloc(sizeof(char)*7);
+					strcpy(tokenName, "ENDDEF");
+					tokenName[6] = '\0';
+					tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
+					tkn->value = (void *)NULL;
+					*toRead = *reading;
+					*startptr = ptr;
+					return tkn;
+				}
+				break;
+			case 28:
 				tkn = (Token *)malloc(sizeof(Token));
 				lexeme = (char *)malloc(sizeof(char)*4);
 				lexeme[0] = '>'; lexeme[1] = '>'; lexeme[2] = '>'; lexeme[3] = '\0';
-				char * tokenName = (char *)malloc(sizeof(char)*13);
+				tokenName = (char *)malloc(sizeof(char)*13);
 				strcpy(tokenName, "DRIVERENDDEF");
 				tokenName[12] = '\0';
 				tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
@@ -896,307 +846,264 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 				*toRead = *reading;
 				*startptr = ptr;
 				return tkn;
-			}
-			else
-			{
-				tkn = (Token *)malloc(sizeof(Token));
+				break;
+			case 29:
 				lexeme = (char *)malloc(sizeof(char)*3);
-				lexeme[0] = '>'; lexeme[1] = '>'; lexeme[2] = '\0';
-				char * tokenName = (char *)malloc(sizeof(char)*7);
-				strcpy(tokenName, "ENDDEF");
-				tokenName[6] = '\0';
+				lexeme[0] = '>'; lexeme[1] = '='; lexeme[2] = '\0';
+				
+				tokenName = (char *)malloc(sizeof(char)*3);
+				strcpy(tokenName, "GE");
+				tokenName[2] = '\0';
+				tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
+				tkn->value = (void *)NULL;
+				// incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
+				*toRead = *reading;
+				*startptr = ptr;
+				return tkn;	
+				break;			
+			case 30:
+				if(isdigit(buffer[ptr]))
+					state = 30;
+				else if(buffer[ptr]=='.')
+					state = 31;
+				else
+				{
+					lexeme = fillLexeme(buffer1, buffer2, *reading, *toRead, *startptr, ptr);
+					tokenName = (char *)malloc(sizeof(char)*4);
+					strcpy(tokenName, "NUM");
+					tokenName[3] = '\0';
+
+					int * result = (int *)malloc(sizeof(int));
+					*result = lexeme2int(lexeme);
+
+					tkn->lexeme = lexeme; tkn->token = tokenName; 
+					tkn->value = (void *)result; tkn->lineNum = lineNum;
+					*toRead = *reading;
+					*startptr = ptr;
+					return tkn;		
+				}
+				break;
+			case 31:
+				if(isdigit(buffer[ptr]))
+					state = 32;
+				else if(buffer[ptr]=='.')
+				{
+					decrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
+					lexeme = fillLexeme(buffer1, buffer2, *reading, *toRead, *startptr, ptr);
+					tokenName = (char *)malloc(sizeof(char)*4);
+					strcpy(tokenName, "NUM");
+					tokenName[3] = '\0';
+
+					int * result = (int *)malloc(sizeof(int));
+					*result = lexeme2int(lexeme);
+					tkn->lexeme = lexeme;
+					tkn->token = tokenName;
+					tkn->value = (void *)result;
+					tkn->lineNum = lineNum;
+					*toRead = *reading;
+					*startptr = ptr;
+					return tkn;
+				}
+				else
+				{
+					tokenName = (char *)malloc(sizeof(char)*4);
+					tokenName[0] = 'E'; tokenName[1] = 'R'; tokenName[2] = 'R'; tokenName[3] = '\0';
+					char * lexeme = (char *)malloc(sizeof(char)*21);
+					strcpy(lexeme, "Expected NUM after .");		
+					lexeme[20]='\0';
+					tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
+					tkn->value = (void *) NULL;	
+					*toRead = *reading;
+					*startptr = ptr;
+					return tkn;					
+				}
+				break;		
+			case 32:
+				if(isdigit(buffer[ptr]))
+					state = 32;
+				else if(buffer[ptr]=='E')
+					state = 33;
+				else
+				{
+					lexeme = fillLexeme(buffer1, buffer2, *reading, *toRead, *startptr, ptr);
+					tkn = (Token *)malloc(sizeof(Token));
+					tokenName = (char *)malloc(sizeof(char)*5);
+					strcpy(tokenName, "RNUM");
+					tokenName[4] = '\0';
+					
+					//lexeme2real is returning a float value. So take it and cast to a void*
+					tkn->lexeme = lexeme; tkn->token = tokenName;
+					float * var = (float *)malloc(sizeof(float));
+					*var = lexeme2real(lexeme);	tkn->value = (void *) var; tkn->lineNum = lineNum;
+					*toRead = *reading;
+					*startptr = ptr;
+					return tkn;					
+				}		
+				break;
+			case 33:
+				if(buffer[ptr]=='+' || buffer[ptr]=='-')
+					state = 34;
+				else if(isdigit(buffer[ptr]))
+					state = 35;
+				else
+				{
+					tokenName = (char *)malloc(sizeof(char)*4);
+					tokenName[0] = 'E'; tokenName[1] = 'R'; tokenName[2] = 'R'; tokenName[3] = '\0';
+					char * lexeme = (char *)malloc(sizeof(char)*31);
+					strcpy(lexeme, "Expected NUM or + or - after E");		
+					lexeme[30]='\0';
+					tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
+					tkn->value = (void *) NULL;	
+					*toRead = *reading;
+					*startptr = ptr;
+					return tkn;				
+				}
+				break;
+			case 34:
+				if(isdigit(buffer[ptr]))
+					state = 35;
+				else
+				{
+					tokenName = (char *)malloc(sizeof(char)*4);
+					tokenName[0] = 'E'; tokenName[1] = 'R'; tokenName[2] = 'R'; tokenName[3] = '\0';
+					char * lexeme = (char *)malloc(sizeof(char)*28);
+					strcpy(lexeme, "Expected NUM after E+ or E-");		
+					lexeme[27]='\0';
+					tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
+					tkn->value = (void *) NULL;
+					*toRead = *reading;
+					*startptr = ptr;
+					return tkn;					
+				}
+				break;
+			case 35:
+				if(isdigit(buffer[ptr]))
+					state = 35;
+				else
+				{
+					lexeme = fillLexeme(buffer1, buffer2, *reading, *toRead, *startptr, ptr);
+					tkn = (Token *)malloc(sizeof(Token));
+					tokenName = (char *)malloc(sizeof(char)*5);
+					strcpy(tokenName, "RNUM");
+					tokenName[4] = '\0';
+					
+					//lexeme2real is returning a float value. So take it and cast to a void*
+					tkn->lexeme = lexeme; tkn->token = tokenName;
+					float * var = (float *)malloc(sizeof(float));
+					*var = lexeme2real(lexeme);	tkn->value = (void *) var; tkn->lineNum = lineNum;
+					*toRead = *reading;
+					*startptr = ptr;
+					return tkn;
+				}
+				break;				
+			case 38:
+				if(buffer[ptr]=='=')
+					state = 39;
+				else
+				{
+					tokenName = (char *)malloc(sizeof(char)*4);
+					tokenName[0] = 'E'; tokenName[1] = 'R'; tokenName[2] = 'R'; tokenName[3] = '\0';
+					char * lexeme = (char *)malloc(sizeof(char)*19);
+					strcpy(lexeme, "Expected !=, got !");		
+					lexeme[18]='\0';
+					tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
+					tkn->value = (void *) NULL;
+					*toRead = *reading;
+					*startptr = ptr;
+					return tkn;					
+				}
+				break;
+			case 39:
+				lexeme[0] = '!'; lexeme[1] = '='; lexeme[2] = '\0';
+				tokenName = (char *)sizeof(Token);
+				lexeme = (char *) malloc(sizeof(char)*3);
+				strcpy(tokenName, "NE");
+				tokenName[2] = '\0';
+				tkn->lexeme = lexeme; tkn->lineNum = lineNum;	tkn->token = tokenName;
+				tkn->value = (void *) NULL;
+				*toRead = *reading;
+				*startptr = ptr;
+				return tkn;				
+				break;
+			case 40:
+				if(buffer[ptr]=='=')
+					state = 41;
+				else
+				{
+					lexeme = (char *)malloc(sizeof(char)*2);
+					lexeme[0] = ':'; lexeme[1] = '\0';
+					tokenName = (char *)malloc(sizeof(char)*6);
+					strcpy(tokenName, "COLON");
+					tokenName[5] = '\0';
+					tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
+					tkn->value = (void *)NULL;
+					*toRead = *reading;
+					*startptr = ptr;
+					return tkn;									
+				}
+				break;
+			case 41:
+				lexeme = (char *)malloc(sizeof(char)*3);
+				lexeme[0] = ':'; lexeme[1] = '='; lexeme[2] = '\0';
+				tokenName = (char *)malloc(sizeof(char)*9);
+				strcpy(tokenName, "ASSIGNOP");
+				tokenName[8] = '\0';
+				tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
+				tkn->value = (void *)NULL;	
+				*toRead = *reading;
+				*startptr = ptr;
+				return tkn;					
+				break;
+			case 43:
+				if(buffer[ptr]=='.')
+					state = 44;
+				else
+				{
+					tokenName = (char *)malloc(sizeof(char)*4);
+					tokenName[0] = 'E'; tokenName[1] = 'R'; tokenName[2] = 'R'; tokenName[3] = '\0';
+					char * lexeme = (char *)malloc(sizeof(char)*19);
+					strcpy(lexeme, "Expected .., got .");		
+					lexeme[18]='\0';
+					tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
+					tkn->value = (void *) NULL;
+					*toRead = *reading;
+					*startptr = ptr;
+					return tkn;												
+				}
+				break;
+			case 44:
+				lexeme = (char *)malloc(sizeof(char)*3);
+				lexeme[0] = '.'; lexeme[1] = '.'; lexeme[2] = '\0';
+				tokenName = (char *)malloc(sizeof(char)*8);
+				strcpy(tokenName, "RANGEOP");
+				tokenName[7] = '\0';
 				tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
 				tkn->value = (void *)NULL;
 				*toRead = *reading;
 				*startptr = ptr;
 				return tkn;
-			}
-		}
-		else
-		{
-			//Greater than
-			tkn = (Token *)malloc(sizeof(Token));
-			lexeme = (char *)malloc(sizeof(char)*2);
-			lexeme[0] = '>'; lexeme[1] = '\0';
-			char * tokenName = (char *)malloc(sizeof(char)*3);
-			strcpy(tokenName, "GT");
-			tokenName[2] = '\0';
-			tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
-			tkn->value = (void *)NULL;
-			*toRead = *reading;
-			*startptr = ptr;
-			return tkn;
-		}
-	}
-
-	//Number parsing
-
-	else if(isdigit(buffer[ptr]))
-	{
-		incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
-		while(isdigit(buffer[ptr]))
-		{
-			incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
-		}
-		// printf("Here: %c\n",buffer[ptr]);
-		tkn = (Token *)malloc(sizeof(Token));
-		if(buffer[ptr] == '.') //<digits>.
-		{
-			incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
-			if(buffer[ptr] == '.')	//<digits>..
-			{
-				//RangeOp .. operator is encountered
-				decrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
-
-				lexeme = fillLexeme(buffer1, buffer2, *reading, *toRead, *startptr, ptr);
-				// int length = ptr - (*startptr) + 1;
-				// lexeme = (char *)malloc(sizeof(char)*length);
-				// int trav = *startptr, i=0;
-				// while(i < length-1)
-				// {
-				// 	lexeme[i] = buffer[trav];
-				// 	i++;
-				// 	trav++;
-				// }
-				// lexeme[length - 1] = '\0';
-				char * tokenName = (char *)malloc(sizeof(char)*4);
-				strcpy(tokenName, "NUM");
-				tokenName[3] = '\0';
-
-				int * result = (int *)malloc(sizeof(int));
-				*result = lexeme2int(lexeme);
-				tkn->lexeme = lexeme;
-				tkn->token = tokenName;
-				tkn->value = (void *)result;
-				tkn->lineNum = lineNum;
+				break;
+			case 45:
+				lexeme = (char *)malloc(sizeof(char)*2);
+				lexeme[0] = ';';	lexeme[1] = '\0';
+				tokenName = (char *)malloc(sizeof(char)*8);
+				strcpy(tokenName, "SEMICOL");
+				tokenName[7] = '\0';
+				tkn->lexeme = lexeme; tkn->lineNum = lineNum;	tkn->token = tokenName;
+				tkn->value = (void *)NULL;
+				// incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
 				*toRead = *reading;
 				*startptr = ptr;
-				return tkn;
-			}
-			else if(isdigit(buffer[ptr]))	//<digits>.<digits>
-			{
-				//Post decimal number has started
-				incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
-				while(isdigit(buffer[ptr]))
-				{
-					incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
-				}
-				if(buffer[ptr] == 'E')		//<digits>.<digits>E
-				{
-					//The power of 10 is being parsed
-					incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
-					if(isdigit(buffer[ptr]))	//<digits>.<digits>E<digits>
-					{
-						//There is a number after the E symbol
-						incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
-						while(isdigit(buffer[ptr]))
-						{
-							incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
-						}
-					}
-					else if(buffer[ptr] == '+' || buffer[ptr] == '-')	//<digits>.<digits>E<+ or ->
-					{
-						//There is a sign after the E symbol
-						incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
-						if(isdigit(buffer[ptr]))	//<digits>.<digits>E<+ or -><digits>
-						{
-							incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
-							while(isdigit(buffer[ptr]))
-							{
-								incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
-							}
-						}
-						else		//E+<nonDigit>, should be an error
-						{
-							//There should have been a number after E+ or E-
-							tkn = (Token *)malloc(sizeof(Token));
-							char * tokenName = (char *)malloc(sizeof(char)*4);
-							tokenName[0] = 'E'; tokenName[1] = 'R'; tokenName[2] = 'R'; tokenName[3] = '\0';
-							char * lexeme = (char *)malloc(sizeof(char)*28);
-							strcpy(lexeme, "Expected NUM after E+ or E-");		
-							lexeme[27]='\0';
-							tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
-							tkn->value = (void *) NULL;
-							*toRead = *reading;
-							*startptr = ptr;
-							return tkn;
-						}
-					}
-					else 
-					{
-						//There is no number or +- after the E symbol. So it's an error
-						tkn = (Token *)malloc(sizeof(Token));
-						char * tokenName = (char *)malloc(sizeof(char)*4);
-						tokenName[0] = 'E'; tokenName[1] = 'R'; tokenName[2] = 'R'; tokenName[3] = '\0';
-						char * lexeme = (char *)malloc(sizeof(char)*31);
-						strcpy(lexeme, "Expected NUM or + or - after E");		
-						lexeme[30]='\0';
-						tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
-						tkn->value = (void *) NULL;	
-						*toRead = *reading;
-						*startptr = ptr;
-						return tkn;
-					} 
-				}
-				//We come here in following ways:
-				//1) We have encountered some number as: <digits>.<digits>
-				//2) We have encountered some number as: <digits>.<digits>E<digits>
-				//3) We have encountered some number as: <digits>.<digits>E<+ or ->
-				//4) We have encountered some number as:<digits>.<digits>E<+ or -><digits>
-				
-				//The above 4 cases cover all the possible cases for real numbers
-
-				lexeme = fillLexeme(buffer1, buffer2, *reading, *toRead, *startptr, ptr);
-				// int length = ptr - (*startptr) + 1;
-				// lexeme = (char *)malloc(sizeof(char)*length);
-
-				// int i = 0, trav = *startptr;
-				// //Put the number as it is in the lexeme
-				// while(i < length-1)
-				// {
-				// 	lexeme[i] = buffer[trav];
-				// 	trav++; i++;
-				// }
-				// lexeme[length-1] = '\0';
-
-				tkn = (Token *)malloc(sizeof(Token));
-
-				char * tokenName = (char *)malloc(sizeof(char)*5);
-				strcpy(tokenName, "RNUM");
-				tokenName[4] = '\0';
-				
-				//lexeme2real is returning a float value. So take it and cast to a void*
-
-				tkn->lexeme = lexeme; tkn->token = tokenName;
-				float * var = (float *)malloc(sizeof(float));
-				*var = lexeme2real(lexeme);	tkn->value = (void *) var; tkn->lineNum = lineNum;
+				return tkn;	
+				break;			
+			default:
 				*toRead = *reading;
 				*startptr = ptr;
-				return tkn;
-			}
-			else	//<digits>.<not a . or a number>, this is an error
-			{
-				//We have a number, then a dot, but after that no dot or number
-				//So num.nonumdot
-				//Hence error
-				tkn = (Token *)malloc(sizeof(Token));
-				char * tokenName = (char *)malloc(sizeof(char)*4);
-				tokenName[0] = 'E'; tokenName[1] = 'R'; tokenName[2] = 'R'; tokenName[3] = '\0';
-				char * lexeme = (char *)malloc(sizeof(char)*21);
-				strcpy(lexeme, "Expected NUM after .");		
-				lexeme[20]='\0';
-				tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
-				tkn->value = (void *) NULL;	
-				*toRead = *reading;
-				*startptr = ptr;
-				return tkn;
-			}
+				return NULL;
+				break;													
 		}
-		else //<digits>
-		{
-			lexeme = fillLexeme(buffer1, buffer2, *reading, *toRead, *startptr, ptr);
-			// int length=0;
-			// if(buffer[ptr] == '\0')
-			// 	length = ptr - (*startptr) + 1;
-			// else
-			// 	length = ptr - (*startptr) + 1;
-			// // printf("%d\n",ptr);
-			// lexeme = (char *)malloc(sizeof(char)*length);
-			// int trav = *startptr, i=0;
-
-			// while(i < length)
-			// {
-			// 	lexeme[i] = buffer[trav];
-			// 	i++; trav++;
-			// }
-			// lexeme[length-1] = '\0';
-			
-			char * tokenName = (char *)malloc(sizeof(char)*4);
-			strcpy(tokenName, "NUM");
-			tokenName[3] = '\0';
-
-			int * result = (int *)malloc(sizeof(int));
-			*result = lexeme2int(lexeme);
-
-			tkn->lexeme = lexeme; tkn->token = tokenName; 
-			tkn->value = (void *)result; tkn->lineNum = lineNum;
-			*toRead = *reading;
-			*startptr = ptr;
-			return tkn;
-		}
-	}
-	
-	else if(buffer[ptr] == '.')
-	{
-		tkn = (Token *)malloc(sizeof(Token));
 		incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
-		if(buffer[ptr]=='.')
-		{
-			
-			// Found another dot.
-			lexeme = (char *)malloc(sizeof(char)*3);
-			lexeme[0] = '.'; lexeme[1] = '.'; lexeme[2] = '\0';
-			char *tokenName = (char *)malloc(sizeof(char)*8);
-			strcpy(tokenName, "RANGEOP");
-			tokenName[7] = '\0';
-			tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
-			tkn->value = (void *)NULL;
-			incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
-		}
-		else
-		{
-			// A single dot should not have occured
-			tkn = (Token *)malloc(sizeof(Token));
-			char * tokenName = (char *)malloc(sizeof(char)*4);
-			tokenName[0] = 'E'; tokenName[1] = 'R'; tokenName[2] = 'R'; tokenName[3] = '\0';
-			char * lexeme = (char *)malloc(sizeof(char)*19);
-			strcpy(lexeme, "Expected .., got .");		
-			lexeme[18]='\0';
-			tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
-			tkn->value = (void *) NULL;		
-		}
-		// my pointer is at the next symbol not a dot
-		*toRead = *reading;
-		*startptr = ptr;
-		return tkn;
 	}
-	else if(buffer[ptr] == ':')
-	{
-		tkn = (Token *)malloc(sizeof(Token));
-		incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
-		if( buffer[ptr]=='=')
-		{
-			//  Asignment := operator
-			lexeme = (char *)malloc(sizeof(char)*3);
-			lexeme[0] = ':'; lexeme[1] = '='; lexeme[2] = '\0';
-			char *tokenName = (char *)malloc(sizeof(char)*9);
-			strcpy(tokenName, "ASSIGNOP");
-			tokenName[8] = '\0';
-			tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
-			tkn->value = (void *)NULL;
-			incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
-		}
-		else
-		{
-			// Colon : simple branch
-			lexeme = (char *)malloc(sizeof(char)*2);
-			lexeme[0] = ':'; lexeme[1] = '\0';
-			char *tokenName = (char *)malloc(sizeof(char)*6);
-			strcpy(tokenName, "COLON");
-			tokenName[5] = '\0';
-			tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
-			tkn->value = (void *)NULL;
-		}
-		
-		//pointer at the next symbol after the definitely parsed branches, no error.
-		*toRead = *reading;
-		*startptr = ptr;
-		return tkn;
-	}
-
-	// Only possible case is <number><some alphabet from where there is no branch on start state>
-	// This is an error
-
 	return NULL;
 }
 
