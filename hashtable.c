@@ -598,6 +598,91 @@ void printFollow(int ** followSet)
     }
 }
 
+
+int ** intializeParseTable()
+{
+    int ** parseTable = (int **) malloc(sizeof(int*)*enumNonTerminal);
+    
+    for (int i=0;i<enumNonTerminal;i++)
+    {
+        parseTable[i] = (int*)malloc(sizeof(int)*enumTerminal+1);
+        
+        //initialise the table with errors now itself
+        for(int j=0;j<enumTerminal+1;j++)
+            parseTable[i][j]=(-1);
+    }
+    return parseTable;
+}
+
+void createParseTable(Grammar *grammar, int **parseTable, int **firstSet, int **followSet)
+{
+    
+    for(int i = 0 ; i < grammar->size ; i++)
+    {
+        Node *trav = grammar->arr[i].head;
+        
+        //array to get firstset of the RHS of the rule
+        int arr[enumTerminal+1];
+        memset(arr,0, sizeof(int)*(enumTerminal+1));
+        trav = trav->next;
+        while(trav!=NULL)
+        {
+            if(trav->ele.tag == 2)
+            {
+                if(trav->ele.type.t.enumcode == epsilonENUM)
+                    setOR(arr,followSet[grammar->arr[i].head->ele.type.nt.enumcode]);
+                else
+                    arr[trav->ele.type.t.enumcode] = 1;
+
+                break;
+            }
+            else
+            {
+                setOR(arr,firstSet[trav->ele.type.nt.enumcode]);
+                
+                if(firstSet[trav->ele.type.nt.enumcode][epsilonENUM]==0)
+                    break;
+            }
+
+            trav = trav->next;
+        
+        }
+        if(trav==NULL)
+        {
+            setOR(arr,followSet[grammar->arr[i].head->ele.type.nt.enumcode]);
+        }
+        for(int j=0 ; j<enumTerminal+1 ; j++)
+        {
+            if(arr[j])
+                parseTable[grammar->arr[i].head->ele.type.nt.enumcode][j] = i;
+        }
+
+    }
+    return;
+}
+
+void printParseTable(Grammar *grammar,int ** parseTable)
+{
+    for(int j=0;j<enumTerminal+1;j++)
+    {
+        printf("%20s  ",enumToTerminal[j]);
+    }
+    printf("\n");
+
+    for(int i = 0 ; i < enumNonTerminal ; i++)    
+    {
+        printf("%20s  ",enumToNonTerminal[i]);
+        for(int j=0;j<enumTerminal+1;j++)
+        {
+            printf("%20d  ",parseTable[i][j]);
+        }
+        printf("\n");
+    }    
+
+    return;
+}
+
+
 int main(int argc, char * argv[])
 {
     if(argc != 2)
@@ -606,7 +691,7 @@ int main(int argc, char * argv[])
     }
     Grammar * grammar = read_grammar(argv[1]);
 
-    printGrammar(grammar);
+    // printGrammar(grammar);
     map(grammar);
     // printMap();
     int ** firstSet = initializeFirst();
@@ -622,8 +707,15 @@ int main(int argc, char * argv[])
     {
         calculateFollowSet(grammar, i, followSet, firstSet);
     }
-    printf("\n\n----------- FIRST SET -----------\n");
-    printFirst(firstSet);
-    printf("\n----------- FOLLOW SET -----------\n");
-    printFollow(followSet);
+    // printf("\n\n----------- FIRST SET -----------\n");
+    // printFirst(firstSet);
+    // printf("\n----------- FOLLOW SET -----------\n");
+    // printFollow(followSet);
+
+    int ** parseTable = intializeParseTable();
+    createParseTable(grammar,parseTable,firstSet,followSet);
+    printParseTable(grammar,parseTable);
+
+    return 0;
+
 } 
