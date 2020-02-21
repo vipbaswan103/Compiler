@@ -433,11 +433,11 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 						break;
 						
 					case '-':
-						state = 14;
+						state = 15;
 						break;
 						
 					case '/':
-						state = 15;
+						state = 14;
 						break;
 						
 					case '*':
@@ -484,26 +484,31 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 							state = 30;
 						else
 						{
-							
-							printf("Lexical Error (line %d) : Not a valid language alphabet \n",lineNum);
-							*toRead = *reading;
-							*startptr = ptr;
-							return NULL;
-							
-							tkn = (Token*) malloc(sizeof(Token));
-							tokenName = (char *)malloc(sizeof(char)*4);
-							tokenName[0] = 'E'; tokenName[1] = 'R'; tokenName[2] = 'R'; tokenName[3] = '\0';
-							char * lexeme = (char *)malloc(sizeof(char)*21);
-							strcpy(lexeme, "Not a valid alphabet");		
-							lexeme[20]='\0';
-							tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
-							tkn->value = (void *) NULL;
-							*toRead = *reading;
-							*startptr = ptr;
-							return tkn;
+							printf("Lexical Error (line %d) : %c is not a valid language alphabet \n",lineNum,buffer[ptr]);
+							state=-1;
 						}
 						break;
 				}
+				break;
+			
+			case -1: 
+				
+				
+				*toRead = *reading;
+				*startptr = ptr;
+				return NULL;
+				
+				tkn = (Token*) malloc(sizeof(Token));
+				tokenName = (char *)malloc(sizeof(char)*4);
+				tokenName[0] = 'E'; tokenName[1] = 'R'; tokenName[2] = 'R'; tokenName[3] = '\0';
+				char * lexeme = (char *)malloc(sizeof(char)*21);
+				strcpy(lexeme, "Not a valid alphabet");		
+				lexeme[20]='\0';
+				tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
+				tkn->value = (void *) NULL;
+				*toRead = *reading;
+				*startptr = ptr;
+				return tkn;
 				break;
 				
 			case 1: //received a single = operator
