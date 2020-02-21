@@ -9,7 +9,7 @@
 
 char *keyhash[KEYWORDSIZE] ;
 
-
+//converts to upper case
 void uppertoken(char *str)
 {
 	int i=0;
@@ -111,11 +111,13 @@ typedef struct
 	int lineNum;
 } Token;
 
+
 typedef struct 
 {
 	char * description;
 	int lineNum;
 } Lexical_Error;
+
 
 typedef struct 
 {
@@ -156,7 +158,8 @@ TokenStream * lexer(char * filename, int * lexical_err)	//read prog into buffer
 	{
 		printf("Error opening file");
 		return NULL;
-	}
+	}	
+	
 	readBuffer(fp, buffer1);
 
 	int size_tknStream = 10;
@@ -316,6 +319,7 @@ void decrementPointer(FILE * fp, char ** buffer, char * buffer1, char * buffer2,
 		(*ptr) = (*ptr) - 1;
 	}
 }
+
 char * fillLexeme(char * buffer1, char * buffer2, int reading, int toRead, int startptr, int ptr)
 {
 	char * lexeme = NULL, *buffer;
@@ -487,7 +491,7 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 					tokenName = (char *)malloc(sizeof(char)*4);
 					tokenName[0] = 'E'; tokenName[1] = 'R'; tokenName[2] = 'R'; tokenName[3] = '\0';
 					char * lexeme = (char *)malloc(sizeof(char)*19);
-					strcpy(lexeme, "Expected !=, got !");		
+					strcpy(lexeme, "Expected ==, got =");		
 					lexeme[18]='\0';
 					tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
 					tkn->value = (void *) NULL;
@@ -997,10 +1001,14 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 				}
 				break;				
 			case 38:
+				
 				if(buffer[ptr]=='=')
+				{
 					state = 39;
+				}
 				else
 				{
+					
 					tokenName = (char *)malloc(sizeof(char)*4);
 					tokenName[0] = 'E'; tokenName[1] = 'R'; tokenName[2] = 'R'; tokenName[3] = '\0';
 					char * lexeme = (char *)malloc(sizeof(char)*19);
@@ -1014,9 +1022,9 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 				}
 				break;
 			case 39:
-				lexeme[0] = '!'; lexeme[1] = '='; lexeme[2] = '\0';
-				tokenName = (char *)sizeof(Token);
 				lexeme = (char *) malloc(sizeof(char)*3);
+				lexeme[0] = '!'; lexeme[1] = '='; lexeme[2] = '\0';
+				tokenName = (char *)malloc(sizeof(char)*3);
 				strcpy(tokenName, "NE");
 				tokenName[2] = '\0';
 				tkn->lexeme = lexeme; tkn->lineNum = lineNum;	tkn->token = tokenName;
@@ -1109,8 +1117,8 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 
 void printToken(Token * tkn)
 {
-	printf("%s\t\t",tkn->lexeme);
-	printf("%s\t\t",tkn->token);
+	printf("%10s\t\t",tkn->lexeme);
+	printf("%10s\t\t",tkn->token);
 	printf("%d",tkn->lineNum);
 
 	if(strcmp(tkn->token, "NUM") == 0)
@@ -1129,6 +1137,7 @@ void printToken(Token * tkn)
 int main(int argc, char * argv[])
 {
 	populate_keyhash();
+	
 	if(argc != 2)
 	{
 		printf("Wrong number of arguments\n");
@@ -1137,10 +1146,12 @@ int main(int argc, char * argv[])
 
 	int error = 0;
 	TokenStream * tknstr = lexer(argv[1], &error);
+	
+	
 
 	//printf("%d\n",tknstr->num_tokens);
-	printf("LEXEME\t\tTOKEN\t\tLineNum\t\tValue\n");
-	printf("--------------------------------------------------------\n");
+	printf("LEXEME\t\t\t  TOKEN\t\t   LineNum\t\t   Value\n");
+	printf("---------------------------------------------------------------------------\n");
 	Token ** stream = tknstr->Tokenized_code;
 	for(int i=0; i < tknstr->num_tokens; i++)
 	{
