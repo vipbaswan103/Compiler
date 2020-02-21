@@ -9,7 +9,7 @@
 
 char *keyhash[KEYWORDSIZE] ;
 
-//converts to upper case
+
 void uppertoken(char *str)
 {
 	int i=0;
@@ -111,13 +111,11 @@ typedef struct
 	int lineNum;
 } Token;
 
-
 typedef struct 
 {
 	char * description;
 	int lineNum;
 } Lexical_Error;
-
 
 typedef struct 
 {
@@ -158,8 +156,7 @@ TokenStream * lexer(char * filename, int * lexical_err)	//read prog into buffer
 	{
 		printf("Error opening file");
 		return NULL;
-	}	
-	
+	}
 	readBuffer(fp, buffer1);
 
 	int size_tknStream = 10;
@@ -319,7 +316,6 @@ void decrementPointer(FILE * fp, char ** buffer, char * buffer1, char * buffer2,
 		(*ptr) = (*ptr) - 1;
 	}
 }
-
 char * fillLexeme(char * buffer1, char * buffer2, int reading, int toRead, int startptr, int ptr)
 {
 	char * lexeme = NULL, *buffer;
@@ -469,6 +465,7 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 							state = 30;
 						else
 						{
+							tkn = (Token*) malloc(sizeof(Token));
 							tokenName = (char *)malloc(sizeof(char)*4);
 							tokenName[0] = 'E'; tokenName[1] = 'R'; tokenName[2] = 'R'; tokenName[3] = '\0';
 							char * lexeme = (char *)malloc(sizeof(char)*21);
@@ -488,10 +485,11 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 					state = 2;
 				else
 				{
+					tkn = (Token*) malloc(sizeof(Token));
 					tokenName = (char *)malloc(sizeof(char)*4);
 					tokenName[0] = 'E'; tokenName[1] = 'R'; tokenName[2] = 'R'; tokenName[3] = '\0';
 					char * lexeme = (char *)malloc(sizeof(char)*19);
-					strcpy(lexeme, "Expected ==, got =");		
+					strcpy(lexeme, "Expected !=, got !");		
 					lexeme[18]='\0';
 					tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
 					tkn->value = (void *) NULL;
@@ -501,6 +499,7 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 				}
 				break;
 			case 2:
+				tkn = (Token*) malloc(sizeof(Token));
 				lexeme = (char *)malloc(sizeof(char)*3);
 				lexeme[0] = '='; lexeme[1] = '='; lexeme[2] = '\0';
 				tokenName = (char *)malloc(sizeof(char)*3);
@@ -514,6 +513,7 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 				return tkn;
 				break;
 			case 3:
+				tkn = (Token*) malloc(sizeof(Token));
 				lexeme = (char *)malloc(sizeof(char)*2);
 				lexeme[0] = '['; lexeme[1] = '\0';
 				tokenName = (char *)malloc(sizeof(char)*5);
@@ -527,6 +527,7 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 				return tkn;
 				break;
 			case 4:
+				tkn = (Token*) malloc(sizeof(Token));
 				lexeme = (char *)malloc(sizeof(char)*2);
 				lexeme[0] = ']'; lexeme[1] = '\0';
 				tokenName = (char *)malloc(sizeof(char)*5);
@@ -540,6 +541,7 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 				return tkn;
 				break;
 			case 5:
+				tkn = (Token*) malloc(sizeof(Token));
 				lexeme = (char *)malloc(sizeof(char)*2);
 				lexeme[0] = '(';
 				lexeme[1] = '\0';
@@ -554,6 +556,7 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 				return tkn;
 				break;
 			case 6:
+				tkn = (Token*) malloc(sizeof(Token));
 				lexeme = (char *)malloc(sizeof(char)*2);
 				lexeme[0] = ')'; lexeme[1] = '\0';
 				tokenName = (char *)malloc(sizeof(char)*3);
@@ -586,6 +589,7 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 					state = 10;
 				else
 				{
+					tkn = (Token*) malloc(sizeof(Token));
 					lexeme = fillLexeme(buffer1, buffer2, *reading, *toRead, *startptr, ptr);
 					int lex_len = strlen(lexeme) + 1;
 					tkn->lexeme = (char *)malloc(sizeof(char)*lex_len);
@@ -613,6 +617,7 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 				}
 				break;
 			case 13:
+				tkn = (Token*) malloc(sizeof(Token));
 				lexeme = (char *)malloc(sizeof(char)*2);
 				lexeme[0] = '+'; lexeme[1] = '\0';
 				tokenName = (char *)malloc(sizeof(char)*5);
@@ -626,6 +631,7 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 				return tkn;
 				break;
 			case 14:
+				tkn = (Token*) malloc(sizeof(Token));
 				lexeme = (char *)malloc(sizeof(char)*2);
 				lexeme[0] = '/'; lexeme[1] = '\0';
 				tokenName = (char *)malloc(sizeof(char)*4);
@@ -641,6 +647,7 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 				return tkn;
 				break;
 			case 15:
+				tkn = (Token*) malloc(sizeof(Token));
 				lexeme = (char *)malloc(sizeof(char)*2);
 				lexeme[0] = '-'; lexeme[1] = '\0';
 				tokenName = (char *)malloc(sizeof(char)*6);
@@ -659,6 +666,7 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 					state = 18;
 				else
 				{
+					tkn = (Token*) malloc(sizeof(Token));
 					lexeme = (char *)malloc(sizeof(char)*2);
 					lexeme[0] = '*';	lexeme[1] = '\0';
 					tokenName = (char *)malloc(sizeof(char)*4);
@@ -682,7 +690,7 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 				else if(buffer[ptr]=='\0')
 				{
 					//ERROR HANDLING: Comment not terminated
-					// tkn = (Token *)malloc(sizeof(Token));
+					tkn = (Token *)malloc(sizeof(Token));
 					tokenName = (char *)malloc(sizeof(char)*4);
 					tokenName[0] = 'E'; tokenName[1] = 'R'; tokenName[2] = 'R'; tokenName[3] = '\0';
 					char * lexeme = (char *)malloc(sizeof(char)*23);
@@ -712,7 +720,7 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 				else if(buffer[ptr]=='\0')
 				{
 					//ERROR HANDLING: Comment not terminated
-					// tkn = (Token *)malloc(sizeof(Token));
+					tkn = (Token *)malloc(sizeof(Token));
 					tokenName = (char *)malloc(sizeof(char)*4);
 					tokenName[0] = 'E'; tokenName[1] = 'R'; tokenName[2] = 'R'; tokenName[3] = '\0';
 					char * lexeme = (char *)malloc(sizeof(char)*23);
@@ -728,6 +736,7 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 					state = 18;
 				break;
 			case 21:
+				tkn = (Token*) malloc(sizeof(Token));
 				lexeme = (char *)malloc(sizeof(char)*2);
 				lexeme[0] = ','; lexeme[1] = '\0';
 				tokenName = (char *)malloc(sizeof(char)*6);
@@ -747,6 +756,7 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 					state = 25;
 				else 
 				{
+					tkn = (Token*) malloc(sizeof(Token));
 					lexeme = (char *)malloc(sizeof(char)*2);
 					lexeme[0] = '<';lexeme[1] = '\0';
 					tokenName = (char *)malloc(sizeof(char)*3);
@@ -764,6 +774,7 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 					state = 24;
 				else
 				{
+					tkn = (Token*) malloc(sizeof(Token));
 					lexeme = (char *)malloc(sizeof(char)*3);
 					lexeme[0] = '<'; lexeme[1] = '<'; lexeme[2] = '\0';
 					tokenName = (char *)malloc(sizeof(char)*4);
@@ -777,6 +788,7 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 				}
 				break;
 			case 24:
+				tkn = (Token*) malloc(sizeof(Token));
 				lexeme = (char *)malloc(sizeof(char)*4);
 				lexeme[0] = '<'; lexeme[1] = '<'; lexeme[2] = '<'; lexeme[3] = '\0';
 				tokenName = (char *)malloc(sizeof(char)*10);
@@ -790,6 +802,7 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 				return tkn;
 				break;
 			case 25:
+				tkn = (Token*) malloc(sizeof(Token));
 				lexeme = (char *)malloc(sizeof(char)*3);
 				lexeme[0] = '<'; lexeme[1] = '=';lexeme[2] = '\0';
 				tokenName = (char *)malloc(sizeof(char)*3);
@@ -809,6 +822,7 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 					state = 29;
 				else 
 				{
+					tkn = (Token*) malloc(sizeof(Token));
 					lexeme = (char *)malloc(sizeof(char)*2);
 					lexeme[0] = '>';lexeme[1] = '\0';
 					tokenName = (char *)malloc(sizeof(char)*3);
@@ -826,6 +840,7 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 					state = 28;
 				else
 				{
+					tkn = (Token*) malloc(sizeof(Token));
 					lexeme = (char *)malloc(sizeof(char)*3);
 					lexeme[0] = '>'; lexeme[1] = '>'; lexeme[2] = '\0';
 					tokenName = (char *)malloc(sizeof(char)*7);
@@ -852,6 +867,7 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 				return tkn;
 				break;
 			case 29:
+				tkn = (Token*) malloc(sizeof(Token));
 				lexeme = (char *)malloc(sizeof(char)*3);
 				lexeme[0] = '>'; lexeme[1] = '='; lexeme[2] = '\0';
 				
@@ -872,6 +888,7 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 					state = 31;
 				else
 				{
+					tkn = (Token*) malloc(sizeof(Token));
 					lexeme = fillLexeme(buffer1, buffer2, *reading, *toRead, *startptr, ptr);
 					tokenName = (char *)malloc(sizeof(char)*4);
 					strcpy(tokenName, "NUM");
@@ -892,6 +909,7 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 					state = 32;
 				else if(buffer[ptr]=='.')
 				{
+					tkn = (Token*) malloc(sizeof(Token));
 					decrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
 					lexeme = fillLexeme(buffer1, buffer2, *reading, *toRead, *startptr, ptr);
 					tokenName = (char *)malloc(sizeof(char)*4);
@@ -910,6 +928,7 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 				}
 				else
 				{
+					tkn = (Token*) malloc(sizeof(Token));
 					tokenName = (char *)malloc(sizeof(char)*4);
 					tokenName[0] = 'E'; tokenName[1] = 'R'; tokenName[2] = 'R'; tokenName[3] = '\0';
 					char * lexeme = (char *)malloc(sizeof(char)*21);
@@ -951,6 +970,7 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 					state = 35;
 				else
 				{
+					tkn = (Token*) malloc(sizeof(Token));
 					tokenName = (char *)malloc(sizeof(char)*4);
 					tokenName[0] = 'E'; tokenName[1] = 'R'; tokenName[2] = 'R'; tokenName[3] = '\0';
 					char * lexeme = (char *)malloc(sizeof(char)*31);
@@ -968,6 +988,7 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 					state = 35;
 				else
 				{
+					tkn = (Token*) malloc(sizeof(Token));
 					tokenName = (char *)malloc(sizeof(char)*4);
 					tokenName[0] = 'E'; tokenName[1] = 'R'; tokenName[2] = 'R'; tokenName[3] = '\0';
 					char * lexeme = (char *)malloc(sizeof(char)*28);
@@ -1001,14 +1022,11 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 				}
 				break;				
 			case 38:
-				
 				if(buffer[ptr]=='=')
-				{
 					state = 39;
-				}
 				else
 				{
-					
+					tkn = (Token*) malloc(sizeof(Token));
 					tokenName = (char *)malloc(sizeof(char)*4);
 					tokenName[0] = 'E'; tokenName[1] = 'R'; tokenName[2] = 'R'; tokenName[3] = '\0';
 					char * lexeme = (char *)malloc(sizeof(char)*19);
@@ -1022,9 +1040,10 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 				}
 				break;
 			case 39:
+				tkn = (Token*) malloc(sizeof(Token));
 				lexeme = (char *) malloc(sizeof(char)*3);
 				lexeme[0] = '!'; lexeme[1] = '='; lexeme[2] = '\0';
-				tokenName = (char *)malloc(sizeof(char)*3);
+				tokenName = (char *)sizeof(sizeof(char)*3);
 				strcpy(tokenName, "NE");
 				tokenName[2] = '\0';
 				tkn->lexeme = lexeme; tkn->lineNum = lineNum;	tkn->token = tokenName;
@@ -1038,6 +1057,7 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 					state = 41;
 				else
 				{
+					tkn = (Token*) malloc(sizeof(Token));
 					lexeme = (char *)malloc(sizeof(char)*2);
 					lexeme[0] = ':'; lexeme[1] = '\0';
 					tokenName = (char *)malloc(sizeof(char)*6);
@@ -1051,6 +1071,7 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 				}
 				break;
 			case 41:
+				tkn = (Token*) malloc(sizeof(Token));
 				lexeme = (char *)malloc(sizeof(char)*3);
 				lexeme[0] = ':'; lexeme[1] = '='; lexeme[2] = '\0';
 				tokenName = (char *)malloc(sizeof(char)*9);
@@ -1067,6 +1088,7 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 					state = 44;
 				else
 				{
+					tkn = (Token*) malloc(sizeof(Token));
 					tokenName = (char *)malloc(sizeof(char)*4);
 					tokenName[0] = 'E'; tokenName[1] = 'R'; tokenName[2] = 'R'; tokenName[3] = '\0';
 					char * lexeme = (char *)malloc(sizeof(char)*19);
@@ -1080,6 +1102,7 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 				}
 				break;
 			case 44:
+				tkn = (Token*) malloc(sizeof(Token));
 				lexeme = (char *)malloc(sizeof(char)*3);
 				lexeme[0] = '.'; lexeme[1] = '.'; lexeme[2] = '\0';
 				tokenName = (char *)malloc(sizeof(char)*8);
@@ -1092,6 +1115,7 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 				return tkn;
 				break;
 			case 45:
+				tkn = (Token*) malloc(sizeof(Token));
 				lexeme = (char *)malloc(sizeof(char)*2);
 				lexeme[0] = ';';	lexeme[1] = '\0';
 				tokenName = (char *)malloc(sizeof(char)*8);
@@ -1117,8 +1141,8 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 
 void printToken(Token * tkn)
 {
-	printf("%10s\t\t",tkn->lexeme);
-	printf("%10s\t\t",tkn->token);
+	printf("%s\t\t",tkn->lexeme);
+	printf("%s\t\t",tkn->token);
 	printf("%d",tkn->lineNum);
 
 	if(strcmp(tkn->token, "NUM") == 0)
@@ -1137,7 +1161,6 @@ void printToken(Token * tkn)
 int main(int argc, char * argv[])
 {
 	populate_keyhash();
-	
 	if(argc != 2)
 	{
 		printf("Wrong number of arguments\n");
@@ -1146,12 +1169,10 @@ int main(int argc, char * argv[])
 
 	int error = 0;
 	TokenStream * tknstr = lexer(argv[1], &error);
-	
-	
 
 	//printf("%d\n",tknstr->num_tokens);
-	printf("LEXEME\t\t\t  TOKEN\t\t   LineNum\t\t   Value\n");
-	printf("---------------------------------------------------------------------------\n");
+	printf("LEXEME\t\tTOKEN\t\tLineNum\t\tValue\n");
+	printf("--------------------------------------------------------\n");
 	Token ** stream = tknstr->Tokenized_code;
 	for(int i=0; i < tknstr->num_tokens; i++)
 	{
