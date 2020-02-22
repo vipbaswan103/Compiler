@@ -707,12 +707,12 @@ void inOrder(FILE * fp, TreeNode * root, TreeNode * parent)
 
     if(root->tag == 2)  //Its a leaf
     {
-        if(strcmp(root->ele.leaf.tkn.token, "NUM") == 0)
+        if(strcmp(root->ele.leaf.tkn.token, "NUM") == 0 && (root->ele.leaf.tkn.value != NULL))
         {
             int *x = (int *)root->ele.leaf.tkn.value;
             fprintf(fp, "%20s %20d %20s %20d %20s %20s %20s", root->ele.leaf.tkn.lexeme, root->ele.leaf.tkn.lineNum, root->ele.leaf.tkn.token, *x, parent->ele.nonleaf.nt.str, "YES", "----");
         }
-        else if(strcmp(root->ele.leaf.tkn.token, "RNUM") == 0)
+        else if(strcmp(root->ele.leaf.tkn.token, "RNUM") == 0 && (root->ele.leaf.tkn.value != NULL))
         {
             float *x = (float *)root->ele.leaf.tkn.value;
             fprintf(fp, "%20s %20d %20s %20lf %20s %20s %20s", root->ele.leaf.tkn.lexeme, root->ele.leaf.tkn.lineNum, root->ele.leaf.tkn.token, *x, parent->ele.nonleaf.nt.str, "YES", "----");

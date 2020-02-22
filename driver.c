@@ -7,10 +7,22 @@ void seeTokenization()
     Token * tkn = NULL;
 
     tkn = getNextToken();
-
+    int *x;
+    float *y;
     while(strcmp(tkn->token, "EOF")!=0)
     {
-        printf("%-20d %-20s %-20s\n", tkn->lineNum, tkn->lexeme, tkn->token);
+        if(strcmp(tkn->token, "NUM") == 0)
+        {
+            x = (int *)tkn->value;
+            printf("%-20d %-20s %-20s %-20d\n", tkn->lineNum, tkn->lexeme, tkn->token, *x);
+        }
+        else if(strcmp(tkn->token, "RNUM") == 0)
+        {
+            y = (float *)tkn->value;
+            printf("%-20d %-20s %-20s %-20lf\n", tkn->lineNum, tkn->lexeme, tkn->token, *y);
+        }
+        else
+            printf("%-20d %-20s %-20s %-20s\n", tkn->lineNum, tkn->lexeme, tkn->token,"----");
         tkn = getNextToken();
     }
 

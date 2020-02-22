@@ -4,7 +4,7 @@
 int lineNum = 1;
 char *keywords[] = {"integer","real","boolean","of","array","start","end","declare","module","driver",
 					"program","get_value","print","use","with","parameters","true","false","takes","input",
-					"return","AND","OR","for","in","switch","case","break","default","while","driverdef","driverenddef"};
+					"returns","AND","OR","for","in","switch","case","break","default","while","driverdef","driverenddef"};
 
 
 int hash_func(char *str)
@@ -565,7 +565,6 @@ void removeCommentsUtil(FILE * fp, char *buffer, char * buffer1, char * buffer2,
 				// If the line changes, move on but increment line count.
 				else if(buffer[ptr] == '\n')
 				{
-					lineNum++;
 					printf("\n");
 					incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
 					continue;		
@@ -736,9 +735,9 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 					tkn = (Token*) malloc(sizeof(Token));
 					tokenName = (char *)malloc(sizeof(char)*4);
 					tokenName[0] = 'E'; tokenName[1] = 'R'; tokenName[2] = 'R'; tokenName[3] = '\0';
-					char * lexeme = (char *)malloc(sizeof(char)*19);
-					strcpy(lexeme, "Expected ==, got =");		
-					lexeme[18]='\0';
+					char * lexeme = (char *)malloc(sizeof(char)*50);
+					memset(lexeme, '\0', sizeof(char)*50);
+					strcpy(lexeme, "Expected == or :=, got =");
 					tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
 					tkn->value = (void *) NULL;
 					*toRead = *reading;
@@ -857,6 +856,7 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 						sprintf(tkn->lexeme, "%s variable is longer than 20 characters", errorLexeme);
 						memset(tkn->token, '\0', sizeof(char)*4);
 						strcpy(tkn->token, "ERR");
+						tkn->lineNum = lineNum;
                         *toRead = *reading;
                         *startptr = ptr;
                         return tkn;
@@ -1333,7 +1333,7 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 					memset(lexeme, '\0', sizeof(char)*100);
 					// strcpy(lexeme, "Expected a number [e/E][+/-] exponent symbols at ");
 					// strcat(lexeme, fillLexeme(buffer1, buffer2, *reading, *toRead, *startptr, ptr));	
-					sprintf(lexeme, "Expected a number [e/E][+/-] exponent symbols at %s", fillLexeme(buffer1, buffer2, *reading, *toRead, *startptr, ptr));	
+					sprintf(lexeme, "Expected a number after [e/E][+/-] exponent symbols at %s", fillLexeme(buffer1, buffer2, *reading, *toRead, *startptr, ptr));	
 					tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
 					tkn->value = (void *) NULL;
 					*toRead = *reading;
