@@ -8,81 +8,81 @@ int enumNonTerminal=0;
 int curr_size = 10;
 int epsilonENUM = 0;
 
-int hash_func(char *str)
-{
-    int i = 0 ;
-    long long val = 11 ;
+// int hash_func(char *str)
+// {
+//     int i = 0 ;
+//     long long val = 11 ;
 
-    while(str[i] != '\0')
-    {
-        val = val*31 + str[i] ;
-        i++ ;
-    }
-    if(val < 0)
-        val = val * (-1);
+//     while(str[i] != '\0')
+//     {
+//         val = val*31 + str[i] ;
+//         i++ ;
+//     }
+//     if(val < 0)
+//         val = val * (-1);
 
-    return val % HASHSIZE ;
-}
+//     return val % HASHSIZE ;
+// }
 
 
-Element* hash_find(char * str, Hashtable * hash_tb)
-{
-    int hash;
-    hash = hash_func(str);
+// Element* hash_find(char * str, Hashtable * hash_tb)
+// {
+//     int hash;
+//     hash = hash_func(str);
     
-    Node * trav = hash_tb->arr[hash].head; 
-    char * lexeme;
-    while(trav != NULL)
-    {
-        //write the logic for the comparison based on what we decide
-        if(trav->ele.tag==1)
-            lexeme = trav->ele.type.nt.str;
-        else if (trav->ele.tag==2)
-            lexeme = trav->ele.type.t.str;
-        if(strcmp(lexeme,str) == 0)
-            return &(trav->ele);
-        trav = trav->next;
-    }
-    return NULL;
-}
+//     Node * trav = hash_tb->arr[hash].head; 
+//     char * lexeme;
+//     while(trav != NULL)
+//     {
+//         //write the logic for the comparison based on what we decide
+//         if(trav->ele.tag==1)
+//             lexeme = trav->ele.type.nt.str;
+//         else if (trav->ele.tag==2)
+//             lexeme = trav->ele.type.t.str;
+//         if(strcmp(lexeme,str) == 0)
+//             return &(trav->ele);
+//         trav = trav->next;
+//     }
+//     return NULL;
+// }
 
-void hash_insert(Element * ele, Hashtable * hash_tb)
-{
-    char * str;
-    if(ele->tag == 1)
-        str = ele->type.nt.str;
-    else
-        str = ele->type.t.str;
+// void hash_insert(Element * ele, Hashtable * hash_tb)
+// {
+//     char * str;
+//     if(ele->tag == 1)
+//         str = ele->type.nt.str;
+//     else
+//         str = ele->type.t.str;
 
-    if(hash_find(str,hash_tb) != NULL)
-        return; 
+//     if(hash_find(str,hash_tb) != NULL)
+//         return; 
 
-    int hash;
+//     int hash;
     
-    if(ele->tag==1)
-        hash = hash_func(ele->type.nt.str);
-    else if (ele->tag==2)
-        hash = hash_func(ele->type.t.str);
+//     if(ele->tag==1)
+//         hash = hash_func(ele->type.nt.str);
+//     else if (ele->tag==2)
+//         hash = hash_func(ele->type.t.str);
 
-    Node *temp = (Node*)malloc(sizeof(Node)) ;
-    temp->ele = *ele ;
-    temp->next = NULL ;
+//     Node *temp = (Node*)malloc(sizeof(Node)) ;
+//     temp->ele = *ele ;
+//     temp->next = NULL ;
 
-    if( hash_tb->arr[hash].head == NULL)
-    {
-        hash_tb->arr[hash].head = temp ;
-        hash_tb->arr[hash].tail = temp ;
-        hash_tb->arr[hash].size = 1 ;
-    }
-    else
-    {
-        hash_tb->arr[hash].tail->next = temp ;
-        hash_tb->arr[hash].tail = temp ;
-        hash_tb->arr[hash].size++ ;
-    }
+//     if( hash_tb->arr[hash].head == NULL)
+//     {
+//         hash_tb->arr[hash].head = temp ;
+//         hash_tb->arr[hash].tail = temp ;
+//         hash_tb->arr[hash].size = 1 ;
+//     }
+//     else
+//     {
+//         hash_tb->arr[hash].tail->next = temp ;
+//         hash_tb->arr[hash].tail = temp ;
+//         hash_tb->arr[hash].size++ ;
+//     }
     
-    return ;
-}
+//     return ;
+// }
 
 void populateGrammarArray(Grammar * grammar, char * str, int TorNT, int index)
 {
@@ -198,7 +198,16 @@ void printGrammar(Grammar * grammar)
     }
 }
 
-
+void initializeParser()
+{
+    enumToTerminal = NULL;
+    enumToNonTerminal = NULL;
+    enumTerminal = 0;
+    enumNonTerminal = 0;
+    epsilonENUM = 0;
+    curr_size = 0;
+    hash_tb = NULL;
+}
 Grammar * read_grammar(char * filename)
 {
     Grammar * grammar = (Grammar *)malloc(sizeof(Grammar));
@@ -686,50 +695,52 @@ void insert(TreeNode * parent, TreeNode * newNode)
     parent->child = siblingInsert(parent->child, newNode);
 }
 
-void preOrder(TreeNode * root, TreeNode * parent)
+void inOrder(FILE * fp, TreeNode * root, TreeNode * parent)
 {
     if(root == NULL)
     {
         return;
     }
+    
+    TreeNode * trav = root->child;
+    inOrder(fp, trav, root);
 
     if(root->tag == 2)  //Its a leaf
     {
         if(strcmp(root->ele.leaf.tkn.token, "NUM") == 0)
         {
             int *x = (int *)root->ele.leaf.tkn.value;
-            printf("%20s %20d %20s %20d %20s %20s %20s", root->ele.leaf.tkn.lexeme, root->ele.leaf.tkn.lineNum, root->ele.leaf.tkn.token, *x, parent->ele.nonleaf.nt.str, "YES", "----");
+            fprintf(fp, "%20s %20d %20s %20d %20s %20s %20s", root->ele.leaf.tkn.lexeme, root->ele.leaf.tkn.lineNum, root->ele.leaf.tkn.token, *x, parent->ele.nonleaf.nt.str, "YES", "----");
         }
         else if(strcmp(root->ele.leaf.tkn.token, "RNUM") == 0)
         {
             float *x = (float *)root->ele.leaf.tkn.value;
-            printf("%20s %20d %20s %20lf %20s %20s %20s", root->ele.leaf.tkn.lexeme, root->ele.leaf.tkn.lineNum, root->ele.leaf.tkn.token, *x, parent->ele.nonleaf.nt.str, "YES", "----");
+            fprintf(fp, "%20s %20d %20s %20lf %20s %20s %20s", root->ele.leaf.tkn.lexeme, root->ele.leaf.tkn.lineNum, root->ele.leaf.tkn.token, *x, parent->ele.nonleaf.nt.str, "YES", "----");
         }
         else
         {
-            printf("%20s %20d %20s %20s %20s %20s %20s", root->ele.leaf.tkn.lexeme, root->ele.leaf.tkn.lineNum, root->ele.leaf.tkn.token,"----",parent->ele.nonleaf.nt.str,"YES","----");
+            fprintf(fp, "%20s %20d %20s %20s %20s %20s %20s", root->ele.leaf.tkn.lexeme, root->ele.leaf.tkn.lineNum, root->ele.leaf.tkn.token,"----",parent->ele.nonleaf.nt.str,"YES","----");
         }
     }
     else    //It's an internal node
     {
         if(parent == NULL)  //If root is the ROOT node
         {
-            printf("%20s %20s %20s %20s %20s %20s %20s", "----","----","----","----","ROOT","NO",root->ele.nonleaf.nt.str);
+            fprintf(fp, "%20s %20s %20s %20s %20s %20s %20s", "----","----","----","----","ROOT","NO",root->ele.nonleaf.nt.str);
         }
         else    //If root is not the ROOT node
         {
-            printf("%20s %20s %20s %20s %20s %20s %20s", "----","----","----","----",parent->ele.nonleaf.nt.str, "NO", parent->ele.nonleaf.nt.str);   
+            fprintf(fp, "%20s %20s %20s %20s %20s %20s %20s", "----","----","----","----",parent->ele.nonleaf.nt.str, "NO", parent->ele.nonleaf.nt.str);   
         }
     }
-    printf("\n");
-    TreeNode * trav = root->child;
-    preOrder(trav, root);
+    fprintf(fp, "\n");
     while(trav != NULL)
     {
         trav = trav->sibling;
-        preOrder(trav, root);
+        inOrder(fp, trav, root);
     }
 }
+
 
 void printTokenStream(TreeNode * root)
 {
@@ -745,10 +756,10 @@ void printTokenStream(TreeNode * root)
     }
     
     // TreeNode * trav = root;
-    // preOrder(trav->child);
+    // inOrder(trav->child);
 
     // trav = trav->sibling;
-    // preOrder(trav);    
+    // inOrder(trav);    
 
     TreeNode * trav = root->child;
     printTokenStream(trav);

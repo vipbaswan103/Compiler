@@ -15,48 +15,9 @@
 extern int enumTerminal, enumNonTerminal, curr_size, epsilonENUM;
 char **enumToTerminal;
 char **enumToNonTerminal;
-
-typedef struct{
-    char str[60];
-    int enumcode;
-} Terminal;
-
-typedef struct{
-    char str[60];
-    int enumcode;
-} NonTerminal;
-
-typedef union{
-        Terminal t;
-        NonTerminal nt;
-} TokenType; 
-
-//changable element
-typedef struct{
-    int tag;
-    TokenType type;
-}Element;
-
-//node of the hash chain
-typedef struct node
-{
-    Element ele ;
-    struct node * next ;
-}Node;
-
-// base list
-typedef struct{
-    Node * head;
-    Node * tail;
-    int size ;
-}LinkedList;
-
-//the head of the linked list
-typedef struct
-{
-    LinkedList arr[HASHSIZE] ;
-}Hashtable;
 Hashtable * hash_tb;
+
+
 //grammar
 typedef struct
 {

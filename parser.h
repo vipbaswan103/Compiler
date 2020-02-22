@@ -4,9 +4,10 @@
 #include "parserDef.h"
 #include "lexerDef.h"
 
-int hash_func(char *str);
-Element* hash_find(char * str, Hashtable * hash_tb);
-void hash_insert(Element * ele, Hashtable * hash_tb);
+void initializeParser();
+// int hash_func(char *str);
+// Element* hash_find(char * str, Hashtable * hash_tb);
+// void hash_insert(Element * ele, Hashtable * hash_tb);
 void populateGrammarArray(Grammar * grammar, char * str, int TorNT, int index);
 void insertInLinkedList(Grammar * grammar, char * str, int TorNT, int index);
 void printGrammar(Grammar * grammar);
@@ -25,7 +26,7 @@ void createParseTable(Grammar *grammar, int **parseTable, int **firstSet, int **
 void printParseTable(Grammar *grammar,int ** parseTable);
 TreeNode * siblingInsert(TreeNode * head, TreeNode * node);
 void insert(TreeNode * parent, TreeNode * newNode);
-void preOrder(TreeNode * root, TreeNode * parent);
+void inOrder(FILE * fp, TreeNode * root, TreeNode * parent);
 void printTokenStream(TreeNode * root);
 TreeNode * pop(Stack * st);
 Stack * push(Stack * st, TreeNode * trNode);
