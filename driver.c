@@ -63,13 +63,13 @@ int main(int argc, char * argv[])
         {
             case 1: //comment removal
                     populate_keyhash();
-                    initializeLexer(argv[2]);
+                    initializeLexer(argv[1]);
                     removeComments();
                     break;
 
             case 2: //tokens are printed
                     populate_keyhash();
-                    initializeLexer(argv[2]);
+                    initializeLexer(argv[1]);
                     seeTokenization();
                     if(LexHead != NULL)
                     {
@@ -84,16 +84,17 @@ int main(int argc, char * argv[])
                     break;
 
             case 3: //Parsing Tree and Output
-                    fp = fopen("ParseTree_Output.txt","w");
+                    fp = fopen(argv[2],"w");
                     if(fp == NULL)
                     {
                         printf("Error: Not able to open the file");
                         exit(-1);
                     }
                     populate_keyhash();
-                    initializeLexer(argv[2]);
+                    initializeLexer(argv[1]);
                     initializeParser();
-                    grammar = read_grammar(argv[1]);
+                    
+                    grammar = read_grammar("grammar.txt");
                     map(grammar);
 
                     firstSet = initializeFirst();
@@ -139,9 +140,9 @@ int main(int argc, char * argv[])
                     start_time= clock();
                     //invoke lexer and parser here
                     populate_keyhash();
-                    initializeLexer(argv[2]);
+                    initializeLexer(argv[1]);
                     initializeParser();
-                    grammar = read_grammar(argv[1]);
+                    grammar = read_grammar("grammar.txt");
                     map(grammar);
 
                     firstSet = initializeFirst();

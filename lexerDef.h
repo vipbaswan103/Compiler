@@ -16,14 +16,14 @@
 typedef struct lexerror
 {
     char description[200];
-    char lexeme[50];
+    char lexeme[200];
     int lineNum;
 }LexicalErr;
 
 typedef struct syntaxerror
 {
     char description[200];
-    char lexeme[50];
+    char lexeme[200];
     int lineNum;
 }SyntaxErr;
 

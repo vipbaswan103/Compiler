@@ -457,7 +457,7 @@ char * fillLexeme(char * buffer1, char * buffer2, int reading, int toRead, int s
 	{
 		len = ptr-startptr+1;
 		lexeme = (char *)malloc(sizeof(char)*len);
-
+		// memset(lexeme, '\0', sizeof(char)*len);
 		if(reading == 1)
 			buffer = buffer1;
 		else
@@ -473,7 +473,7 @@ char * fillLexeme(char * buffer1, char * buffer2, int reading, int toRead, int s
 		//Calculating length of the buffer
 		len = BUFFERSIZE-startptr;
 		len += (ptr+1);
-
+		
 		//Firstly read from the initial buffer
 		//toRead indicates the initial buffer
 		if(toRead == 1)
@@ -482,6 +482,7 @@ char * fillLexeme(char * buffer1, char * buffer2, int reading, int toRead, int s
 			buffer = buffer2;
 
 		lexeme = (char *)malloc(sizeof(char)*len);
+		// memset(lexeme, '\0', sizeof(char)*len);
 		for(int i=startptr; i<BUFFERSIZE; i++)
 		{
 			lexeme[j++] = buffer[i];
@@ -713,7 +714,7 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 				tokenName[0] = 'E'; tokenName[1] = 'R'; tokenName[2] = 'R'; tokenName[3] = '\0';
 				char * lexeme = (char *)malloc(sizeof(char)*70);
 				memset(lexeme, '\0', sizeof(char)*70);
-				sprintf(tkn->lexeme, "%c is not a valid language alphabet", buffer[ptr]);	
+				sprintf(tkn->lexeme, "%c is not a valid language alphabet", buffer[ptr]);
 				tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
 				tkn->value = (void *) NULL;
 				*toRead = *reading;
@@ -849,10 +850,11 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
                     if(strlen(lexeme)>20)
                     {
                         //ERROR
-						tkn ->lexeme = (char *)malloc(sizeof(char)*50);
-						memset(tkn->lexeme, '\0', sizeof(char)*50);
-						strcpy(tkn->lexeme, "One variable was too long (longer than 20 characters)");
+						tkn ->lexeme = (char *)malloc(sizeof(char)*100);
+						memset(tkn->lexeme, '\0', sizeof(char)*100);
+						char * errorLexeme = fillLexeme(buffer1, buffer2, *reading, *toRead, *startptr, ptr);
 						tkn->token = (char *)malloc(sizeof(char)*4);
+						sprintf(tkn->lexeme, "%s variable is longer than 20 characters", errorLexeme);
 						memset(tkn->token, '\0', sizeof(char)*4);
 						strcpy(tkn->token, "ERR");
                         *toRead = *reading;
@@ -1246,9 +1248,13 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 					tkn = (Token*) malloc(sizeof(Token));
 					tokenName = (char *)malloc(sizeof(char)*4);
 					tokenName[0] = 'E'; tokenName[1] = 'R'; tokenName[2] = 'R'; tokenName[3] = '\0';
-					char * lexeme = (char *)malloc(sizeof(char)*50);
-					memset(lexeme, '\0', sizeof(char)*50);
-					strcpy(lexeme, "Expected NUM after (.) decimal point");
+					char * lexeme = (char *)malloc(sizeof(char)*200);
+					memset(lexeme, '\0', sizeof(char)*200);
+					// strcpy(lexeme, "Expected NUM after (.) decimal point at ");
+					// strcat(lexeme, fillLexeme(buffer1, buffer2, *reading, *toRead, *startptr, ptr));
+					// printf("vipin \n");
+					sprintf(lexeme, "Expected NUM after (.) decimal point at %s", fillLexeme(buffer1, buffer2, *reading, *toRead, *startptr, ptr));
+					// printf("swadesh \n");
 					tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
 					tkn->value = (void *) NULL;	
 					*toRead = *reading;
@@ -1297,9 +1303,11 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 					tkn = (Token*) malloc(sizeof(Token));
 					tokenName = (char *)malloc(sizeof(char)*4);
 					tokenName[0] = 'E'; tokenName[1] = 'R'; tokenName[2] = 'R'; tokenName[3] = '\0';
-					char * lexeme = (char *)malloc(sizeof(char)*50);
-					memset(lexeme, '\0', sizeof(char)*50);
-					strcpy(lexeme, "Expected a number or +/- after e/E exp symbol");		
+					char * lexeme = (char *)malloc(sizeof(char)*100);
+					memset(lexeme, '\0', sizeof(char)*100);
+					// strcpy(lexeme, "Expected a number or +/- after e/E exp symbol at ");
+					// strcat(lexeme, fillLexeme(buffer1, buffer2, *reading, *toRead, *startptr, ptr));
+					sprintf(lexeme, "Expected a number or +/- after e/E exp symbol at %s", fillLexeme(buffer1, buffer2, *reading, *toRead, *startptr, ptr));		
 					tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
 					tkn->value = (void *) NULL;	
 					*toRead = *reading;
@@ -1321,9 +1329,11 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 					tkn = (Token*) malloc(sizeof(Token));
 					tokenName = (char *)malloc(sizeof(char)*4);
 					tokenName[0] = 'E'; tokenName[1] = 'R'; tokenName[2] = 'R'; tokenName[3] = '\0';
-					char * lexeme = (char *)malloc(sizeof(char)*50);
-					memset(lexeme, '\0', sizeof(char)*50);
-					strcpy(lexeme, "Expected a number [e/E][+/-] exponent symbols");		
+					char * lexeme = (char *)malloc(sizeof(char)*100);
+					memset(lexeme, '\0', sizeof(char)*100);
+					// strcpy(lexeme, "Expected a number [e/E][+/-] exponent symbols at ");
+					// strcat(lexeme, fillLexeme(buffer1, buffer2, *reading, *toRead, *startptr, ptr));	
+					sprintf(lexeme, "Expected a number [e/E][+/-] exponent symbols at %s", fillLexeme(buffer1, buffer2, *reading, *toRead, *startptr, ptr));	
 					tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
 					tkn->value = (void *) NULL;
 					*toRead = *reading;
@@ -1366,8 +1376,8 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 					tkn = (Token*) malloc(sizeof(Token));
 					tokenName = (char *)malloc(sizeof(char)*4);
 					tokenName[0] = 'E'; tokenName[1] = 'R'; tokenName[2] = 'R'; tokenName[3] = '\0';
-					char * lexeme = (char *)malloc(sizeof(char)*50);
-					memset(lexeme, '\0', sizeof(char)*50);
+					char * lexeme = (char *)malloc(sizeof(char)*100);
+					memset(lexeme, '\0', sizeof(char)*100);
 					strcpy(lexeme, "Expected !=, got !");		
 					tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
 					tkn->value = (void *) NULL;
@@ -1437,8 +1447,8 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 					tkn = (Token*) malloc(sizeof(Token));
 					tokenName = (char *)malloc(sizeof(char)*4);
 					tokenName[0] = 'E'; tokenName[1] = 'R'; tokenName[2] = 'R'; tokenName[3] = '\0';
-					char * lexeme = (char *)malloc(sizeof(char)*50);
-					memset(lexeme, '\0', sizeof(char)*50);
+					char * lexeme = (char *)malloc(sizeof(char)*100);
+					memset(lexeme, '\0', sizeof(char)*100);
 					strcpy(lexeme, "Expected .., got .");		
 					tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
 					tkn->value = (void *) NULL;
