@@ -2,7 +2,109 @@
 #include "lexerDef.h"
 
 int lineNum = 1;
+char *keywords[] = {"integer","real","boolean","of","array","start","end","declare","module","driver",
+					"program","get_value","print","use","with","parameters","true","false","takes","input",
+					"return","AND","OR","for","in","switch","case","break","default","while","driverdef","driverenddef"};
 
+
+int hash_func(char *str)
+{
+    int i = 0 ;
+    long long val = 11 ;
+
+    while(str[i] != '\0')
+    {
+        val = val*31 + str[i] ;
+        i++ ;
+    }
+    if(val < 0)
+        val = val * (-1);
+
+    return val % HASHSIZE ;
+}
+
+
+Element* hash_find(char * str, Hashtable * hash_tb)
+{
+    int hash;
+    hash = hash_func(str);
+    
+    Node * trav = hash_tb->arr[hash].head; 
+    char * lexeme;
+    while(trav != NULL)
+    {
+        //write the logic for the comparison based on what we decide
+        if(trav->ele.tag==1)
+            lexeme = trav->ele.type.nt.str;
+        else if (trav->ele.tag==2)
+            lexeme = trav->ele.type.t.str;
+        if(strcmp(lexeme,str) == 0)
+            return &(trav->ele);
+        trav = trav->next;
+    }
+    return NULL;
+}
+
+void hash_insert(Element * ele, Hashtable * hash_tb)
+{
+    char * str;
+    if(ele->tag == 1)
+        str = ele->type.nt.str;
+    else
+        str = ele->type.t.str;
+
+    if(hash_find(str,hash_tb) != NULL)
+        return; 
+
+    int hash;
+    
+    if(ele->tag==1)
+        hash = hash_func(ele->type.nt.str);
+    else if (ele->tag==2)
+        hash = hash_func(ele->type.t.str);
+
+    Node *temp = (Node*)malloc(sizeof(Node)) ;
+    temp->ele = *ele ;
+    temp->next = NULL ;
+
+    if( hash_tb->arr[hash].head == NULL)
+    {
+        hash_tb->arr[hash].head = temp ;
+        hash_tb->arr[hash].tail = temp ;
+        hash_tb->arr[hash].size = 1 ;
+    }
+    else
+    {
+        hash_tb->arr[hash].tail->next = temp ;
+        hash_tb->arr[hash].tail = temp ;
+        hash_tb->arr[hash].size++ ;
+    }
+    
+    return ;
+}
+
+void initializeKeyHash()
+{
+	keyhash = (Hashtable *)malloc(sizeof(Hashtable));
+}
+
+void populate_keyhash()
+{
+	Element * ele = (Element *)malloc(sizeof(Element));
+	for(int i=0; i<32; i++)
+	{
+		ele->tag = 2;
+		strcpy(ele->type.t.str, keywords[i]);
+		hash_insert(ele, keyhash);
+	}
+}
+int keyhash_find(char * str)
+{
+	Element * ele = hash_find(str, keyhash);
+	if(ele == NULL)
+		return 0;
+	return 1;
+}
 //tag indicated the type of error user is willing to push
 void insertError(char * description, char* lexeme, int linenum, int tag)
 {
@@ -59,9 +161,9 @@ void printErrorList(int whichOne)
     while(trav != NULL)
     {
         if(whichOne == 1)
-            printf("%20s %10d %20s %20s", "Lexical Error :", trav->err.lex.lineNum, trav->err.lex.lexeme, trav->err.lex.description);
+            printf("%s %d : %s", "Line ", trav->err.lex.lineNum, trav->err.lex.description);
         else
-            printf("%20s %10d %20s %20s", "Syntax Error :", trav->err.syn.lineNum, trav->err.syn.lexeme, trav->err.syn.description);
+            printf("%s %d : %s", "Line ", trav->err.syn.lineNum, trav->err.syn.description);
         printf("\n");
         trav = trav->next;
     }
@@ -77,86 +179,86 @@ void uppertoken(char *str)
 	}
 }
 
-void populate_keyhash()
-{
+// void populate_keyhash()
+// {
     
-    keyhash[0] = (char*) malloc(sizeof(char)* (8) ) ;
-    strcpy(keyhash[0], "integer") ;
-    keyhash[1] = (char*) malloc(sizeof(char)* (5) ) ;
-    strcpy(keyhash[1], "real"); 
-    keyhash[2] = (char*) malloc(sizeof(char)* (8) ) ;
-    strcpy(keyhash[2], "boolean"); 
-    keyhash[3] = (char*) malloc(sizeof(char)* (3) ) ;
-    strcpy(keyhash[3], "of") ;
-    keyhash[4] = (char*) malloc(sizeof(char)* (6) ) ;
-    strcpy(keyhash[4],"array") ;
-    keyhash[5] = (char*) malloc(sizeof(char)* (6) ) ;
-    strcpy(keyhash[5], "start") ;
-    keyhash[6] = (char*) malloc(sizeof(char)* (4) ) ;
-    strcpy(keyhash[6], "end") ;
-    keyhash[7] = (char*) malloc(sizeof(char)* (7) ) ;
-    strcpy(keyhash[7], "declare");  
-    keyhash[8] = (char*) malloc(sizeof(char)* (7) ) ;
-    strcpy(keyhash[8], "module") ;
-    keyhash[9] = (char*) malloc(sizeof(char)* (7) ) ;
-    strcpy(keyhash[9], "driver") ;
-    keyhash[10] = (char*) malloc(sizeof(char)* (8) ) ;
-    strcpy(keyhash[10], "program") ;
-    keyhash[11] = (char*) malloc(sizeof(char)* (10) ) ;
-    strcpy(keyhash[11], "get_value") ;
-    keyhash[12] = (char*) malloc(sizeof(char)* (6) ) ;
-    strcpy(keyhash[12], "print") ;
-    keyhash[13] = (char*) malloc(sizeof(char)* (4) ) ;
-    strcpy(keyhash[13], "use") ;
-    keyhash[14] = (char*) malloc(sizeof(char)* (5) ) ;
-    strcpy(keyhash[14], "with") ;
-    keyhash[15] = (char*) malloc(sizeof(char)* (11) ) ;
-    strcpy(keyhash[15], "parameters") ;
-    keyhash[16] = (char*) malloc(sizeof(char)* (5) ) ;
-    strcpy(keyhash[16], "true") ;
-    keyhash[17] = (char*) malloc(sizeof(char)* (6) ) ;
-    strcpy(keyhash[17], "false") ;
-    keyhash[18] = (char*) malloc(sizeof(char)* (6) ) ;
-    strcpy(keyhash[18], "takes") ;
-    keyhash[19] = (char*) malloc(sizeof(char)* (6) ) ;
-    strcpy(keyhash[19], "input") ;
-    keyhash[20] = (char*) malloc(sizeof(char)* (8) ) ;
-    strcpy(keyhash[20], "returns") ;
-    keyhash[21] = (char*) malloc(sizeof(char)* (4) ) ;
-    strcpy(keyhash[21], "AND") ;
-    keyhash[22] = (char*) malloc(sizeof(char)* (3) ) ;
-    strcpy(keyhash[22], "OR") ;
-    keyhash[23] = (char*) malloc(sizeof(char)* (4) ) ;
-    strcpy(keyhash[23], "for") ;
-    keyhash[24] = (char*) malloc(sizeof(char)* (3) ) ;
-    strcpy(keyhash[24], "in") ;
-    keyhash[25] = (char*) malloc(sizeof(char)* (7) ) ;
-    strcpy(keyhash[25], "switch") ;
-    keyhash[26] = (char*) malloc(sizeof(char)* (5) ) ;
-    strcpy(keyhash[26], "case") ;
-    keyhash[27] = (char*) malloc(sizeof(char)* (6) ) ;
-    strcpy(keyhash[27], "break") ;
-    keyhash[28] = (char*) malloc(sizeof(char)* (8) ) ;
-    strcpy(keyhash[28], "default") ;
-    keyhash[29] = (char*) malloc(sizeof(char)* (6) ) ;
-    strcpy(keyhash[29], "while") ;
-    keyhash[30] = (char*) malloc(sizeof(char)* (10) ) ;
-    strcpy(keyhash[30], "driverdef") ;
-    keyhash[31] = (char*) malloc(sizeof(char)* (13) ) ;
-    strcpy(keyhash[31], "driverenddef") ;
-}
+//     keyhash[0] = (char*) malloc(sizeof(char)* (8) ) ;
+//     strcpy(keyhash[0], "integer") ;
+//     keyhash[1] = (char*) malloc(sizeof(char)* (5) ) ;
+//     strcpy(keyhash[1], "real"); 
+//     keyhash[2] = (char*) malloc(sizeof(char)* (8) ) ;
+//     strcpy(keyhash[2], "boolean"); 
+//     keyhash[3] = (char*) malloc(sizeof(char)* (3) ) ;
+//     strcpy(keyhash[3], "of") ;
+//     keyhash[4] = (char*) malloc(sizeof(char)* (6) ) ;
+//     strcpy(keyhash[4],"array") ;
+//     keyhash[5] = (char*) malloc(sizeof(char)* (6) ) ;
+//     strcpy(keyhash[5], "start") ;
+//     keyhash[6] = (char*) malloc(sizeof(char)* (4) ) ;
+//     strcpy(keyhash[6], "end") ;
+//     keyhash[7] = (char*) malloc(sizeof(char)* (7) ) ;
+//     strcpy(keyhash[7], "declare");  
+//     keyhash[8] = (char*) malloc(sizeof(char)* (7) ) ;
+//     strcpy(keyhash[8], "module") ;
+//     keyhash[9] = (char*) malloc(sizeof(char)* (7) ) ;
+//     strcpy(keyhash[9], "driver") ;
+//     keyhash[10] = (char*) malloc(sizeof(char)* (8) ) ;
+//     strcpy(keyhash[10], "program") ;
+//     keyhash[11] = (char*) malloc(sizeof(char)* (10) ) ;
+//     strcpy(keyhash[11], "get_value") ;
+//     keyhash[12] = (char*) malloc(sizeof(char)* (6) ) ;
+//     strcpy(keyhash[12], "print") ;
+//     keyhash[13] = (char*) malloc(sizeof(char)* (4) ) ;
+//     strcpy(keyhash[13], "use") ;
+//     keyhash[14] = (char*) malloc(sizeof(char)* (5) ) ;
+//     strcpy(keyhash[14], "with") ;
+//     keyhash[15] = (char*) malloc(sizeof(char)* (11) ) ;
+//     strcpy(keyhash[15], "parameters") ;
+//     keyhash[16] = (char*) malloc(sizeof(char)* (5) ) ;
+//     strcpy(keyhash[16], "true") ;
+//     keyhash[17] = (char*) malloc(sizeof(char)* (6) ) ;
+//     strcpy(keyhash[17], "false") ;
+//     keyhash[18] = (char*) malloc(sizeof(char)* (6) ) ;
+//     strcpy(keyhash[18], "takes") ;
+//     keyhash[19] = (char*) malloc(sizeof(char)* (6) ) ;
+//     strcpy(keyhash[19], "input") ;
+//     keyhash[20] = (char*) malloc(sizeof(char)* (8) ) ;
+//     strcpy(keyhash[20], "returns") ;
+//     keyhash[21] = (char*) malloc(sizeof(char)* (4) ) ;
+//     strcpy(keyhash[21], "AND") ;
+//     keyhash[22] = (char*) malloc(sizeof(char)* (3) ) ;
+//     strcpy(keyhash[22], "OR") ;
+//     keyhash[23] = (char*) malloc(sizeof(char)* (4) ) ;
+//     strcpy(keyhash[23], "for") ;
+//     keyhash[24] = (char*) malloc(sizeof(char)* (3) ) ;
+//     strcpy(keyhash[24], "in") ;
+//     keyhash[25] = (char*) malloc(sizeof(char)* (7) ) ;
+//     strcpy(keyhash[25], "switch") ;
+//     keyhash[26] = (char*) malloc(sizeof(char)* (5) ) ;
+//     strcpy(keyhash[26], "case") ;
+//     keyhash[27] = (char*) malloc(sizeof(char)* (6) ) ;
+//     strcpy(keyhash[27], "break") ;
+//     keyhash[28] = (char*) malloc(sizeof(char)* (8) ) ;
+//     strcpy(keyhash[28], "default") ;
+//     keyhash[29] = (char*) malloc(sizeof(char)* (6) ) ;
+//     strcpy(keyhash[29], "while") ;
+//     keyhash[30] = (char*) malloc(sizeof(char)* (10) ) ;
+//     strcpy(keyhash[30], "driverdef") ;
+//     keyhash[31] = (char*) malloc(sizeof(char)* (13) ) ;
+//     strcpy(keyhash[31], "driverenddef") ;
+// }
 
-int keyhash_find(char * str)
-{
-    int i=0;
-    while(i!=32)
-    {
-        if(strcmp(str,keyhash[i])==0)
-        	return 1;
-        i++;
-    }
-    return 0;
-}
+// int keyhash_find(char * str)
+// {
+//     int i=0;
+//     while(i!=32)
+//     {
+//         if(strcmp(str,keyhash[i])==0)
+//         	return 1;
+//         i++;
+//     }
+//     return 0;
+// }
 
 void readBuffer(FILE *fp, char * buffer)
 {
@@ -185,6 +287,9 @@ void initializeLexer(char * filename)
 	readBuffer(fp, buffer1);
 	reading = 1;
 	toRead = 1;
+	lineNum = 1;
+	SynHead = NULL;
+	LexHead = NULL;
 }
 
 //read prog into buffer
@@ -217,9 +322,8 @@ Token * getNextToken()
 			}
 			else    //If lexical error, continue searching for the valid token
 			{
-				printf("LEXICAL ERROR (%d) :",tkn->lineNum);
-				printf("%s\n",tkn->lexeme); 
-                tkn = NULL;
+				insertError(tkn->lexeme, tkn->lexeme, tkn->lineNum, 1);
+				continue;
 			}
 		}
     }
@@ -406,6 +510,90 @@ void getErrorToken(Token * tkn)
     tkn->lineNum = lineNum;
 }
 
+void removeComments()
+{
+	char * buffer;
+	if(toRead == 1)
+		buffer = buffer1;
+	else
+		buffer = buffer2;
+	
+	while(buffer[startptr]!='\0')
+	{
+		removeCommentsUtil(fp, buffer, buffer1, buffer2, &startptr, &reading, &toRead);
+
+		//Update the buffer to one which we are supposed to read next (Needed if tkn is NULL)
+		if(toRead == 1)
+			buffer = buffer1;
+		else
+			buffer = buffer2;
+    }
+}
+void removeCommentsUtil(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *startptr, int * reading, int * toRead)
+{
+	int ptr = *startptr;
+	if(buffer[ptr] == '*')
+	{
+		
+		//The first character is *. 
+		//I need to look ahead now.
+		incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
+
+		if(buffer[ptr] != '*')
+		{
+			printf("*");
+			*toRead = *reading;
+			*startptr = ptr;
+			return;
+		}
+		else
+		{
+			//Since the next is also a *, start the comments. 
+			incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
+
+			// Untill my program ends, look for end of comments  
+			while(buffer[ptr] != '\0')
+			{
+				// I am looking for **. Ignore the rest.
+				if(buffer[ptr] != '*' &&  buffer[ptr] != '\n')
+				{
+					incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
+					continue;
+				}
+
+				// If the line changes, move on but increment line count.
+				else if(buffer[ptr] == '\n')
+				{
+					lineNum++;
+					printf("\n");
+					incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
+					continue;		
+				}
+
+				// Encountered a *. Look for one more.
+				else if(buffer[ptr] == '*')
+				{
+					incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
+					if(buffer[ptr] == '*')	//Comment terminated
+					{
+						// Finally return NULL.
+						incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
+						*toRead = *reading;
+						*startptr = ptr;
+						return;
+					}					
+				}
+			}
+		}
+	}
+	else
+	{
+		printf("%c",buffer[ptr]);
+		incrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
+		*toRead = *reading;
+		*startptr = ptr;
+	}
+}
 Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *startptr, int * reading, int * toRead)
 {
 	//toRead is the current buffer (with which this function is called).
@@ -505,8 +693,8 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 							state = 30;
 						else
 						{
-                            getErrorToken(tkn);
-                            sprintf(tkn->lexeme, "%c is not a valid language alphabet", buffer[ptr]);
+                            // getErrorToken(tkn);
+                            // sprintf(tkn->lexeme, "%c is not a valid language alphabet", buffer[ptr]);
                             // insertError(tkn->lexeme,);
 							// printf("Lexical Error (line %d) : %c is not a valid language alphabet \n",tkn->lineNum,buffer[ptr]);
 							state=-1;
@@ -516,16 +704,16 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 				break;
 			
 			case -1: 
-				*toRead = *reading;
-				*startptr = ptr;
-				return NULL;
+				// *toRead = *reading;
+				// *startptr = ptr;
+				// return NULL;
 				
 				tkn = (Token*) malloc(sizeof(Token));
 				tokenName = (char *)malloc(sizeof(char)*4);
 				tokenName[0] = 'E'; tokenName[1] = 'R'; tokenName[2] = 'R'; tokenName[3] = '\0';
-				char * lexeme = (char *)malloc(sizeof(char)*21);
-				strcpy(lexeme, "Not a valid alphabet");		
-				lexeme[20]='\0';
+				char * lexeme = (char *)malloc(sizeof(char)*70);
+				memset(lexeme, '\0', sizeof(char)*70);
+				sprintf(tkn->lexeme, "%c is not a valid language alphabet", buffer[ptr]);	
 				tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
 				tkn->value = (void *) NULL;
 				*toRead = *reading;
@@ -538,13 +726,12 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 					state = 2;
 				else
 				{
-					getErrorToken(tkn);
-                    strcpy(tkn->lexeme, "Expected ==, got =");
-					printf("Lexical Error (line %d) : Expected ==, got = \n",lineNum);
-					*toRead = *reading;
-					*startptr = ptr;
-					return NULL;
-							
+					// getErrorToken(tkn);
+                    // strcpy(tkn->lexeme, "Expected ==, got =");
+					// printf("Lexical Error (line %d) : Expected ==, got = \n",lineNum);
+					// *toRead = *reading;
+					// *startptr = ptr;
+					// return NULL;
 					tkn = (Token*) malloc(sizeof(Token));
 					tokenName = (char *)malloc(sizeof(char)*4);
 					tokenName[0] = 'E'; tokenName[1] = 'R'; tokenName[2] = 'R'; tokenName[3] = '\0';
@@ -662,15 +849,20 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
                     if(strlen(lexeme)>20)
                     {
                         //ERROR
-
-                        printf("One variable was too long (longer than 20 characters)");
+						tkn ->lexeme = (char *)malloc(sizeof(char)*50);
+						memset(tkn->lexeme, '\0', sizeof(char)*50);
+						strcpy(tkn->lexeme, "One variable was too long (longer than 20 characters)");
+						tkn->token = (char *)malloc(sizeof(char)*4);
+						memset(tkn->token, '\0', sizeof(char)*4);
+						strcpy(tkn->token, "ERR");
                         *toRead = *reading;
                         *startptr = ptr;
-                        return NULL;
+                        return tkn;
                     }
                     else
                     {
                         tkn = (Token*) malloc(sizeof(Token));
+                        lexeme = fillLexeme(buffer1, buffer2, *reading, *toRead, *startptr, ptr);
                         int lex_len = strlen(lexeme) + 1;
                         tkn->lexeme = (char *)malloc(sizeof(char)*lex_len);
                         strcpy(tkn->lexeme, lexeme);
@@ -776,10 +968,10 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 				else if(buffer[ptr]=='\0')
 				{
 					//ERROR HANDLING: Comment not terminated
-					printf("Lexical Error (line: %d): Comment not terminated in file \n",lineNum);
-					*toRead = *reading;
-					*startptr = ptr;
-					return NULL;
+					// printf("Lexical Error (line: %d): Comment not terminated in file \n",lineNum);
+					// *toRead = *reading;
+					// *startptr = ptr;
+					// return NULL;
 					
 					tkn = (Token *)malloc(sizeof(Token));
 					tokenName = (char *)malloc(sizeof(char)*4);
@@ -812,10 +1004,10 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 				else if(buffer[ptr]=='\0')
 				{
 					//ERROR HANDLING: Comment not terminated
-					printf("Lexical Error (line: %d): Comment not terminated in file \n",lineNum);
-					*toRead = *reading;
-					*startptr = ptr;
-					return NULL;
+					// printf("Lexical Error (line: %d): Comment not terminated in file \n",lineNum);
+					// *toRead = *reading;
+					// *startptr = ptr;
+					// return NULL;
 					
 					tkn = (Token *)malloc(sizeof(Token));
 					tokenName = (char *)malloc(sizeof(char)*4);
@@ -1046,17 +1238,17 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 				}
 				else
 				{
-					printf("Lexical Error (line %d): Expected a number after (.) decimal point \n",lineNum); 
-					*toRead = *reading;
-					*startptr = ptr;
-					return NULL;
+					// printf("Lexical Error (line %d): Expected a number after (.) decimal point \n",lineNum); 
+					// *toRead = *reading;
+					// *startptr = ptr;
+					// return NULL;
 					
 					tkn = (Token*) malloc(sizeof(Token));
 					tokenName = (char *)malloc(sizeof(char)*4);
 					tokenName[0] = 'E'; tokenName[1] = 'R'; tokenName[2] = 'R'; tokenName[3] = '\0';
-					char * lexeme = (char *)malloc(sizeof(char)*21);
-					strcpy(lexeme, "Expected NUM after .");		
-					lexeme[20]='\0';
+					char * lexeme = (char *)malloc(sizeof(char)*50);
+					memset(lexeme, '\0', sizeof(char)*50);
+					strcpy(lexeme, "Expected NUM after (.) decimal point");
 					tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
 					tkn->value = (void *) NULL;	
 					*toRead = *reading;
@@ -1097,17 +1289,17 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 					state = 35;
 				else
 				{
-					printf("Lexical Error (line %d): Expected a number or +/- after e/E exp symbol\n",lineNum); 
-					*toRead = *reading;
-					*startptr = ptr;
-					return NULL;
+					// printf("Lexical Error (line %d): Expected a number or +/- after e/E exp symbol\n",lineNum); 
+					// *toRead = *reading;
+					// *startptr = ptr;
+					// return NULL;
 					
 					tkn = (Token*) malloc(sizeof(Token));
 					tokenName = (char *)malloc(sizeof(char)*4);
 					tokenName[0] = 'E'; tokenName[1] = 'R'; tokenName[2] = 'R'; tokenName[3] = '\0';
-					char * lexeme = (char *)malloc(sizeof(char)*31);
-					strcpy(lexeme, "Expected NUM or + or - after E");		
-					lexeme[30]='\0';
+					char * lexeme = (char *)malloc(sizeof(char)*50);
+					memset(lexeme, '\0', sizeof(char)*50);
+					strcpy(lexeme, "Expected a number or +/- after e/E exp symbol");		
 					tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
 					tkn->value = (void *) NULL;	
 					*toRead = *reading;
@@ -1121,17 +1313,17 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 					state = 35;
 				else
 				{
-					printf("Lexical Error (line %d): Expected a number [e/E][+/-] exponent symbols\n",lineNum); 
-					*toRead = *reading;
-					*startptr = ptr;
-					return NULL;
+					// printf("Lexical Error (line %d): Expected a number [e/E][+/-] exponent symbols\n",lineNum); 
+					// *toRead = *reading;
+					// *startptr = ptr;
+					// return NULL;
 					
 					tkn = (Token*) malloc(sizeof(Token));
 					tokenName = (char *)malloc(sizeof(char)*4);
 					tokenName[0] = 'E'; tokenName[1] = 'R'; tokenName[2] = 'R'; tokenName[3] = '\0';
-					char * lexeme = (char *)malloc(sizeof(char)*28);
-					strcpy(lexeme, "Expected NUM after E+ or E-");		
-					lexeme[27]='\0';
+					char * lexeme = (char *)malloc(sizeof(char)*50);
+					memset(lexeme, '\0', sizeof(char)*50);
+					strcpy(lexeme, "Expected a number [e/E][+/-] exponent symbols");		
 					tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
 					tkn->value = (void *) NULL;
 					*toRead = *reading;
@@ -1166,17 +1358,17 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 					state = 39;
 				else
 				{
-					printf("Lexical Error (line %d): Expected !=, got !\n",lineNum); 
-					*toRead = *reading;
-					*startptr = ptr;
-					return NULL;
+					// printf("Lexical Error (line %d): Expected !=, got !\n",lineNum); 
+					// *toRead = *reading;
+					// *startptr = ptr;
+					// return NULL;
 					
 					tkn = (Token*) malloc(sizeof(Token));
 					tokenName = (char *)malloc(sizeof(char)*4);
 					tokenName[0] = 'E'; tokenName[1] = 'R'; tokenName[2] = 'R'; tokenName[3] = '\0';
-					char * lexeme = (char *)malloc(sizeof(char)*19);
+					char * lexeme = (char *)malloc(sizeof(char)*50);
+					memset(lexeme, '\0', sizeof(char)*50);
 					strcpy(lexeme, "Expected !=, got !");		
-					lexeme[18]='\0';
 					tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
 					tkn->value = (void *) NULL;
 					*toRead = *reading;
@@ -1237,17 +1429,17 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 					state = 44;
 				else
 				{
-					printf("Lexical Error (line %d): Expected .. , got .\n",lineNum); 
-					*toRead = *reading;
-					*startptr = ptr;
-					return NULL;
+					// printf("Lexical Error (line %d): Expected .. , got .\n",lineNum); 
+					// *toRead = *reading;
+					// *startptr = ptr;
+					// return NULL;
 					
 					tkn = (Token*) malloc(sizeof(Token));
 					tokenName = (char *)malloc(sizeof(char)*4);
 					tokenName[0] = 'E'; tokenName[1] = 'R'; tokenName[2] = 'R'; tokenName[3] = '\0';
-					char * lexeme = (char *)malloc(sizeof(char)*19);
+					char * lexeme = (char *)malloc(sizeof(char)*50);
+					memset(lexeme, '\0', sizeof(char)*50);
 					strcpy(lexeme, "Expected .., got .");		
-					lexeme[18]='\0';
 					tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
 					tkn->value = (void *) NULL;
 					*toRead = *reading;
@@ -1315,4 +1507,3 @@ void printToken(Token * tkn)
 	}
 	printf("\n");
 }
-

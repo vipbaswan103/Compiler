@@ -11,9 +11,7 @@
 #define RULESIZE 1000
 #define NTSIZE 60
 
-#define BUFFERSIZE 35
-
-char *keyhash[32] ;
+#define BUFFERSIZE 4096
 
 typedef struct lexerror
 {
@@ -55,6 +53,48 @@ typedef struct
 } Token;
 
 
+typedef struct{
+    char str[60];
+    int enumcode;
+} Terminal;
+
+typedef struct{
+    char str[60];
+    int enumcode;
+} NonTerminal;
+
+typedef union{
+        Terminal t;
+        NonTerminal nt;
+} TokenType; 
+
+//changable element
+typedef struct{
+    int tag;
+    TokenType type;
+}Element;
+
+//node of the hash chain
+typedef struct node
+{
+    Element ele ;
+    struct node * next ;
+}Node;
+
+// base list
+typedef struct{
+    Node * head;
+    Node * tail;
+    int size ;
+}LinkedList;
+
+//the head of the linked list
+typedef struct
+{
+    LinkedList arr[HASHSIZE] ;
+}Hashtable;
+
+Hashtable *keyhash;
 extern int lineNum;
 char *buffer1, *buffer2;
 int startptr, reading, toRead;
