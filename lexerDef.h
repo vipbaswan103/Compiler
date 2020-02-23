@@ -27,13 +27,14 @@ typedef struct syntaxerror
     int lineNum;
 }SyntaxErr;
 
-
+//Wraps around the lexical and syntactical errors 
 typedef union error
 {
     LexicalErr lex;
     SyntaxErr syn;
 }Error;
 
+//Wraps around the lexical and syntactical errors using the union
 typedef struct errnode
 {
     int tag;            //1 for LexicalError, 2 for Syntactical
@@ -41,8 +42,10 @@ typedef struct errnode
     struct errnode * next;
 }ErrorNode;
 
+//Global Lists for error reporting at the end
 ErrorNode * LexHead;
 ErrorNode * SynHead;
+
 
 typedef struct
 {
@@ -68,13 +71,13 @@ typedef union{
         NonTerminal nt;
 } TokenType; 
 
-//changable element
+//changable element (wraps the T and NT within itself)
 typedef struct{
     int tag;
     TokenType type;
 }Element;
 
-//node of the hash chain
+//node of the hash chain with element inside it
 typedef struct node
 {
     Element ele ;
@@ -94,11 +97,19 @@ typedef struct
     LinkedList arr[HASHSIZE] ;
 }Hashtable;
 
+//"keyhash" stores the keyword hash table
 Hashtable *keyhash;
-extern int lineNum;
-char *buffer1, *buffer2;
-int startptr, reading, toRead;
-FILE * fp;
 
+//lineNum is a global line  number maintanance variable
+extern int lineNum;
+
+//buffer (twins)
+char *buffer1, *buffer2;
+
+//accessory variables for the twin buffer smooth functioning
+int startptr, reading, toRead;
+
+//global filepointer for opening the file
+FILE * fp;
 
 #endif
