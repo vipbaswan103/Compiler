@@ -1,3 +1,12 @@
+/* 
+	GROUP 33
+	Aryan Mehra 2017A7PS0077P
+	Akshit Khanna 2017A7PS0023P
+   	Vipin Baswan 2017A7PS0429P
+   	Swadesh Vaibhav 2017A7PS0030P
+*/
+
+
 #include "parser.h"
 #include "lexer.h"
 #include <time.h>
@@ -28,12 +37,17 @@ void seeTokenization()
 
     printf("%s\n", tkn->token);
 }
+
 /*******************************************************************/
+
+
 int main(int argc, char * argv[])
 {
     if(argc != 3)
     {
-        printf("Wrong number of args\n");
+        printf("Wrong number of args. Please give 2 file names. \n The first one should be the program and the other should be where you want to write the syntax tree output\n"); 
+        return 0;
+        
     }
     Grammar * grammar = NULL;
     int ** parseTable;
@@ -48,7 +62,7 @@ int main(int argc, char * argv[])
     printf("We are Akshit Khanna, Aryan Mehra, Vipin Baswan and Swadesh Vaibhav.\n");
     printf("Our group has successfully COMPLETED ALL REQUIRED FEATURES of the lexical and syntax analysis \n");
     printf("1. FIRST and FOLLOW is completely automated.\n");
-    printf("2. Both Lexical and Syntax Analysis are complete.");
+    printf("2. Both Lexical and Syntax Analysis are complete.\n");
     printf("3. Errors are reported with line numbers. This happens at the end of the compilation process (like it should)\n");
     printf("4. Syntax errors do not stop the process and parse tree is generated.\n");
     printf("5. All test cases run flawlessly!\n\n");
@@ -56,6 +70,8 @@ int main(int argc, char * argv[])
     
     int option=(-1);
 
+
+    printf("----------------------------------------------------------------------------------------------\n");
     printf("\nOptions:\n");
     printf("Press 0 : Exit \n");
     printf("Press 1 : Removal of comments and display \n");
@@ -64,9 +80,11 @@ int main(int argc, char * argv[])
     printf("Press 4 : Time Analysis of the lexer \n");
     printf("What would you like to do? Option: ");
     scanf("%d",&option);
+    printf("----------------------------------------------------------------------------------------------\n");
     
     
-    clock_t start_time, end_time;               //For time analysis of stage 1
+    //For time analysis of stage 1
+    clock_t start_time, end_time;               
     double total_CPU_time, total_CPU_time_in_seconds;
     
     while(option!=0)
@@ -74,15 +92,19 @@ int main(int argc, char * argv[])
         switch(option)
         {
             case 1: //comment removal
+            		printf("----------------------------------------------------------------------------------------------\n");
                     populate_keyhash();
                     initializeLexer(argv[1]);
                     removeComments();
+                    printf("----------------------------------------------------------------------------------------------\n");
                     break;
 
             case 2: //tokens are printed
+            		printf("----------------------------------------------------------------------------------------------\n");
                     populate_keyhash();
                     initializeLexer(argv[1]);
                     seeTokenization();
+                    printf("----------------------------------------------------------------------------------------------\n");
                     if(LexHead != NULL)
                     {
                         printf("Lexical Errors:\n");
@@ -92,6 +114,7 @@ int main(int argc, char * argv[])
                     {
                         printf("No lexical errors\n");
                     }
+                    printf("----------------------------------------------------------------------------------------------\n");
                     
                     break;
 

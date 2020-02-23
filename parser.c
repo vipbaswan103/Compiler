@@ -1,3 +1,11 @@
+/* 
+	GROUP 33
+	Aryan Mehra 2017A7PS0077P
+	Akshit Khanna 2017A7PS0023P
+   	Vipin Baswan 2017A7PS0429P
+   	Swadesh Vaibhav 2017A7PS0030P
+*/
+
 #include "lexer.h"
 #include "lexerDef.h"
 #include "parser.h"
@@ -8,81 +16,7 @@ int enumNonTerminal=0;
 int curr_size = 10;
 int epsilonENUM = 0;
 
-// int hash_func(char *str)
-// {
-//     int i = 0 ;
-//     long long val = 11 ;
 
-//     while(str[i] != '\0')
-//     {
-//         val = val*31 + str[i] ;
-//         i++ ;
-//     }
-//     if(val < 0)
-//         val = val * (-1);
-
-//     return val % HASHSIZE ;
-// }
-
-
-// Element* hash_find(char * str, Hashtable * hash_tb)
-// {
-//     int hash;
-//     hash = hash_func(str);
-    
-//     Node * trav = hash_tb->arr[hash].head; 
-//     char * lexeme;
-//     while(trav != NULL)
-//     {
-//         //write the logic for the comparison based on what we decide
-//         if(trav->ele.tag==1)
-//             lexeme = trav->ele.type.nt.str;
-//         else if (trav->ele.tag==2)
-//             lexeme = trav->ele.type.t.str;
-//         if(strcmp(lexeme,str) == 0)
-//             return &(trav->ele);
-//         trav = trav->next;
-//     }
-//     return NULL;
-// }
-
-// void hash_insert(Element * ele, Hashtable * hash_tb)
-// {
-//     char * str;
-//     if(ele->tag == 1)
-//         str = ele->type.nt.str;
-//     else
-//         str = ele->type.t.str;
-
-//     if(hash_find(str,hash_tb) != NULL)
-//         return; 
-
-//     int hash;
-    
-//     if(ele->tag==1)
-//         hash = hash_func(ele->type.nt.str);
-//     else if (ele->tag==2)
-//         hash = hash_func(ele->type.t.str);
-
-//     Node *temp = (Node*)malloc(sizeof(Node)) ;
-//     temp->ele = *ele ;
-//     temp->next = NULL ;
-
-//     if( hash_tb->arr[hash].head == NULL)
-//     {
-//         hash_tb->arr[hash].head = temp ;
-//         hash_tb->arr[hash].tail = temp ;
-//         hash_tb->arr[hash].size = 1 ;
-//     }
-//     else
-//     {
-//         hash_tb->arr[hash].tail->next = temp ;
-//         hash_tb->arr[hash].tail = temp ;
-//         hash_tb->arr[hash].size++ ;
-//     }
-    
-//     return ;
-// }
 
 void populateGrammarArray(Grammar * grammar, char * str, int TorNT, int index)
 {
@@ -208,6 +142,7 @@ void initializeParser()
     curr_size = 0;
     hash_tb = NULL;
 }
+
 Grammar * read_grammar(char * filename)
 {
     Grammar * grammar = (Grammar *)malloc(sizeof(Grammar));
@@ -377,10 +312,18 @@ int ** initializeFollow()
     {
         followSet[i] = (int *)malloc(sizeof(int)*(enumTerminal+3));
         memset(followSet[i],0,sizeof(int)*(enumTerminal+3));
-        followSet[i][enumTerminal+1] = -1;  //Indicates whether we have calculated follow set or not, special
-        followSet[i][enumTerminal+2] = -1;  //Indicates whether we have traversed this NT before or not, special
+        
+        //Indicates whether we have calculated follow set or not, special
+        followSet[i][enumTerminal+1] = -1;  
+        
+        //Indicates whether we have traversed this NT before or not, special
+        followSet[i][enumTerminal+2] = -1;  
     }
-    followSet[0][enumTerminal] = 1; //Puts '$' in the follow of start symbol
+    
+    
+    followSet[0][enumTerminal] = 1; 
+    //Puts '$' in the follow of start symbol
+    
     return followSet;
 }
 
@@ -397,12 +340,20 @@ void setOR(int * arr1, int * arr2)
 
 //Basically a DFS implementation
 /*For a NT, we have following cases:
-    1) It's follow has been calculated.     followSet[NT][enumTerminal+1] = 1
-                                            followSet[NT][enumTerminal+2] = 1
-    2) It's follow set is being calculated and it has been traversed.   followSet[NT][enumTerminal+1] = -1
-                                                                        followSet[NT][enumTerminal+2] = 1
-    3) It's follow set is not yet calculated.   followSet[NT][enumTerminal+1] = -1
-                                                followSet[NT][enumTerminal+2] = -1
+
+    1) It's follow has been calculated.     
+    followSet[NT][enumTerminal+1] = 1
+    followSet[NT][enumTerminal+2] = 1
+    
+    
+    2) It's follow set is being calculated and it has been traversed.   
+    followSet[NT][enumTerminal+1] = -1
+    followSet[NT][enumTerminal+2] = 1
+    
+    3) It's follow set is not yet calculated.   
+    followSet[NT][enumTerminal+1] = -1
+    followSet[NT][enumTerminal+2] = -1
+    
 */
 
 
@@ -647,12 +598,14 @@ void printParseTable(Grammar *grammar,int ** parseTable)
 TreeNode * getNode(NonTerminal * nt, Token * tkn, int whichOne)
 {
     TreeNode * newNode = (TreeNode *)malloc(sizeof(TreeNode));
-    if(whichOne == 1)   //Node is a non-terminal i.e. non-leaf node
+    //Node is a non-terminal i.e. non-leaf node
+    if(whichOne == 1)   
     {
         newNode->tag = 1;
         newNode->ele.nonleaf.nt = *nt;
     }
-    else if(whichOne == 2)  //Node is a terminal i.e. leaf node
+    //Node is a terminal i.e. leaf node
+    else if(whichOne == 2)  
     {
         newNode->tag = 2;
         newNode->ele.leaf.tkn = *tkn;
@@ -809,7 +762,8 @@ void printStack(Stack * st)
     StackNode * trav = st->top;
     while(trav != NULL)
     {
-        if(trav->trnode->tag == 1)  //Its an internal node
+    	//Its an internal node
+        if(trav->trnode->tag == 1)  
             printf("%s (%d)\n", trav->trnode->ele.nonleaf.nt.str, trav->trnode->ele.nonleaf.nt.enumcode);
         else    //Its a leaf
             printf("%s (%d)\n", trav->trnode->ele.leaf.tkn.token, trav->trnode->ele.leaf.tkn.lineNum);
@@ -878,17 +832,18 @@ TreeNode * parser(Grammar * grammar, int ** parsetable)
             //throw an error
             else
             {
-				// if((strcmp(mainStack->top->trnode->ele.leaf.tkn.token,"EOF")==0) && (strcmp(tkn->token, "EOF")!=0))
-				// {
-				// 	tkn = getNextToken();
-				// 	continue;
-				// }
-				if(isFirstTerminal == 1)
-				{
-					sprintf(error, "Expected %s, got %s", mainStack->top->trnode->ele.leaf.tkn.token, tkn->token);
-                	insertError(error, tkn->lexeme, tkn->lineNum, 2);
-				}
-				isFirstTerminal++;
+		// if((strcmp(mainStack->top->trnode->ele.leaf.tkn.token,"EOF")==0) && (strcmp(tkn->token, "EOF")!=0))
+		// {
+		// 	tkn = getNextToken();
+		// 	continue;
+		// }
+		if(isFirstTerminal == 1)
+		{
+			sprintf(error, "Expected %s, got %s", mainStack->top->trnode->ele.leaf.tkn.token, tkn->token);
+			insertError(error, tkn->lexeme, tkn->lineNum, 2);
+		}
+		
+		isFirstTerminal++;
                 node = pop(mainStack);
             }
         }
