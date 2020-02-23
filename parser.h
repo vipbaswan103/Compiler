@@ -1,3 +1,12 @@
+
+/* 
+	GROUP 33
+	Aryan Mehra 2017A7PS0077P
+	Akshit Khanna 2017A7PS0023P
+   	Vipin Baswan 2017A7PS0429P
+   	Swadesh Vaibhav 2017A7PS0030P
+*/
+
 #ifndef PARSER_H_
 #define PARSER_H_
 
@@ -5,9 +14,6 @@
 #include "lexerDef.h"
 
 void initializeParser();
-// int hash_func(char *str);
-// Element* hash_find(char * str, Hashtable * hash_tb);
-// void hash_insert(Element * ele, Hashtable * hash_tb);
 void populateGrammarArray(Grammar * grammar, char * str, int TorNT, int index);
 void insertInLinkedList(Grammar * grammar, char * str, int TorNT, int index);
 void printGrammar(Grammar * grammar);
