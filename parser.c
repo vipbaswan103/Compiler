@@ -362,7 +362,12 @@ void setOR(int * arr1, int * arr2)
 }
 
 
-//Basically a DFS implementation
+//Basically a DFS implementation for First and Follow Set
+// Analogy of nodes that are already visited and done
+// Or nodes that are visited but not done (you have cycled back)
+// Or nodes that are not visited and hence you are visiting them 
+// for the first time through some other NT's rule
+
 /*For a NT, we have following cases:
 
     1) It's follow has been calculated.     
@@ -425,15 +430,12 @@ int * calculateFollowSet(Grammar * grammar, int nonTerminal, int ** followSet, i
                             else   //If Y is a non-terminal
                             {
                                 setOR(followSet[nonTerminal], firstSet[trav->ele.type.nt.enumcode]);
-                                if (firstSet[trav->ele.type.nt.enumcode][epsilonENUM] == 1) //First set contains EPSILON
-                                {
-                                    
-                                }
-                                else
+                                
+                                //First set does not contain EPSILON
+                                if (firstSet[trav->ele.type.nt.enumcode][epsilonENUM] != 1) 
                                 {
                                     break;
-                                }
-                                
+                                }                                
                             }
                             trav = trav->next;
                         }

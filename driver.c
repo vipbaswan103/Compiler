@@ -206,6 +206,9 @@ int main(int argc, char * argv[])
                     printf("Total CPU Time in Seconds: %lf \n", total_CPU_time_in_seconds);
 
                     break;
+                    
+            default: 
+            		printf("Wrong Option entered \n ");
         }
 
         printf("\nOptions:\n");
