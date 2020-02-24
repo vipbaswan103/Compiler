@@ -88,7 +88,7 @@ void hash_insert(Element * ele, Hashtable * hash_tb)
     else if (ele->tag==2)
         hash = hash_func(ele->type.t.str);
 
-	//wrap the ele (copy it) in a Node for the hash's linked list
+	//wrap the ele (fully copy the static thing into a dynamic) in a Node for the hash's linked list
     Node *temp = (Node*)malloc(sizeof(Node)) ;
     temp->ele = *ele ;
     temp->next = NULL ;

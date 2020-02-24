@@ -17,17 +17,25 @@ int curr_size = 10;
 int epsilonENUM = 0;
 
 
-
+// this function is used to initialise the Grammar array
+// this means that only the non terminals (any term that occures in LHS of a rule)
+// is populated into the grammar structure using this function 
 void populateGrammarArray(Grammar * grammar, char * str, int TorNT, int index)
 {
     Element * ele = hash_find(str, hash_tb);
-
+	
+	//Node is the structure that has ele inside it, 
+	//ele has type, which has NT or T, which have str to store the token
     Node * newHead = (Node *)malloc(sizeof(Node));
-    Node * newTail = (Node *)malloc(sizeof(Node));
+    Node * newTail = NULL;
     
     if(ele != NULL)     //Is in the hash table
     {
+        //increase the grammar size by one
         grammar->size += 1;
+        
+        //newHead's ele equated to ele we got from hash table
+        //this is static copying mechanism, cause newHead->ele is not a pointer
         newHead->ele = *ele;
         newHead->next = NULL;
         newTail = newHead;
@@ -35,6 +43,8 @@ void populateGrammarArray(Grammar * grammar, char * str, int TorNT, int index)
         list.head = newHead;
         list.tail = newTail;
         list.size = 0;
+        
+        // add the non terminal of the LHS to the grammar
         grammar->arr[index] = list;
     }
     else    //Isn't in the hash table
@@ -44,32 +54,42 @@ void populateGrammarArray(Grammar * grammar, char * str, int TorNT, int index)
         TokenType type;
         NonTerminal nt;
         
+        //we thus intialise the statically allocated type and nt
         nt.enumcode = enumNonTerminal;
         enumNonTerminal++;
         strcpy(nt.str, str);
         type.nt = nt;
-
+		
+		//the mallocated ele now copies the info to it's type
+		//thus heap now has the above initialised info
         newHead->ele.tag = 1;
         newHead->ele.type = type;
         newHead->next = NULL;
         newTail = newHead;
-
+		
         LinkedList list;
         list.head = newHead;
         list.tail = newTail;
         list.size = 0;
         
+        //add the non terminal in the hash table as well
         hash_insert(&(newHead->ele), hash_tb);
         grammar->arr[index] = list;
+			
     }
 }
 
+// this function inserts RHS side of the rules
 void insertInLinkedList(Grammar * grammar, char * str, int TorNT, int index)
 {
+    //take the head and the tail of the appropriate grammar rule
     Node * trav = grammar->arr[index].head;
     Node * tail = grammar->arr[index].tail;
+    
+    //increase the rule's size by one
     grammar->arr[index].size += 1;
-
+    
+    //new node for the linkedlist
     Node * newNode = (Node *)malloc(sizeof(Node));
     
     Element * ele = hash_find(str, hash_tb);
@@ -77,6 +97,7 @@ void insertInLinkedList(Grammar * grammar, char * str, int TorNT, int index)
     tail->next = newNode;
     if(ele != NULL)     //Found in hash table, can be a T or a NT
     {
+    	//again static copying
         newNode->ele = *ele;
         newNode->next = NULL;
         grammar->arr[index].tail = newNode;
