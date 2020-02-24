@@ -25,7 +25,7 @@ extern int enumTerminal, enumNonTerminal, curr_size, epsilonENUM;
 char **enumToTerminal;
 char **enumToNonTerminal;
 
-//this hash_tb stores the enumeration for the terminals and non terminals
+//this hash_tb stores the enumeration for the terminals and non terminal
 Hashtable * hash_tb;
 
 
