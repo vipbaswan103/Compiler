@@ -1,4 +1,3 @@
-
 /* 
 	GROUP 33
 	Aryan Mehra 2017A7PS0077P
@@ -21,7 +20,10 @@
 #define RULESIZE 1000
 #define NTSIZE 60
 
+//count of the NT and T we have encountered
 extern int enumTerminal, enumNonTerminal, epsilonENUM;
+
+
 char **enumToTerminal;
 char **enumToNonTerminal;
 

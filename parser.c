@@ -431,7 +431,7 @@ int * calculateFollowSet(Grammar * grammar, int nonTerminal, int ** followSet, i
                             {
                                 setOR(followSet[nonTerminal], firstSet[trav->ele.type.nt.enumcode]);
                                 
-                                //First set does not contain EPSILON
+                                //First set does not contain EPSILON, so you may stop
                                 if (firstSet[trav->ele.type.nt.enumcode][epsilonENUM] != 1) 
                                 {
                                     break;

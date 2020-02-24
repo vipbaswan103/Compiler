@@ -200,6 +200,8 @@ int main(int argc, char * argv[])
 
                     end_time= clock();
                     total_CPU_time= (end_time-start_time);
+                    
+                    //time we get is in milliseconds
                     total_CPU_time_in_seconds = total_CPU_time/CLOCKS_PER_SEC;
                     
                     printf("Total CPU Time taken by Lexer and Parser : %lf \n", total_CPU_time);

@@ -54,7 +54,7 @@ typedef struct errnode
 ErrorNode * LexHead;
 ErrorNode * SynHead;
 
-
+//universally used to store the terminals
 typedef struct
 {
 	char * token;

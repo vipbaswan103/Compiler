@@ -10,6 +10,8 @@
 #include "lexerDef.h"
 
 int lineNum = 1;
+
+//global array of the keywords of the language
 char *keywords[] = {"integer","real","boolean","of","array","start","end","declare","module","driver",
 					"program","get_value","print","use","with","parameters","true","false","takes","input",
 					"returns","AND","OR","for","in","switch","case","break","default","while","driverdef","driverenddef"};
