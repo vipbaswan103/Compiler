@@ -21,7 +21,7 @@
 #define RULESIZE 1000
 #define NTSIZE 60
 
-extern int enumTerminal, enumNonTerminal, curr_size, epsilonENUM;
+extern int enumTerminal, enumNonTerminal, epsilonENUM;
 char **enumToTerminal;
 char **enumToNonTerminal;
 

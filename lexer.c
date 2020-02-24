@@ -16,6 +16,7 @@ char *keywords[] = {"integer","real","boolean","of","array","start","end","decla
 
 
 // Takes a string to calculate its hash
+// used for both key hash and T and NT hash tables
 int hash_func(char *str)
 {
     int i = 0 ;
@@ -37,7 +38,7 @@ int hash_func(char *str)
     return val % HASHSIZE ;
 }
 
-
+//used to find the enumeration hash table for terminals and non terminals
 Element* hash_find(char * str, Hashtable * hash_tb)
 {
     int hash;
@@ -66,7 +67,7 @@ Element* hash_find(char * str, Hashtable * hash_tb)
     return NULL;
 }
 
-
+//common for both hash tables of keywords and TorNT
 void hash_insert(Element * ele, Hashtable * hash_tb)
 {
 	//extract the name of the lexeme according to the tag

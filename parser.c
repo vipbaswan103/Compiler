@@ -13,7 +13,6 @@
 
 int enumTerminal = 0; 
 int enumNonTerminal=0;
-int curr_size = 10;
 int epsilonENUM = 0;
 
 
@@ -112,24 +111,28 @@ void insertInLinkedList(Grammar * grammar, char * str, int TorNT, int index)
         enumTerminal++;
         strcpy(t.str, str);
         type.t = t;
-
+		
+		//global enumcode is set here
         if(strcmp(str, "EPSILON") == 0)
             epsilonENUM = t.enumcode;
 
         ele.tag = TorNT;
         ele.type = type;
-
+		
+		//static copying once more
         newNode->ele = ele;
         newNode->next = NULL;
         tail->next = newNode;
         grammar->arr[index].tail = tail->next;
-
+		
+		//since it wasn't in hash insert it now
         hash_insert(&ele, hash_tb);        
     }
 }
 
-// Use this function to print the grammar as interpreted in the linked list array
 
+// Use this function to print the grammar as interpreted in the linked list array
+//only a utility function to test the grammar function
 void printGrammar(Grammar * grammar)
 {
     Node * trav = NULL;
@@ -153,6 +156,7 @@ void printGrammar(Grammar * grammar)
     }
 }
 
+
 void initializeParser()
 {
     enumToTerminal = NULL;
@@ -160,7 +164,6 @@ void initializeParser()
     enumTerminal = 0;
     enumNonTerminal = 0;
     epsilonENUM = 0;
-    curr_size = 0;
     hash_tb = NULL;
 }
 
