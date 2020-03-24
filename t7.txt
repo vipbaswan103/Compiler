@@ -1,5 +1,6 @@
 <<<driver program>>>
 start
-	declare a:integer;
-	print(a);
+	while(true)
+	start
+	end
 end

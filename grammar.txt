@@ -29,7 +29,7 @@ statement simpleStmt
 statement declareStmt 
 statement conditionalStmt 
 statement iterativeStmt
-ioStmt GET_VALUE BO ID BC SEMICOL 
+ioStmt GET_VALUE BO ID BC SEMICOL
 ioStmt PRINT BO varAndBool BC SEMICOL
 varAndBool var 
 varAndBool boolConst
@@ -63,10 +63,10 @@ logicalExpr arithmeticExpr logicalExpr2
 logicalExpr2 relationalOp arithmeticExpr
 logicalExpr2 EPSILON
 arithmeticExpr term arithmeticExpr2
-arithmeticExpr2 op1 term arithmeticExpr2 
+arithmeticExpr2 op1 arithmeticExpr 
 arithmeticExpr2 EPSILON
 term factor term2
-term2 op2 factor
+term2 op2 term
 term2 EPSILON
 factor BO expression2 BC 
 factor var
@@ -74,7 +74,7 @@ unaryExprArithmetic op1 myOptions
 myOptions var 
 myOptions BO arithmeticExprBoolnt BC
 arithmeticExprBoolnt termBoolnt arithmeticExpr2Boolnt
-arithmeticExpr2Boolnt op1 termBoolnt arithmeticExpr2Boolnt
+arithmeticExpr2Boolnt op1 arithmeticExprBoolnt
 arithmeticExpr2Boolnt EPSILON
 termBoolnt factorBoolnt term2Boolnt
 term2Boolnt op2 factorBoolnt 
@@ -106,7 +106,7 @@ value FALSE
 default DEFAULT COLON statements BREAK SEMICOL 
 default EPSILON
 iterativeStmt FOR BO ID IN range2 BC START statements END 
-iterativeStmt WHILE BO expression BC START statements END
+iterativeStmt WHILE BO expression2 BC START statements END
 range1 NUM RANGEOP index 
 range1 ID RANGEOP index
 range2 NUM RANGEOP NUM

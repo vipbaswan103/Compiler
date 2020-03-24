@@ -145,6 +145,7 @@ int main(int argc, char * argv[])
                     {
                         calculateFollowSet(grammar, i, followSet, firstSet);
                     }
+                    printFollow(followSet);
                     parseTable = intializeParseTable();
                     createParseTable(grammar,parseTable,firstSet,followSet);
                     parseTree = parser(grammar, parseTable);
@@ -172,9 +173,9 @@ int main(int argc, char * argv[])
                         printf("Parsing was successfull......!\n");
                     }
                     fclose(fp);
-                    astNode * ast = createAST(parseTree, NULL, NULL);
-                    fp = fopen(argv[3], "w");
-                    printAST(ast, fp);
+                    // astNode * ast = createAST(parseTree, NULL, NULL);
+                    // fp = fopen(argv[3], "w");
+                    // printAST(ast, fp);
                     break;
 
             case 4: //Time analysis
