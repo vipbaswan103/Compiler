@@ -1,0 +1,5 @@
+<<<driver program>>>
+start
+	declare a:integer;
+	print(a);
+end
