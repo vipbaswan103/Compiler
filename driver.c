@@ -9,6 +9,7 @@
 
 #include "parser.h"
 #include "lexer.h"
+#include "ast.h"
 #include <time.h>
 
 void seeTokenization()
@@ -43,11 +44,9 @@ void seeTokenization()
 }
 
 /*******************************************************************/
-
-
 int main(int argc, char * argv[])
 {
-    if(argc != 3)
+    if(argc != 4)
     {
         printf("Wrong number of args. Please give 2 file names. \n The first one should be the program and the other should be where you want to write the syntax tree output\n"); 
         return 0;
@@ -149,8 +148,8 @@ int main(int argc, char * argv[])
                     parseTable = intializeParseTable();
                     createParseTable(grammar,parseTable,firstSet,followSet);
                     parseTree = parser(grammar, parseTable);
-                    fprintf(fp,"%20s %20s %20s %20s %20s %20s %20s\n", "LEXEME", "LINENO", "TOKEN", "VALUE", "PARENT_NODE", "IS_LEAF", "CURR_NODE");
-                    fprintf(fp,"%s\n","---------------------------------------------------------------------------------------------------------------------------------------------------------------------");
+                    fprintf(fp,"%15s %10s %15s %15s %20s %10s %20s\n", "LEXEME", "LINENO", "TOKEN", "VALUE", "PARENT_NODE", "IS_LEAF", "CURR_NODE");
+                    fprintf(fp,"%s\n","--------------------------------------------------------------------------------------------------------------------------------");
                     inOrder(fp, parseTree, NULL);
                     printf("\n\n");
                     if(LexHead != NULL)
@@ -173,6 +172,9 @@ int main(int argc, char * argv[])
                         printf("Parsing was successfull......!\n");
                     }
                     fclose(fp);
+                    astNode * ast = createAST(parseTree, NULL, NULL);
+                    fp = fopen(argv[3], "w");
+                    printAST(ast, fp);
                     break;
 
             case 4: //Time analysis
