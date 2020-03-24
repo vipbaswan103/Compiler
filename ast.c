@@ -456,7 +456,8 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
             astNode *IDNode = createAST(parseNode->child, NULL, NULL);
             idList2Inh = concatenate(inh, IDNode);
             createAST(parseNode->child->sibling, idList2Inh, &idList2Syn);
-            return idList2Syn;
+            arrASTnodes[0] = idList2Syn;
+            return makeASTnode("ID_LIST", arrASTnodes, 1);
         }
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "idList2"))
         {
@@ -487,7 +488,7 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
         // <expression2> ---- <logicalExpr> <expression3>
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "expression2"))
         {
-            astNode *exp3Inh;
+            astNode *exp3Inh = NULL;
             astNode *logExpOrboolConst = createAST(parseNode->child, NULL, NULL);
             exp3Inh = logExpOrboolConst;
             return createAST(parseNode->child->sibling, exp3Inh, NULL);
@@ -497,7 +498,7 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
             if(!strcmp(parseNode->child->ele.nonleaf.nt.str, "logicalOp"))
             {
                 astNode *logOp_syn = createAST(parseNode->child, NULL, NULL); 
-                astNode *expr2_node = createAST(parseNode->child, NULL, NULL);
+                astNode *expr2_node = createAST(parseNode->child->sibling, NULL, NULL);
                 
                 arrASTnodes[0] = inh;
                 arrASTnodes[1] = expr2_node;
@@ -548,7 +549,7 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
         // <arithmeticExpr> ---- <term> <arithmeticExpr2>	
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "arithmeticExpr"))
         {
-            astNode *arithExp2Inh;
+            astNode *arithExp2Inh = NULL;
             astNode *term = createAST(parseNode->child, NULL, NULL);
             arithExp2Inh = term;
             return createAST(parseNode->child->sibling, arithExp2Inh, NULL);
@@ -670,7 +671,7 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
             astNode *term2Boolnt_inh = factBoolnt_node;
             return createAST(parseNode->child->sibling, term2Boolnt_inh, NULL);   
         }
-        else if(!strcmp(parseNode->ele.nonleaf.nt.str, "term2BoolInt"))
+        else if(!strcmp(parseNode->ele.nonleaf.nt.str, "term2Boolnt"))
         {
             //Rule 80
             // <term2Boolnt> ---- <op2> <factorBoolnt> 
@@ -688,7 +689,7 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
             // <term2Boolnt> ----  ε
             else
             {
-                return createAST(parseNode->child->sibling,NULL,NULL);
+                return inh;
             }
         }
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "factorBoolnt"))
@@ -791,10 +792,10 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
             }
             else
             {
-                astNode *expr_node = createAST(parseNode->child->sibling->sibling, NULL, NULL);
+                astNode *expr2_node = createAST(parseNode->child->sibling->sibling, NULL, NULL);
                 astNode *stmts_node = createAST(parseNode->child->sibling->sibling->sibling->sibling->sibling, NULL, NULL);
                 
-                arrASTnodes[0] = expr_node;
+                arrASTnodes[0] = expr2_node;
                 arrASTnodes[1] = stmts_node;
 
                 return makeASTnode("WHILE", arrASTnodes, 2);
