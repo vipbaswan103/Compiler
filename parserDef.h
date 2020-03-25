@@ -26,6 +26,8 @@ extern int enumTerminal, enumNonTerminal, epsilonENUM;
 
 char **enumToTerminal;
 char **enumToNonTerminal;
+int **firstEquations; 
+int **followEquations;
 
 //this hash_tb stores the enumeration for the terminals and non terminal
 Hashtable * hash_tb;
@@ -48,7 +50,7 @@ typedef struct nonleaf
     NonTerminal nt;
 }nonleafNode;
 
-typedef struct leaf
+typedef struct leafnode
 {
     Token tkn;
 }leafNode;
@@ -66,7 +68,6 @@ typedef struct treenode
 {
     int tag;
     NodeElement ele;
-    
     // The first left most child and the sibling is stored
     struct treenode * sibling;
     struct treenode * child;
