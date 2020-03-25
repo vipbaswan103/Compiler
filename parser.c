@@ -11,7 +11,7 @@
 #include "parser.h"
 #include "parserDef.h"
 
-int enumTerminal = 0; 
+int enumTerminal = 0;
 int enumNonTerminal=0;
 int epsilonENUM = 0;
 
@@ -23,7 +23,7 @@ void populateGrammarArray(Grammar * grammar, char * str, int TorNT, int index)
 {
     Element * ele = hash_find(str, hash_tb);
 	
-	//Node is the structure that has ele inside it, 
+	//Node is the structure that has ele insidme it, 
 	//ele has type, which has NT or T, which have str to store the token
     Node * newHead = (Node *)malloc(sizeof(Node));
     Node * newTail = NULL;
@@ -270,95 +270,60 @@ Grammar * read_grammar(char * filename)
 int ** initializeFirst()
 {
     int ** firstSet = (int **)malloc(sizeof(int*)*enumNonTerminal);
+    firstEquations = (int **)malloc(sizeof(int *)*(enumNonTerminal));
+
     for(int i=0; i<enumNonTerminal; i++)
     {
         firstSet[i] = (int *)malloc(sizeof(int)*(enumTerminal+3));
+        firstEquations[i] = (int *)malloc(sizeof(int)*(enumNonTerminal+1));
         memset(firstSet[i],0,sizeof(int)*(enumTerminal+3));
-        firstSet[i][enumTerminal+1] = -1;  //Indicates whether we have calculated follow set or not, special
+        memset(firstEquations[i],0,sizeof(int)*(enumNonTerminal+1));
+        firstSet[i][enumTerminal+1] = -1;  //Indicates whether we have calculated first set or not, special
         firstSet[i][enumTerminal+2] = -1;  //Indicates whether we have traversed this NT before or not, special
     }
     return firstSet;
 }
 
-
-int * calculateFirstSet(Grammar *grammar, int nonTerminal, int ** firstSet)
-{
-    if(firstSet[nonTerminal][enumTerminal+1]==1)
-        return firstSet[nonTerminal];
-        
-    if(firstSet[nonTerminal][enumTerminal+2]==1)
-    {
-        int * arr = (int *)malloc(sizeof(int)*(enumTerminal+3));
-        memset(arr, 0, sizeof(int)*(enumTerminal+3));
-        return arr;
-    }    
-
-    for(int i = 0 ; i < grammar->size ; i++)
-    {
-        Node *trav = grammar->arr[i].head;
-        if(trav->ele.type.nt.enumcode == nonTerminal)
-        {
-            while(trav!=NULL)
-            {
-                if(trav->next->ele.tag == 2) // A->XB and X is a Terminal 
-                {
-                    firstSet[nonTerminal][trav->next->ele.type.t.enumcode] = 1;
-                    break;
-                }
-                else //A->XB and X is a NonTerminal
-                {
-                    firstSet[nonTerminal][enumTerminal+2] = 1;
-                    int *arr = calculateFirstSet(grammar, trav->next->ele.type.nt.enumcode, firstSet);
-                    setOR(firstSet[nonTerminal], arr);
-                    if(arr[epsilonENUM])
-                    {
-                        trav = trav->next;
-                    }
-                    else
-                    {
-                        break;
-                    }                   
-                }
-            }
-            if(trav == NULL)
-                firstSet[nonTerminal][epsilonENUM] = 1;
-        }
-    }
-    firstSet[nonTerminal][enumTerminal+1] = 1;
-    firstSet[nonTerminal][enumTerminal+2] = 1;
-    return firstSet[nonTerminal];
-}
-
 int ** initializeFollow()
 {
     int ** followSet = (int **)malloc(sizeof(int*)*enumNonTerminal);
+    followEquations = (int **)malloc(sizeof(int*)*enumNonTerminal);
     for(int i=0; i<enumNonTerminal; i++)
     {
         followSet[i] = (int *)malloc(sizeof(int)*(enumTerminal+3));
+        followEquations[i] = (int *)malloc(sizeof(int)*(enumNonTerminal+1));
         memset(followSet[i],0,sizeof(int)*(enumTerminal+3));
+        memset(followEquations[i],0,sizeof(int)*(enumNonTerminal+1));
         
         //Indicates whether we have calculated follow set or not, special
         followSet[i][enumTerminal+1] = -1;  
         
         //Indicates whether we have traversed this NT before or not, special
         followSet[i][enumTerminal+2] = -1;  
+
+        // //Indicates on what nonTerminal does i have circular dependency with
+        // followSet[i][enumTerminal+3] = -1;
     }
-    
-    
+        
     followSet[0][enumTerminal] = 1; 
     //Puts '$' in the follow of start symbol
     
     return followSet;
 }
 
-void setOR(int * arr1, int * arr2)
+int setOR(int * arr1, int * arr2)
 {
-    int tmp = arr1[epsilonENUM];
+    int changed = 0;
     for(int i=0; i<=enumTerminal; i++)
     {
-        arr1[i] = (arr1[i]==1 || arr2[i]==1) ? 1 : 0;
+        if((arr1[i]==0 && arr2[i]==1) && i!=epsilonENUM)
+        {
+            changed=1;
+            arr1[i] = 1;
+        }
+        
     }
-    arr1[epsilonENUM] = tmp;
+    return changed;
 }
 
 
@@ -382,80 +347,197 @@ void setOR(int * arr1, int * arr2)
     3) It's follow set is not yet calculated.   
     followSet[NT][enumTerminal+1] = -1
     followSet[NT][enumTerminal+2] = -1
-    
 */
 
-
-int * calculateFollowSet(Grammar * grammar, int nonTerminal, int ** followSet, int ** firstSet)
+void calculateFirstEquations(Grammar * grammar, int **firstSet, int ** firstEquations)
 {
-    //We have already calculated the follow set
-    if(followSet[nonTerminal][enumTerminal+1] == 1)    
-        return followSet[nonTerminal];
-    
-    //Cycle detected
-    //But now, don't recurse. Just return whatever has been collected in the followset till now
-    //Don't return all zeros (if A -> B and B -> A, then A must have "atleast" what B has and vice-versa)
-    if(followSet[nonTerminal][enumTerminal+2] == 1)     
+    while(1)
     {
-        // int * arr = (int *)malloc(sizeof(int)*(enumTerminal+3));
-        // memset(arr, 0, sizeof(int)*(enumTerminal+3));
+        int changed = 0;
 
-        return followSet[nonTerminal];      
+        //travel through the grammar for epsilons
+        for(int i=0; i<grammar->size; i++)
+        {
+            //LHS of the grammar
+            Node * trav = grammar->arr[i].head;
+            
+            // RHS's head 
+            trav = trav->next;
+
+            // the RHS head is a non terminal
+            if(trav->ele.tag == 1)
+            {
+                while(trav != NULL)
+                {
+                    //If current symbol is a NT and doesn't derive EPSILON, then break
+                    if(trav->ele.tag == 1)
+                    {
+                        if(firstSet[trav->ele.type.nt.enumcode][epsilonENUM] != 1)
+                            break;
+                    }
+                    else    //if current symbol is a Terminal, break
+                        break;
+                    trav = trav->next;
+                }
+
+                //If every symbol on RHS derives an EPSILON, put EPSILON in this NT's first
+                if(trav==NULL)
+                {
+                    if(firstSet[grammar->arr[i].head->ele.type.nt.enumcode][epsilonENUM] != 1)
+                        changed = 1;
+                    firstSet[grammar->arr[i].head->ele.type.nt.enumcode][epsilonENUM] = 1;
+                }
+            }
+
+            // RHS head is a terminal
+            else
+            {
+                // if it is an EPSILON
+                if(trav->ele.type.t.enumcode == epsilonENUM)
+                {
+                    if(firstSet[grammar->arr[i].head->ele.type.nt.enumcode][epsilonENUM] != 1)
+                        changed = 1;
+                    firstSet[grammar->arr[i].head->ele.type.nt.enumcode][epsilonENUM] = 1;
+                }
+            }
+        }
+        if(changed == 0)
+            break;
     }
-    followSet[nonTerminal][enumTerminal+2] = 1;
+
+    // traverse the grammar for other non-terminals
+    for(int i=0;i<grammar->size;i++)
+    {
+        // start from the LHS 
+        int ntEnum = grammar->arr[i].head->ele.type.nt.enumcode;
+        Node *trav  = grammar->arr[i].head;
+        trav = trav->next;
+        if(trav->ele.tag == 1)
+        {
+            while(trav != NULL)
+            {
+                if(trav->ele.tag == 1)
+                {
+                    int size = firstEquations[ntEnum][0];
+                    firstEquations[ntEnum][size+1] = trav->ele.type.nt.enumcode;
+                    firstEquations[ntEnum][0]++;
+                    //No more NTs from RHS need to be added if current EPSILON isn't in FIRST(this NT)
+                    if(firstSet[trav->ele.type.nt.enumcode][epsilonENUM] == 0)
+                        break;
+                }
+                else
+                {
+                    firstSet[ntEnum][trav->ele.type.t.enumcode] = 1;
+                    break;
+                }
+                trav = trav->next;
+            }
+        }
+        else
+            firstSet[ntEnum][trav->ele.type.t.enumcode] = 1;
+    }
+}
+
+void calculateFollowEquations(Grammar * grammar, int **followSet, int **firstSet, int **followEquations)
+{
     for(int i=0; i<grammar->size; i++)
     {
-        //start from the first element of RHS 
-        Node * trav = grammar->arr[i].head->next;
+        Node * trav = grammar->arr[i].head;
+        trav = trav->next;
+        //travel through the rule's RHS
+
         while(trav != NULL)
         {
             if(trav->ele.tag == 1)
             {
-                if(trav->ele.type.nt.enumcode == nonTerminal)   //We found the matching non-terminal
+                if(trav->next == NULL)  // RUle A -> X....B where we visit B
                 {
-                    trav = trav->next;
-                    if(trav == NULL)  //Rule is of type A -> XB
+                    int index = followEquations[trav->ele.type.nt.enumcode][0];
+                    followEquations[trav->ele.type.nt.enumcode][index+1] = grammar->arr[i].head->ele.type.nt.enumcode;
+                    followEquations[trav->ele.type.nt.enumcode][0]++;
+                }
+                else
+                {
+                    // Rule is of type A -> X...B..X and we are at B after which 
+                    //there is something on right side for sure
+                    int row = trav->ele.type.nt.enumcode;
+                    Node * tmp = trav->next;
+                    while(tmp != NULL)
                     {
-                        setOR(followSet[nonTerminal], calculateFollowSet(grammar, grammar->arr[i].head->ele.type.nt.enumcode, followSet, firstSet));
-                    }
-                    else    //Rule is of type A -> XBY
-                    {
-                        while(trav != NULL)
+                        if(tmp->ele.tag == 2)
                         {
-                            if(trav->ele.tag == 2)    //If Y is a terminal
+                            // simply set the terminal in the follow
+                            followSet[row][tmp->ele.type.t.enumcode] = 1;
+                            break;
+                        }
+                        else
+                        {
+                            // the follow equation will add to it the follow of the Non terminal
+                            // int index = followEquations[row][0];
+                            // followEquations[row][index+1] = grammar->arr[i].head->ele.type.nt.enumcode;
+                            // followEquations[row][0]++;
+                            setOR(followSet[row], firstSet[tmp->ele.type.nt.enumcode]);
+                            if(firstSet[tmp->ele.type.nt.enumcode][epsilonENUM] != 1)
                             {
-                                followSet[nonTerminal][trav->ele.type.t.enumcode] = 1;
                                 break;
                             }
-                            else   //If Y is a non-terminal
-                            {
-                                setOR(followSet[nonTerminal], firstSet[trav->ele.type.nt.enumcode]);
-                                
-                                //First set does not contain EPSILON, so you may stop
-                                if (firstSet[trav->ele.type.nt.enumcode][epsilonENUM] != 1) 
-                                {
-                                    break;
-                                }                                
-                            }
-                            trav = trav->next;
                         }
-
-                        if(trav == NULL)
-                        {
-                            setOR(followSet[nonTerminal], calculateFollowSet(grammar, grammar->arr[i].head->ele.type.nt.enumcode, followSet, firstSet));
-                        }
+                        tmp = tmp->next;
+                    }
+                    
+                    if(tmp == NULL)
+                    {
+                        int index = followEquations[row][0];
+                        followEquations[row][index+1] = grammar->arr[i].head->ele.type.nt.enumcode;
+                        followEquations[row][0]++;
                     }
                 }
             }
-            if(trav != NULL)
-                trav = trav->next;
+            trav = trav->next;
         }
     }
-    //We are done with this non-terminal
-    
-    followSet[nonTerminal][enumTerminal+2] = 1;     //Marked as already traversed
-    followSet[nonTerminal][enumTerminal+1] = 1;     //Mark 1 as follow set already calculated
-    return followSet[nonTerminal];
+}
+
+void calculateFirstSet(Grammar * grammar, int ** firstSet, int ** firstEquations)
+{
+    while(1)
+    {
+        // keep going until no change is detected
+        int changed = 0;
+        for(int i=0; i<enumNonTerminal; i++)
+        {
+            // for all the non terminals occuring in the first set equation of this non terminal
+            for(int j=1; j<=firstEquations[i][0]; j++)
+            {
+                int nonT = firstEquations[i][j];
+                changed = changed || setOR(firstSet[i], firstSet[nonT]);
+            }
+        }
+        //  break condition
+        if(changed == 0)
+            break;
+    }
+}
+
+void calculateFollowSet(Grammar * grammar, int ** followSet, int ** followEquations)
+{
+    while(1)
+    {
+        // keep going until no change is detected
+        int changed = 0;
+        
+        for(int i=0; i<enumNonTerminal; i++)
+        {
+            for(int j=1; j<=followEquations[i][0]; j++)
+            {
+                int nonT = followEquations[i][j];
+                changed = changed || setOR(followSet[i], followSet[nonT]);
+            }
+        }
+        
+        if(changed == 0)
+            break;
+    }
 }
 
 void map(Grammar * grammar)
@@ -511,7 +593,19 @@ void printFirst(int ** firstSet)
         printf("\n");
     }
 }
+void printFirstEquations()
+{
+    for(int i=0; i<enumNonTerminal; i++)
+    {
+        printf("%s : ", enumToNonTerminal[i]);
 
+        for(int j=1; j<=firstEquations[i][0]; j++)
+        {
+            printf("%s ", enumToNonTerminal[firstEquations[i][j]]);
+        }
+        printf("\n");
+    }
+}
 void printFollow(int ** followSet)
 {
     for(int i=0; i<enumNonTerminal; i++)
@@ -525,7 +619,19 @@ void printFollow(int ** followSet)
         printf("\n");
     }
 }
+void printFollowEquations()
+{
+    for(int i=0; i<enumNonTerminal; i++)
+    {
+        printf("%s : ", enumToNonTerminal[i]);
 
+        for(int j=1; j<=followEquations[i][0]; j++)
+        {
+            printf("%s ", enumToNonTerminal[followEquations[i][j]]);
+        }
+        printf("\n");
+    }
+}
 
 int ** intializeParseTable()
 {
@@ -581,7 +687,9 @@ void createParseTable(Grammar *grammar, int **parseTable, int **firstSet, int **
         for(int j=0 ; j<enumTerminal+1 ; j++)
         {
             if(arr[j])
+            {
                 parseTable[grammar->arr[i].head->ele.type.nt.enumcode][j] = i;
+            }
         }
 		
 		memset(arr,0, sizeof(int)*(enumTerminal+1));
@@ -689,27 +797,27 @@ void inOrder(FILE * fp, TreeNode * root, TreeNode * parent)
         if(strcmp(root->ele.leaf.tkn.token, "NUM") == 0 && (root->ele.leaf.tkn.value != NULL))
         {
             int *x = (int *)root->ele.leaf.tkn.value;
-            fprintf(fp, "%20s %20d %20s %20d %20s %20s %20s", root->ele.leaf.tkn.lexeme, root->ele.leaf.tkn.lineNum, root->ele.leaf.tkn.token, *x, parent->ele.nonleaf.nt.str, "YES", "----");
+            fprintf(fp, "%15s %10d %15s %15d %20s %10s %20s", root->ele.leaf.tkn.lexeme, root->ele.leaf.tkn.lineNum, root->ele.leaf.tkn.token, *x, parent->ele.nonleaf.nt.str, "YES", "----");
         }
         else if(strcmp(root->ele.leaf.tkn.token, "RNUM") == 0 && (root->ele.leaf.tkn.value != NULL))
         {
             float *x = (float *)root->ele.leaf.tkn.value;
-            fprintf(fp, "%20s %20d %20s %20lf %20s %20s %20s", root->ele.leaf.tkn.lexeme, root->ele.leaf.tkn.lineNum, root->ele.leaf.tkn.token, *x, parent->ele.nonleaf.nt.str, "YES", "----");
+            fprintf(fp, "%15s %10d %15s %15lf %20s %10s %20s", root->ele.leaf.tkn.lexeme, root->ele.leaf.tkn.lineNum, root->ele.leaf.tkn.token, *x, parent->ele.nonleaf.nt.str, "YES", "----");
         }
         else
         {
-            fprintf(fp, "%20s %20d %20s %20s %20s %20s %20s", root->ele.leaf.tkn.lexeme, root->ele.leaf.tkn.lineNum, root->ele.leaf.tkn.token,"----",parent->ele.nonleaf.nt.str,"YES","----");
+            fprintf(fp, "%15s %10d %15s %15s %20s %10s %20s", root->ele.leaf.tkn.lexeme, root->ele.leaf.tkn.lineNum, root->ele.leaf.tkn.token,"----",parent->ele.nonleaf.nt.str,"YES","----");
         }
     }
     else    //It's an internal node
     {
         if(parent == NULL)  //If root is the ROOT node
         {
-            fprintf(fp, "%20s %20s %20s %20s %20s %20s %20s", "----","----","----","----","ROOT","NO",root->ele.nonleaf.nt.str);
+            fprintf(fp, "%15s %10s %15s %15s %20s %10s %20s", "----","----","----","----","ROOT","NO",root->ele.nonleaf.nt.str);
         }
         else    //If root is not the ROOT node
         {
-            fprintf(fp, "%20s %20s %20s %20s %20s %20s %20s", "----","----","----","----",parent->ele.nonleaf.nt.str, "NO", parent->ele.nonleaf.nt.str);   
+            fprintf(fp, "%15s %10s %15s %15s %20s %10s %20s", "----","----","----","----",parent->ele.nonleaf.nt.str, "NO", root->ele.nonleaf.nt.str);   
         }
     }
     fprintf(fp, "\n");
