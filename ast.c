@@ -49,6 +49,7 @@ astNode* makeLeafNode(TreeNode * leafnode)
     newNode->node->ele.leafNode->lineNum = leafnode->ele.leaf.tkn.lineNum;
     newNode->node->ele.leafNode->type = leafnode->ele.leaf.tkn.token;
     newNode->node->ele.leafNode->value = leafnode->ele.leaf.tkn.value;
+
     return newNode;
 }
 
@@ -81,9 +82,34 @@ astNode * makeListNode(char * label, astNode * list)
     parent->node->ele.internalNode->label = label;
     parent->child = list;
     parent->sibling = NULL;
+
+    
+
     return parent;
 }
 
+void getLineNums(astNode * list, int * start, int * end)
+{
+    astNode * tmp = list;
+    if(tmp == NULL)
+    {
+        *start = -1;
+        *end = -1;
+        return;
+    }
+    if(tmp->node->tag == Internal)
+        *start = tmp->node->ele.internalNode->lineNumStart;
+    else
+        *start = tmp->node->ele.leafNode->lineNum;
+    
+    while(tmp->sibling!=NULL)
+        tmp = tmp->sibling;
+
+    if(tmp->node->tag == Internal)
+        *end = tmp->node->ele.internalNode->lineNumEnd;
+    else
+        *end = tmp->node->ele.leafNode->lineNum;
+}
 astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
 {
     //Non-Terminal
@@ -93,15 +119,13 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
 
         astNode* arrASTnodes[4];
 
-        // Rule 1
-        // <program> -> <moduleDeclarations> <otherModules> <driverModule> <otherModules>
         if(!strcmp(parseNode->ele.nonleaf.nt.str,"program"))
         {
-            
-            // printf("The node is %s", parseNode->ele.nonleaf.nt.str);
-            // printf("The child is %s", parseNode->child->ele.nonleaf.nt.str);
-            // printf("The node is %s", parseNode->child->sibling->ele.nonleaf.nt.str);
-            
+
+            // Rule 1
+            // <program> -> <moduleDeclarations> <otherModules> <driverModule> <otherModules>            // Rule 1
+            // <program> -> <moduleDeclarations> <otherModules> <driverModule> <otherModules>
+
             astNode *programNode;
             astNode *modDecSyn = NULL;
             
@@ -110,7 +134,8 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
             createAST(parseNode->child, NULL, &modDecSyn);
             arrASTnodes[0] = modDecSyn; 
             astNode * modDec = makeASTnode("MODULEDEC",arrASTnodes ,1);
-            
+            getLineNums(modDecSyn, &(modDec->node->ele.internalNode->lineNumStart), &(modDec->node->ele.internalNode->lineNumEnd));
+
             astNode *othMod1_syn = NULL, *othMod2_syn = NULL;
             astNode *othMod1_node = NULL, *othMod2_node = NULL;
             createAST(parseNode->child->sibling, NULL, &othMod1_syn);
@@ -121,16 +146,30 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
             othMod1_node = makeASTnode("MODULES", arrASTnodes, 1);
             arrASTnodes[0] = othMod2_syn;
             othMod2_node = makeASTnode("MODULES", arrASTnodes, 1);
-            
+            getLineNums(othMod1_syn, &(othMod1_node->node->ele.internalNode->lineNumStart), &(othMod1_node->node->ele.internalNode->lineNumEnd));
+            getLineNums(othMod2_syn, &(othMod2_node->node->ele.internalNode->lineNumStart), &(othMod2_node->node->ele.internalNode->lineNumEnd));
             // we have all 4 children to create a program AST node
             arrASTnodes[0] = modDec;
             arrASTnodes[1] = othMod1_node;
             arrASTnodes[2] = driverMod_node;
             arrASTnodes[3] = othMod2_node;
             programNode = makeASTnode("PROGRAM", arrASTnodes, 4);
+            
+            // TODO : Check it
+            if(modDec->child != NULL)
+                programNode->node->ele.internalNode->lineNumStart = modDec->node->ele.internalNode->lineNumStart;
+            else if(othMod1_node->child != NULL)    
+                programNode->node->ele.internalNode->lineNumStart = othMod1_node->node->ele.internalNode->lineNumStart;
+            else
+                programNode->node->ele.internalNode->lineNumStart = driverMod_node->node->ele.internalNode->lineNumStart;
+
+            if(othMod2_node->child != NULL)
+                programNode->node->ele.internalNode->lineNumEnd = othMod2_node->node->ele.internalNode->lineNumEnd;
+            else
+                programNode->node->ele.internalNode->lineNumEnd = driverMod_node->node->ele.internalNode->lineNumEnd;
+                    
             return programNode;
         }
-        
         else if(!strcmp(parseNode->ele.nonleaf.nt.str,"moduleDeclarations"))
         {   
             //Rule 2
@@ -153,6 +192,7 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
             }
             return NULL;
         }
+        
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "moduleDeclaration"))
         {
             // Rule 4 
@@ -181,33 +221,57 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
         }
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "driverModule"))
         {
+            // Rule 7
+            // <driverModule> ---- DRIVERDEF DRIVER PROGRAM DRIVERENDDEF <moduleDef>
             astNode *modDef_node = createAST(parseNode->child->sibling->sibling->sibling->sibling, NULL, NULL);
             arrASTnodes[0] = modDef_node;
-            return makeASTnode("DRIVER", arrASTnodes, 1);
+            astNode *driverNode = makeASTnode("DRIVER", arrASTnodes, 1);
+            driverNode->node->ele.internalNode->lineNumStart = parseNode->child->ele.leaf.tkn.lineNum;
+            driverNode->node->ele.internalNode->lineNumEnd = driverNode->child->node->ele.internalNode->lineNumEnd;
+            return driverNode;
         }
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "module"))
         {
+            // Rule 8
+            // <module> ---- DEF MODULE ID ENDDEF TAKES INPUT SQBO <input_plist> SQBC SEMICOL <ret><moduleDef>
             astNode *ID_node = NULL, *inpList_node = NULL, *ret_node = NULL, *modDef_node = NULL, *mod_node = NULL;
             ID_node = createAST(parseNode->child->sibling->sibling, NULL, NULL);
             inpList_node = createAST(parseNode->child->sibling->sibling->sibling->sibling->sibling->sibling->sibling, NULL, NULL);
             ret_node = createAST(parseNode->child->sibling->sibling->sibling->sibling->sibling->sibling->sibling->sibling->sibling->sibling, NULL, NULL);
             modDef_node = createAST(parseNode->child->sibling->sibling->sibling->sibling->sibling->sibling->sibling->sibling->sibling->sibling->sibling, NULL, NULL);
 
+            astNode * ret = ret_node;
+            if(ret == NULL)
+            {
+                arrASTnodes[0] = ret_node;
+                ret = makeASTnode("OUTPUT_LIST",arrASTnodes,1);
+            }
             arrASTnodes[0] = ID_node;
             arrASTnodes[1] = inpList_node;
-            arrASTnodes[2] = ret_node;
+            arrASTnodes[2] = ret;
             arrASTnodes[3] = modDef_node;
-            return makeASTnode("MODULE", arrASTnodes, 4);
+            astNode * modNode = makeASTnode("MODULE", arrASTnodes, 4);
+            modNode->node->ele.internalNode->lineNumStart = parseNode->child->ele.leaf.tkn.lineNum;
+            modNode->node->ele.internalNode->lineNumEnd = modNode->child->sibling->sibling->sibling->node->ele.internalNode->lineNumEnd;
+            return modNode;
+            return modNode;
         }
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "ret"))
         {
+            // Rule 9
+            // <ret> ---- RETURNS SQBO <output_plist> SQBC SEMICOL 
             if(!strcmp(parseNode->child->ele.leaf.tkn.token, "RETURNS"))
                 return createAST(parseNode->child->sibling->sibling, NULL, NULL);
+            
+            // Rule 10
+            // <ret> ---- ε
             else 
                 return NULL;
         }
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "input_plist"))
         {
+            //Rule 11
+            //<input_plist> ---- ID COLON  <dataType> <input_plist2>
             astNode *input2Inh = NULL, *input2Syn = NULL;
             astNode *IDNode = createAST(parseNode->child, NULL, NULL);
             astNode *datatypeNode = createAST(parseNode->child->sibling->sibling, NULL, NULL);
@@ -215,10 +279,15 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
             createAST(parseNode->child->sibling->sibling->sibling, input2Inh, &input2Syn);
             arrASTnodes[0] = input2Syn;
             astNode *inputNode = makeASTnode("INPUT_LIST", arrASTnodes, 1);
+            getLineNums(input2Syn, &(inputNode->node->ele.internalNode->lineNumStart), &(inputNode->node->ele.internalNode->lineNumEnd));
             return inputNode;
         }
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "input_plist2"))
         {
+            
+            //Rule 12
+            //<input_plist2>  ---- COMMA ID COLON <dataType> <input_plist2>
+
             if(!strcmp(parseNode->child->ele.leaf.tkn.token, "COMMA"))
             {
                 astNode * ID_node = createAST(parseNode->child->sibling, NULL, NULL);
@@ -229,6 +298,10 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
                 createAST(parseNode->child->sibling->sibling->sibling->sibling, inpList22_inh, &inpList22_syn);
                 *syn = inpList22_syn;
             }
+
+            // Rule 13
+            // <input_plist2>  ---- ε
+
             else
             {
                 *syn = inh;
@@ -237,6 +310,11 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
         }
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "output_plist"))
         {
+            // Rule 14
+            // <output_plist> ---- ID COLON <type> <output_plist2>
+
+            //Rule 14
+            //<output_plist> ---- ID COLON <type> <output_plist2>
             astNode * ID_node = createAST(parseNode->child, NULL, NULL);
             astNode * dataType_node = createAST(parseNode->child->sibling->sibling, NULL, NULL);
             astNode *outList2_inh = NULL, *outList2_syn = NULL;
@@ -244,11 +322,13 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
             createAST(parseNode->child->sibling->sibling->sibling, outList2_inh, &outList2_syn);
             arrASTnodes[0] = outList2_syn;
             astNode *output_node = makeASTnode("OUTPUT_LIST", arrASTnodes, 1);
-            
+            getLineNums(outList2_syn, &(output_node->node->ele.internalNode->lineNumStart), &(output_node->node->ele.internalNode->lineNumEnd));
+            return output_node;
         }
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "output_plist2"))
         {
-            
+            //Rule 15
+            //<output_plist2> ---- COMMA ID COLON <type> <output_plist2> 
             if(!strcmp(parseNode->child->ele.leaf.tkn.token, "COMMA"))
             {
                 astNode * ID_node = createAST(parseNode->child->sibling, NULL, NULL);
@@ -259,6 +339,8 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
                 createAST(parseNode->child->sibling->sibling->sibling->sibling, outList22_inh, &outList22_syn);
                 *syn = outList22_syn;
             }    
+            //Rule 16
+            //<output_plist2> ---- ε
             else 
                 *syn = inh;
                 
@@ -266,10 +348,16 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
         }
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "dataType"))
         {
+            //Rule 17, 18, 19
+            //<dataType> ---- INTEGER 
+            //<dataType> ---- REAL
+            //<dataType> ---- BOOLEAN 
             if(!strcmp(parseNode->child->ele.leaf.tkn.token, "INTEGER") || !strcmp(parseNode->child->ele.leaf.tkn.token, "REAL") || !strcmp(parseNode->child->ele.leaf.tkn.token, "BOOLEAN"))
             {
                 return createAST(parseNode->child, NULL, NULL);
             }
+            //Rule 20
+            //<dataType> ---- ARRAY SQBO <range1> SQBC OF <type>
             else
             {
                 astNode *range1_node = NULL, *type_node = NULL;
@@ -277,22 +365,36 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
                 type_node = createAST(parseNode->child->sibling->sibling->sibling->sibling->sibling, NULL, NULL);
                 arrASTnodes[0] = range1_node;
                 arrASTnodes[1] = type_node;
-                return makeASTnode("ARRAY", arrASTnodes, 2);
+                astNode * dtNode = makeASTnode("ARRAY", arrASTnodes, 2);
+                dtNode->node->ele.internalNode->lineNumStart = parseNode->child->ele.leaf.tkn.lineNum;
+                dtNode->node->ele.internalNode->lineNumEnd = dtNode->child->sibling->node->ele.leafNode->lineNum;
+                return dtNode;
             }
         }
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "type"))
         {
+            //Rule 21, 22, 23
+            //<type> ---- INTEGER 
+            //<type> ---- REAL
+            //<type> ---- BOOLEAN 
             return createAST(parseNode->child, NULL, NULL);
         }
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "moduleDef"))
         {
-            astNode *stmts_inh = NULL, *stmts_syn = NULL, *stmts_node = NULL;
+            //Rule 24
+            //<moduleDef> ---- START <statements> END
+            astNode *stmts_inh = NULL, *stmts_syn = NULL;
             createAST(parseNode->child->sibling, stmts_inh, &stmts_syn);
             arrASTnodes[0] = stmts_syn;
-            return makeASTnode("MODULEDEF", arrASTnodes, 1);
+            astNode *moduleDef = makeASTnode("MODULEDEF", arrASTnodes, 1);
+            moduleDef->node->ele.internalNode->lineNumStart = parseNode->child->ele.leaf.tkn.lineNum;
+            moduleDef->node->ele.internalNode->lineNumEnd = parseNode->child->sibling->sibling->ele.leaf.tkn.lineNum;
+            return moduleDef;
         }
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "statements"))
         {
+            //Rule 25
+            //<statements> ---- <statement> <statements>
             if(!strcmp(parseNode->child->ele.nonleaf.nt.str, "statement"))
             {
                 astNode *stmt_node = createAST(parseNode->child, NULL, NULL);
@@ -301,6 +403,8 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
                 createAST(parseNode->child->sibling, stmts2_inh, &stmts2_syn);
                 *syn = stmts2_syn;
             }
+            //Rule 26
+            //<statements> ---- ε
             else
             {
                 *syn = inh;
@@ -309,6 +413,12 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
         }
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "statement"))
         {
+            //Rule 27, 28, 29, 30, 31
+            //<statement> ---- <ioStmt>
+            //<statement> ---- <simpleStmt>
+            //<statement> ---- <declareStmt>
+            //<statement> ---- <conditionalStmt>
+            //<statement> ---- <iterativeStmt>
             return createAST(parseNode->child, NULL, NULL);
         }
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "ioStmt"))
@@ -319,7 +429,10 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
             {
                 astNode *ID_node = createAST(parseNode->child->sibling->sibling, NULL, NULL);
                 arrASTnodes[0] = ID_node;
-                return makeASTnode("GET_VAL", arrASTnodes, 1);
+                astNode *ioNode = makeASTnode("GET_VAL", arrASTnodes, 1);
+                ioNode->node->ele.internalNode->lineNumStart = parseNode->child->ele.leaf.tkn.lineNum;
+                ioNode->node->ele.internalNode->lineNumEnd = parseNode->child->sibling->sibling->sibling->sibling->ele.leaf.tkn.lineNum;
+                return ioNode;
             }
             // Rule 33
             // <ioStmt> ---- PRINT BO <varAndBool> BC SEMICOL
@@ -327,16 +440,18 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
             {
                 astNode *varBool_node = createAST(parseNode->child->sibling->sibling, NULL, NULL);
                 arrASTnodes[0] = varBool_node;
-                return makeASTnode("PRINT", arrASTnodes, 1);
+                astNode *ioNode = makeASTnode("PRINT", arrASTnodes, 1);
+                ioNode->node->ele.internalNode->lineNumStart = parseNode->child->ele.leaf.tkn.lineNum;
+                ioNode->node->ele.internalNode->lineNumEnd = parseNode->child->sibling->sibling->sibling->sibling->ele.leaf.tkn.lineNum;
+                return ioNode;
             }
             
-        }
-
-        // Rule 34 and 35
-        // <varAndBool> ---- <var>
-        // <varAndBool> ---- <boolConst>
+        }       
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "varAndBool"))
         {
+            // Rule 34 and 35
+            // <varAndBool> ---- <var>
+            // <varAndBool> ---- <boolConst>
             return createAST(parseNode->child, NULL, NULL);
         }
 
@@ -352,13 +467,23 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
                 astNode *whichIDNode = createAST(parseNode->child->sibling, NULL, NULL);
                 arrASTnodes[0] = IDNode;
                 arrASTnodes[1] = whichIDNode;
-                return makeASTnode("ID_ARR", arrASTnodes, 2);
+                astNode *idarrNode = makeASTnode("ID_ARR", arrASTnodes, 2);
+                idarrNode->node->ele.internalNode->lineNumStart = parseNode->child->ele.leaf.tkn.lineNum;
+                
+                if(whichIDNode!=NULL)
+                    idarrNode->node->ele.internalNode->lineNumEnd = idarrNode->child->sibling->node->ele.leafNode->lineNum;
+                else
+                    idarrNode->node->ele.internalNode->lineNumEnd = idarrNode->node->ele.internalNode->lineNumStart;
+                
+                
+                return idarrNode;
+            
             }
-            // Rule 37 and 38
-            // <var> ---- NUM 
-            // <var> ---- RNUM
             else 
             {
+                // Rule 37 and 38
+                // <var> ---- NUM 
+                // <var> ---- RNUM
                 return createAST(parseNode->child, NULL, NULL);
             }
         }
@@ -378,53 +503,76 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
                 return NULL;
             }
         }
+
+        
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "simpleStmt"))
         {
+            // Rule 41 and 42
+            // <simpleStmt> ---- <assignmentStmt> 
+            // <simpleStmt> ---- <moduleReuseStmt>
             return createAST(parseNode->child, NULL, NULL);
         }
 
-        //Rule 43
-        //<assignmentStmt> ---- ID <whichStmt>
+        
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "assignmentStmt"))
         {
+            //Rule 43
+            //<assignmentStmt> ---- ID <whichStmt>   
             astNode *whichStmt_inh = NULL, *ID_node = NULL;
             ID_node = createAST(parseNode->child, NULL, NULL);
             whichStmt_inh = ID_node;
             return createAST(parseNode->child->sibling, whichStmt_inh, NULL);
         }
 
-        //Rule 44 and 45
-        // <whichStmt> ---- <lvalueIDStmt> 
-        // <whichStmt> ---- <lvalueARRStmt>
+        
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "whichStmt"))
         {
+            //Rule 44 and 45
+            // <whichStmt> ---- <lvalueIDStmt> 
+            // <whichStmt> ---- <lvalueARRStmt>
             astNode * child_inh = inh;
             return createAST(parseNode->child, child_inh, NULL);
         }
+
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "lvalueIDStmt"))
         {
-            astNode *assignNode = createAST(parseNode->child, NULL, NULL);
+            // Rule 46
+            // <lvalueIDStmt> ---- ASSIGNOP <expression> SEMICOL
+            // astNode *assignNode = createAST(parseNode->child, NULL, NULL);
             astNode *exprNode = createAST(parseNode->child->sibling, NULL, NULL);
             arrASTnodes[0] = inh;
             arrASTnodes[1] = exprNode;
-            return makeASTnode("ASSIGNOP", arrASTnodes, 2);
+            astNode * lvalNode = makeASTnode("ASSIGNOP", arrASTnodes, 2);
+            lvalNode->node->ele.internalNode->lineNumStart = inh->node->ele.leafNode->lineNum;
+            lvalNode->node->ele.internalNode->lineNumEnd = parseNode->child->sibling->sibling->ele.leaf.tkn.lineNum;
+            return lvalNode;
         }
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "lvalueARRStmt"))
         {
+            // Rule 47
+            // <lvalueARRStmt> ---- SQBO <index> SQBC ASSIGNOP <expression> SEMICOL
             astNode *ind_node = createAST(parseNode->child->sibling, NULL, NULL);
             astNode * expr_node = createAST(parseNode->child->sibling->sibling->sibling->sibling, NULL, NULL);
 
             arrASTnodes[0] = inh;
             arrASTnodes[1] = ind_node;
             arrASTnodes[2] = expr_node;
-            return makeASTnode("ASSIGNOPARR", arrASTnodes, 3);
+            astNode * lvalARRNode = makeASTnode("ASSIGNOPARR", arrASTnodes, 3);
+            lvalARRNode->node->ele.internalNode->lineNumStart = inh->node->ele.leafNode->lineNum;
+            lvalARRNode->node->ele.internalNode->lineNumEnd = parseNode->child->sibling->sibling->sibling->sibling->sibling->ele.leaf.tkn.lineNum;
+            return lvalARRNode;
         }
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "index"))
         {
+            // Rule 48, 49
+            // <index> ----  NUM
+            // <index> ----  ID
             return createAST(parseNode->child, NULL, NULL);   
         }
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "moduleReuseStmt"))
         {
+            //Rule 50
+            //<moduleReuseStmt> ---- <optional> USE MODULE ID WITH PARAMETERS <idList> SEMICOL
             astNode *optional_node = createAST(parseNode->child, NULL, NULL);
             astNode *ID_node = createAST(parseNode->child->sibling->sibling->sibling, NULL, NULL);
             astNode *idList_node = createAST(parseNode->child->sibling->sibling->sibling->sibling->sibling->sibling, NULL, NULL);
@@ -432,6 +580,8 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
             arrASTnodes[0] = ID_node;
             arrASTnodes[1] = idList_node;
             astNode * tmp = makeASTnode("MODULECALL", arrASTnodes, 2);
+            tmp->node->ele.internalNode->lineNumStart = parseNode->child->sibling->sibling->sibling->ele.leaf.tkn.lineNum;
+            tmp->node->ele.internalNode->lineNumEnd = tmp->child->sibling->node->ele.internalNode->lineNumEnd;
             if(optional_node == NULL)
             {
                 return tmp;
@@ -440,54 +590,69 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
             {
                 arrASTnodes[0] = optional_node;
                 arrASTnodes[1] = tmp;
-                return makeASTnode("MODULEASSIGNOP", arrASTnodes, 2);
+                astNode * assgNode = makeASTnode("MODULEASSIGNOP", arrASTnodes, 2);
+                assgNode->node->ele.internalNode->lineNumStart = assgNode->child->node->ele.internalNode->lineNumStart;
+                assgNode->node->ele.internalNode->lineNumEnd = assgNode->child->sibling->node->ele.internalNode->lineNumEnd;
+                return assgNode;
             }
         }
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "optional"))
         {
+            // Rule 51
+            // <optional> ---- SQBO <idList> SQBC ASSIGNOP
             if(!strcmp(parseNode->child->ele.leaf.tkn.token, "SQBO"))
                 return createAST(parseNode->child->sibling, NULL, NULL);
+            // Rule 52
+            // <optional> ---- ε 
             else
                 return NULL;            
         }
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "idList"))
         {
+            //Rule 53
+            // <idList> ---- ID <idList2>
             astNode *idList2Inh,*idList2Syn = NULL;
             astNode *IDNode = createAST(parseNode->child, NULL, NULL);
             idList2Inh = concatenate(inh, IDNode);
             createAST(parseNode->child->sibling, idList2Inh, &idList2Syn);
             arrASTnodes[0] = idList2Syn;
-            return makeASTnode("ID_LIST", arrASTnodes, 1);
+            astNode *idList =  makeASTnode("ID_LIST", arrASTnodes, 1);
+            getLineNums(idList2Syn, &(idList->node->ele.internalNode->lineNumStart), &(idList->node->ele.internalNode->lineNumEnd));
+            return idList;
         }
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "idList2"))
         {
+            //Rule 54
+            //<idList2> ---- COMMA ID <idList2>
             if(!strcmp(parseNode->child->ele.leaf.tkn.token, "COMMA"))
             {
                 astNode *ID_node = createAST(parseNode->child->sibling, NULL, NULL);
                 astNode *idList22_inh = concatenate(inh, ID_node);
                 astNode *idList22_syn = NULL;
                 createAST(parseNode->child->sibling->sibling, idList22_inh, &idList22_syn);
+                
                 *syn = idList22_syn;
             }
+            //Rule 55
+            //<idList2> ---- ε
             else
             {
                 *syn = inh;
             }
             return NULL;
         }
-        
-        // Rule 56 and 57 boh are automatically considered 
-        // <expression> ---- <expression2>
-        // <expression> ----  <unaryExprArithmetic> 
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "expression"))
         {
+            // Rule 56 and 57 boh are automatically considered 
+            // <expression> ---- <expression2>
+            // <expression> ----  <unaryExprArithmetic> 
             return createAST(parseNode->child, NULL, NULL);
         }
-        
-        // Rule 58
-        // <expression2> ---- <logicalExpr> <expression3>
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "expression2"))
         {
+            // Rule 58 and 59
+            // <expression2> ---- <logicalExpr> <expression3>
+            // <expression2> ---- <boolConst> <expression3>   
             astNode *exp3Inh = NULL;
             astNode *logExpOrboolConst = createAST(parseNode->child, NULL, NULL);
             exp3Inh = logExpOrboolConst;
@@ -495,6 +660,8 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
         }
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "expression3"))
         {
+            //Rule 60
+            //<expression3> ---- <logicalOp> <expression2>
             if(!strcmp(parseNode->child->ele.nonleaf.nt.str, "logicalOp"))
             {
                 astNode *logOp_syn = createAST(parseNode->child, NULL, NULL); 
@@ -503,20 +670,33 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
                 arrASTnodes[0] = inh;
                 arrASTnodes[1] = expr2_node;
                 
-                return makeASTnode(logOp_syn->node->ele.leafNode->type, arrASTnodes, 2);
+                astNode * expr3Node = makeASTnode(logOp_syn->node->ele.leafNode->type, arrASTnodes, 2);
+                if(inh->node->tag == Internal)
+                    expr3Node->node->ele.internalNode->lineNumStart = inh->node->ele.internalNode->lineNumStart;
+                else
+                    expr3Node->node->ele.internalNode->lineNumStart = inh->node->ele.leafNode->lineNum;
+                    
+                if(expr3Node->child->sibling->node->tag == Internal)
+                    expr3Node->node->ele.internalNode->lineNumEnd = expr3Node->child->sibling->node->ele.internalNode->lineNumEnd;
+                else
+                    expr3Node->node->ele.internalNode->lineNumEnd = expr3Node->child->sibling->node->ele.leafNode->lineNum;
+                return expr3Node;
             }
+            //Rule 61
+            //<expression3> ---- ε
             else
             {
                 return inh;
             }
         }
-        //Rule 62
-        // <logicalExpr> ---- <arithmeticExpr> <logicalExpr2> 
-        // logicalExpr2.inh = arithmeticExpr.node
-        // logicalExpr.node = logicalExpr2.node
 
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "logicalExpr"))
         {
+            
+            // Rule 62
+            // <logicalExpr> ---- <arithmeticExpr> <logicalExpr2> 
+            // logicalExpr2.inh = arithmeticExpr.node
+            // logicalExpr.node = logicalExpr2.node
          
             astNode *arithNode = createAST(parseNode->child, NULL, NULL);  
             astNode *logical2inh = arithNode;
@@ -535,7 +715,16 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
                 astNode *arithExp = createAST(parseNode->child->sibling, NULL, NULL);
                 arrASTnodes[0] = inh;
                 arrASTnodes[1] = arithExp;
-                return makeASTnode(relOp->node->ele.leafNode->type, arrASTnodes, 2);
+                astNode *logExpr2 = makeASTnode(relOp->node->ele.leafNode->type, arrASTnodes, 2);
+                if(inh->node->tag == Internal)
+                    logExpr2->node->ele.internalNode->lineNumStart = inh->node->ele.internalNode->lineNumStart;
+                else
+                    logExpr2->node->ele.internalNode->lineNumStart = inh->node->ele.leafNode->lineNum;
+                if(arithExp->node->tag == Internal)
+                    logExpr2->node->ele.internalNode->lineNumEnd = arithExp->node->ele.internalNode->lineNumEnd;
+                else
+                    logExpr2->node->ele.internalNode->lineNumEnd = arithExp->node->ele.leafNode->lineNum;
+                return logExpr2;                        
             }
             // Rule  64
             // <logicalExpr2> ---- ε
@@ -545,10 +734,12 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
             } 
         }
 
-        // Rule 65
-        // <arithmeticExpr> ---- <term> <arithmeticExpr2>	
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "arithmeticExpr"))
         {
+
+            // Rule 65
+            // <arithmeticExpr> ---- <term> <arithmeticExpr2>	
+            
             astNode *arithExp2Inh = NULL;
             astNode *term = createAST(parseNode->child, NULL, NULL);
             arithExp2Inh = term;
@@ -566,7 +757,16 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
                 
                 arrASTnodes[0] = inh;
                 arrASTnodes[1] = arithExp;
-                return makeASTnode(op1->node->ele.leafNode->type, arrASTnodes, 2);
+                astNode *arithExpr2 = makeASTnode(op1->node->ele.leafNode->type, arrASTnodes, 2);
+                if(inh->node->tag == Internal)
+                    arithExpr2->node->ele.internalNode->lineNumStart = inh->node->ele.internalNode->lineNumStart;
+                else
+                    arithExpr2->node->ele.internalNode->lineNumStart = inh->node->ele.leafNode->lineNum;
+                if(arithExp->node->tag == Internal)
+                    arithExpr2->node->ele.internalNode->lineNumEnd = arithExp->node->ele.internalNode->lineNumEnd;
+                else
+                    arithExpr2->node->ele.internalNode->lineNumEnd = arithExp->node->ele.leafNode->lineNum;
+                return arithExpr2;       
             }
             // Rule 67
             // <arithmeticExpr2> ---- ε 
@@ -576,10 +776,10 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
             }
         }
 
-        //Rule 68
-        // <term> ---- <factor> <term2>
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "term"))
         {
+            //Rule 68
+            // <term> ---- <factor> <term2>
             astNode *fact_node = createAST(parseNode->child, NULL, NULL);
             astNode *term2_inh = fact_node;
             return createAST(parseNode->child->sibling, term2_inh, NULL);
@@ -595,7 +795,16 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
                 astNode *term_node = createAST(parseNode->child->sibling, NULL, NULL);
                 arrASTnodes[0] = inh;
                 arrASTnodes[1] = term_node;
-                return makeASTnode(op2_syn->node->ele.leafNode->type, arrASTnodes, 2);
+                astNode *term2Node = makeASTnode(op2_syn->node->ele.leafNode->type, arrASTnodes, 2);
+                if(inh->node->tag == Internal)
+                    term2Node->node->ele.internalNode->lineNumStart = inh->node->ele.internalNode->lineNumStart;
+                else
+                    term2Node->node->ele.internalNode->lineNumStart = inh->node->ele.leafNode->lineNum;
+                if(term2Node->child->sibling->node->tag == Internal)
+                    term2Node->node->ele.internalNode->lineNumEnd = term2Node->child->sibling->node->ele.internalNode->lineNumEnd;
+                else
+                    term2Node->node->ele.internalNode->lineNumEnd = term2Node->child->sibling->node->ele.leafNode->lineNum;
+                return term2Node;
             }
             // Rule 70 
             // <term2> ----  ε 
@@ -618,15 +827,23 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
                 return createAST(parseNode->child, NULL, NULL);
         }
         
-        //Rule 73
-        //<unaryExprArithmetic> ---- <op1> <myOptions>
-        // unaryExprArithmetic.node = makeNode(op1.syn, myOptions.node)
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "unaryExprArithmetic"))
         {
+            //Rule 73
+            //<unaryExprArithmetic> ---- <op1> <myOptions>
+            // unaryExprArithmetic.node = makeNode(op1.syn, myOptions.node)
             astNode *op1_syn = createAST(parseNode->child, NULL, NULL);
             astNode *myOpt_node = createAST(parseNode->child->sibling, NULL, NULL);
             arrASTnodes[0] = myOpt_node;
-            return makeASTnode(op1_syn->node->ele.leafNode->type, arrASTnodes, 1);
+            astNode *unaryExpArithNode = makeASTnode(op1_syn->node->ele.leafNode->type, arrASTnodes, 1);
+                
+            unaryExpArithNode->node->ele.internalNode->lineNumStart = op1_syn->node->ele.leafNode->lineNum;
+            if(myOpt_node->node->tag == Internal)
+                unaryExpArithNode->node->ele.internalNode->lineNumEnd = myOpt_node->node->ele.internalNode->lineNumEnd;
+            else
+                unaryExpArithNode->node->ele.internalNode->lineNumEnd = myOpt_node->node->ele.leafNode->lineNum;
+                
+            return unaryExpArithNode;
         }
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "myOptions"))
         {
@@ -645,20 +862,35 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
         }
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "arithmeticExprBoolnt"))
         {
+            //Rule 76
+            //<arithmeticExprBoolnt> ---- <termBoolnt> <arithmeticExpr2Boolnt>
             astNode *termBool_node = createAST(parseNode->child, NULL, NULL);
             astNode *expr2Bool_inh = termBool_node;
             return createAST(parseNode->child->sibling, expr2Bool_inh, NULL);
         }
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "arithmeticExpr2Boolnt"))
         {
+            //Rule 77
+            //<arithmeticExpr2Boolnt> ---- <op1> <arithmeticExprBoolnt>
             if(parseNode->child->tag == 1)
             {
                 astNode *op1_syn = createAST(parseNode->child, NULL, NULL);
                 astNode *exprBool_node = createAST(parseNode->child->sibling, NULL, NULL);
                 arrASTnodes[0] = inh;
                 arrASTnodes[1] = exprBool_node;
-                return makeASTnode(op1_syn->node->ele.leafNode->type, arrASTnodes, 2);
+                astNode *arithNode = makeASTnode(op1_syn->node->ele.leafNode->type, arrASTnodes, 2);
+                if(inh->node->tag == Internal)
+                    arithNode->node->ele.internalNode->lineNumStart = inh->node->ele.internalNode->lineNumStart;
+                else
+                    arithNode->node->ele.internalNode->lineNumStart = inh->node->ele.leafNode->lineNum;
+                if(arithNode->child->sibling->node->tag == Internal)
+                    arithNode->node->ele.internalNode->lineNumEnd = arithNode->child->sibling->node->ele.internalNode->lineNumEnd;
+                else
+                    arithNode->node->ele.internalNode->lineNumEnd = arithNode->child->sibling->node->ele.leafNode->lineNum;
+                return arithNode;
             }
+            //Rule 78
+            //<arithmeticExpr2Boolnt> ---- ε
             else
             {
                 return inh;
@@ -667,6 +899,8 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
         }
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "termBoolnt"))
         {
+            //Rule 79
+            //<termBoolnt> ---- <factorBoolnt> <term2Boolnt>
             astNode *factBoolnt_node = createAST(parseNode->child, NULL, NULL);
             astNode *term2Boolnt_inh = factBoolnt_node;
             return createAST(parseNode->child->sibling, term2Boolnt_inh, NULL);   
@@ -675,14 +909,23 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
         {
             //Rule 80
             // <term2Boolnt> ---- <op2> <factorBoolnt> 
-            // term2Boolnt.node=  makenode(‘op2.syn’, term2BooInt.inh, factorBoolnt.node)
+            // term2Boolnt.node = makenode(‘op2.syn’, term2BooInt.inh, factorBoolnt.node)
             if(parseNode->child->tag == 1)
             {
                 astNode *op2_syn = createAST(parseNode->child,NULL, NULL);
                 astNode *factorBoolInt = createAST(parseNode->child->sibling, NULL, NULL);
                 arrASTnodes[0] = inh;
                 arrASTnodes[1] = factorBoolInt;
-                return makeASTnode(op2_syn->node->ele.leafNode->type, arrASTnodes, 2);
+                astNode * term2Node = makeASTnode(op2_syn->node->ele.leafNode->type, arrASTnodes, 2);
+                if(inh->node->tag == Internal)
+                    term2Node->node->ele.internalNode->lineNumStart = inh->node->ele.internalNode->lineNumStart;
+                else
+                    term2Node->node->ele.internalNode->lineNumStart = inh->node->ele.leafNode->lineNum;
+                if(term2Node->child->sibling->node->tag == Internal)
+                    term2Node->node->ele.internalNode->lineNumEnd = term2Node->child->sibling->node->ele.internalNode->lineNumEnd;
+                else
+                    term2Node->node->ele.internalNode->lineNumEnd = term2Node->child->sibling->node->ele.leafNode->lineNum;
+                return term2Node;
             }
             
             //Rule 81
@@ -694,14 +937,14 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
         }
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "factorBoolnt"))
         {
+            //Rule 82
+            //<factorBoolnt> ---- BO <arithmeticExprBoolnt> BC
             if(parseNode->child->tag == 2)
             {
-                astNode *op2_syn = createAST(parseNode->child, NULL, NULL);
-                astNode *facBool_node = createAST(parseNode->child->sibling, NULL, NULL);
-                arrASTnodes[0] = inh;
-                arrASTnodes[1] = facBool_node;
-                return makeASTnode(op2_syn->node->ele.leafNode->type, arrASTnodes, 2);
+                return createAST(parseNode->child->sibling, NULL, NULL);
             }
+            //Rule 83
+            //<factorBoolnt> ---- <var>
             else
             {
                 return createAST(parseNode->child, NULL, NULL);
@@ -710,35 +953,68 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
         }
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "op1") || !strcmp(parseNode->ele.nonleaf.nt.str, "op2") || !strcmp(parseNode->ele.nonleaf.nt.str, "relationalOp") || !strcmp(parseNode->ele.nonleaf.nt.str, "logicalOp") || !strcmp(parseNode->ele.nonleaf.nt.str, "boolConst") || !strcmp(parseNode->ele.nonleaf.nt.str, "value"))
         {
+            //Rule 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 103, 104, 105
+            //<op1> ---- PLUS
+            //<op1> ---- MINUS
+            //<op2> ---- MUL
+            //<op2> ---- DIV
+            //<relationalOp>  ---- LT
+            //<relationalOp>  ---- LE
+            //<relationalOp>  ---- GT
+            //<relationalOp>  ---- GE
+            //<relationalOp>  ---- EQ
+            //<relationalOp>  ---- NE
+            //<logicalOp> ---- AND
+            //<logicalOp> ---- OR
+            //<boolConst> ---- TRUE
+            //<boolConst> ---- FALSE
             return createAST(parseNode->child, NULL, NULL);
         }
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "declareStmt"))
         {
+            // Rule 98
+            // <declareStmt> ---- DECLARE <idList> COLON <dataType> SEMICOL
+
             astNode *idList = createAST(parseNode->child->sibling, NULL, NULL);
             astNode *dataType = createAST(parseNode->child->sibling->sibling->sibling, NULL, NULL);
             
             arrASTnodes[0] = idList;
             arrASTnodes[1] = dataType;
-            return makeASTnode("DECLARE", arrASTnodes, 2);
+            astNode *declareNode = makeASTnode("DECLARE", arrASTnodes, 2);
+
+            declareNode->node->ele.internalNode->lineNumStart = parseNode->child->ele.leaf.tkn.lineNum;
+            declareNode->node->ele.internalNode->lineNumEnd = parseNode->child->sibling->sibling->sibling->sibling->ele.leaf.tkn.lineNum;
+            return declareNode;
         }
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "conditionalStmt"))
         {
+            // Rule 99
+            // <conditionalStmt> ---- SWITCH BO ID BC START <caseStmt><default> END
             astNode *ID_node = createAST(parseNode->child->sibling->sibling, NULL, NULL);
             astNode *caseStmt_node = createAST(parseNode->child->sibling->sibling->sibling->sibling->sibling, NULL, NULL);
             astNode *default_node = createAST(parseNode->child->sibling->sibling->sibling->sibling->sibling->sibling, NULL, NULL);
             arrASTnodes[0] = ID_node;
             arrASTnodes[1] = caseStmt_node;
             arrASTnodes[2] = default_node;
-            return makeASTnode("SWITCH", arrASTnodes, 3);
+            astNode * condNode = makeASTnode("SWITCH", arrASTnodes, 3);
+            condNode->node->ele.internalNode->lineNumStart = parseNode->child->ele.leaf.tkn.lineNum;
+            condNode->node->ele.internalNode->lineNumEnd = parseNode->child->sibling->sibling->sibling->sibling->sibling->sibling->sibling->ele.leaf.tkn.lineNum;
+            return condNode;
         }
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "caseStmt"))
         {
+            // Rule 100
+            // <caseStmt> ---- CASE <value> COLON <statements> BREAK SEMICOL <caseStmts>
+            
             astNode *value = createAST(parseNode->child->sibling, NULL, NULL);
-            astNode *statements = createAST(parseNode->child->sibling->sibling->sibling, NULL, NULL);
-            astNode *caseStmtsInh,*caseStmtsSyn;
+            astNode *stmts_syn = NULL;
+            createAST(parseNode->child->sibling->sibling->sibling, NULL, &stmts_syn);
+            astNode *caseStmtsInh=NULL,*caseStmtsSyn=NULL;
             arrASTnodes[0] = value;
-            arrASTnodes[1] = statements;
+            arrASTnodes[1] = stmts_syn;
             caseStmtsInh = makeASTnode("CASE", arrASTnodes, 2);
+            caseStmtsInh->node->ele.internalNode->lineNumStart = parseNode->child->ele.leaf.tkn.lineNum;
+            caseStmtsInh->node->ele.internalNode->lineNumEnd = parseNode->child->sibling->sibling->sibling->sibling->sibling->ele.leaf.tkn.lineNum;
             createAST(parseNode->child->sibling->sibling->sibling->sibling->sibling->sibling, caseStmtsInh, &caseStmtsSyn);
             return caseStmtsSyn;
         }
@@ -746,12 +1022,18 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
         {
             if(!strcmp(parseNode->child->ele.leaf.tkn.token,"CASE"))
             {
-                astNode *value_node = createAST(parseNode->child->sibling, NULL, NULL);
-                astNode *stmts_node = createAST(parseNode->child->sibling->sibling->sibling, NULL, NULL);
-                arrASTnodes[0] = value_node;
-                arrASTnodes[1] = stmts_node;
-                astNode *tmp = makeASTnode("CASE",arrASTnodes,2);
                 
+                //Rule 101
+                // <caseStmts> ---- CASE <value> COLON <statements> BREAK SEMICOL <caseStmts> 
+
+                astNode *value_node = createAST(parseNode->child->sibling, NULL, NULL);
+                astNode *stmts_syn = NULL;
+                createAST(parseNode->child->sibling->sibling->sibling, NULL, &stmts_syn);
+                arrASTnodes[0] = value_node;
+                arrASTnodes[1] = stmts_syn;
+                astNode *tmp = makeASTnode("CASE",arrASTnodes,2);
+                tmp->node->ele.internalNode->lineNumStart = parseNode->child->ele.leaf.tkn.lineNum;
+                tmp->node->ele.internalNode->lineNumEnd = parseNode->child->sibling->sibling->sibling->sibling->sibling->ele.leaf.tkn.lineNum;
                 astNode *caseStmts_inh = concatenate(inh, tmp);
                 astNode *caseStmts_syn = NULL;
                 createAST(parseNode->child->sibling->sibling->sibling->sibling->sibling->sibling, caseStmts_inh, &caseStmts_syn);
@@ -760,17 +1042,28 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
             }
             else
             {
+                // Rule 102
+                // <caseStmts> ----  ε
                 *syn = inh;
+                return NULL;
             }
         }
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "default"))
         {
+            //Rule 106
+            //<default> ---- DEFAULT COLON <statements> BREAK SEMICOL
             if(!strcmp(parseNode->child->ele.leaf.tkn.token, "DEFAULT"))
             {
-                astNode *stmts_node = createAST(parseNode->child->sibling->sibling, NULL, NULL);
-                arrASTnodes[0] = stmts_node;
-                return makeASTnode("DEFAULT", arrASTnodes, 1);
+                astNode *stmts_syn = NULL;
+                createAST(parseNode->child->sibling->sibling, NULL, &stmts_syn);
+                arrASTnodes[0] = stmts_syn;
+                astNode *defNode = makeASTnode("DEFAULT", arrASTnodes, 1);
+                defNode->node->ele.internalNode->lineNumStart = parseNode->child->ele.leaf.tkn.lineNum;
+                defNode->node->ele.internalNode->lineNumEnd = parseNode->child->sibling->sibling->sibling->sibling->ele.leaf.tkn.lineNum;
+                return defNode;
             }
+            //Rule 107
+            //<default> ----  ε
             else
             {
                 return NULL;
@@ -778,55 +1071,83 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
         }
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "iterativeStmt"))
         {
+            //Rule 108
+            //<iterativeStmt> ---- FOR BO ID IN <range2> BC START <statements> END
             if(!strcmp(parseNode->child->ele.leaf.tkn.token, "FOR"))
             {
                 astNode *ID_node = createAST(parseNode->child->sibling->sibling, NULL, NULL);
                 astNode *range2_node = createAST(parseNode->child->sibling->sibling->sibling->sibling, NULL, NULL);
-                astNode *stmts_node = createAST(parseNode->child->sibling->sibling->sibling->sibling->sibling->sibling->sibling, NULL, NULL);
+                astNode *stmts_syn = NULL;
+                createAST(parseNode->child->sibling->sibling->sibling->sibling->sibling->sibling->sibling, NULL, &stmts_syn);
 
                 arrASTnodes[0] = ID_node;
                 arrASTnodes[1] = range2_node;
-                arrASTnodes[2] = stmts_node;
+                arrASTnodes[2] = stmts_syn;
 
-                return makeASTnode("FOR", arrASTnodes, 3);
+                astNode *itrNode = makeASTnode("FOR", arrASTnodes, 3);
+                itrNode->node->ele.internalNode->lineNumStart = parseNode->child->ele.leaf.tkn.lineNum;
+                itrNode->node->ele.internalNode->lineNumEnd = parseNode->child->sibling->sibling->sibling->sibling->sibling->sibling->sibling->sibling->ele.leaf.tkn.lineNum;
+                return itrNode;
             }
+            
+            // Rule 109
+            // <iterativeStmt> ---- WHILE BO <expression2> BC START <statements> END
             else
             {
                 astNode *expr2_node = createAST(parseNode->child->sibling->sibling, NULL, NULL);
-                astNode *stmts_node = createAST(parseNode->child->sibling->sibling->sibling->sibling->sibling, NULL, NULL);
+                astNode *stmts_syn = NULL;
+                createAST(parseNode->child->sibling->sibling->sibling->sibling->sibling, NULL, &stmts_syn);
                 
                 arrASTnodes[0] = expr2_node;
-                arrASTnodes[1] = stmts_node;
+                arrASTnodes[1] = stmts_syn;
 
-                return makeASTnode("WHILE", arrASTnodes, 2);
+                astNode *whileNode = makeASTnode("WHILE", arrASTnodes, 2);
+                whileNode->node->ele.internalNode->lineNumStart = parseNode->child->ele.leaf.tkn.lineNum;
+                whileNode->node->ele.internalNode->lineNumEnd = parseNode->child->sibling->sibling->sibling->sibling->sibling->sibling->ele.leaf.tkn.lineNum;
+                return whileNode;
             }
         }
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "range1"))
         {
+            // Rule 110
+            // <range1> ---- NUM RANGEOP ID 
             if(!strcmp(parseNode->child->ele.leaf.tkn.token, "NUM"))
             {
                 astNode *NUM_node = createAST(parseNode->child, NULL, NULL);
                 astNode *ID_node = createAST(parseNode->child->sibling->sibling, NULL, NULL);
                 arrASTnodes[0] = NUM_node;
                 arrASTnodes[1] = ID_node;
-                return makeASTnode("RANGEOP", arrASTnodes, 2);
+                astNode *range1 = makeASTnode("RANGEOP", arrASTnodes, 2);
+                range1->node->ele.internalNode->lineNumStart = parseNode->child->ele.leaf.tkn.lineNum;
+                range1->node->ele.internalNode->lineNumEnd = parseNode->child->sibling->sibling->ele.leaf.tkn.lineNum;
+                return range1;
             }
+            // Rule 111
+            // <range1> ---- ID RANGEOP <index>
             else
             {
                 astNode *ID_node = createAST(parseNode->child, NULL, NULL);
                 astNode *index_node = createAST(parseNode->child->sibling->sibling, NULL, NULL);
                 arrASTnodes[0] = ID_node;
                 arrASTnodes[1] = index_node;
-                return makeASTnode("RANGEOP", arrASTnodes, 2);
+                astNode *range1 = makeASTnode("RANGEOP", arrASTnodes, 2);
+                range1->node->ele.internalNode->lineNumStart = parseNode->child->ele.leaf.tkn.lineNum;
+                range1->node->ele.internalNode->lineNumEnd = index_node->node->ele.leafNode->lineNum;
+                return range1;
             }            
         }
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "range2"))
         {
+            // Rule 112
+            // <range2> ---- NUM RANGEOP NUM
             astNode *NUM0_node = createAST(parseNode->child, NULL, NULL);
-            astNode *NUM1_node = createAST(parseNode->child->sibling, NULL, NULL);
+            astNode *NUM1_node = createAST(parseNode->child->sibling->sibling, NULL, NULL);
             arrASTnodes[0]= NUM0_node;
             arrASTnodes[1]= NUM1_node;
-            return makeASTnode("RANGE", arrASTnodes,2);
+            astNode * range2 = makeASTnode("RANGEOP", arrASTnodes,2);
+            range2->node->ele.internalNode->lineNumStart = NUM0_node->node->ele.leafNode->lineNum;
+            range2->node->ele.internalNode->lineNumEnd = NUM1_node->node->ele.leafNode->lineNum;
+            return range2;
         }
     }    
     //Terminal
@@ -845,13 +1166,13 @@ void printAST(astNode * ast, FILE * fp)
         return;
     if(ast->node->tag == Leaf)
     {
-        printf("%s\n", ast->node->ele.leafNode->type);
-        fprintf(fp, "%s\n", ast->node->ele.leafNode->type);
+        printf("%s %d\n", ast->node->ele.leafNode->type, ast->node->ele.leafNode->lineNum);
+        fprintf(fp, "%s %d\n", ast->node->ele.leafNode->type, ast->node->ele.leafNode->lineNum);
     }
     else
     {
-        printf("%s\n", ast->node->ele.internalNode->label);
-        fprintf(fp, "%s\n", ast->node->ele.internalNode->label);
+        printf("%s %d %d\n", ast->node->ele.internalNode->label, ast->node->ele.internalNode->lineNumStart, ast->node->ele.internalNode->lineNumEnd);
+        fprintf(fp, "%s %d %d\n", ast->node->ele.internalNode->label, ast->node->ele.internalNode->lineNumStart, ast->node->ele.internalNode->lineNumEnd);
     }
     astNode * tmp = ast->child;
     while(tmp != NULL)

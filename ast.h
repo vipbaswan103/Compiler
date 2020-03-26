@@ -14,6 +14,8 @@ typedef struct leaf
 typedef struct internal
 {
     char * label;
+    int lineNumStart;
+    int lineNumEnd;
 } internal;
 
 typedef union nodeEle
