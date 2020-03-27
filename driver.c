@@ -137,15 +137,12 @@ int main(int argc, char * argv[])
 
                     firstSet = initializeFirst();
                     followSet = initializeFollow();
-                    for(int  i=0; i<enumNonTerminal; i++)
-                    {
-                        calculateFirstSet(grammar, i, firstSet);
-                    }
-                    for(int i=0; i<enumNonTerminal; i++)
-                    {
-                        calculateFollowSet(grammar, i, followSet, firstSet);
-                    }
-                    printFollow(followSet);
+                    calculateFirstEquations(grammar, firstSet, firstEquations);
+                    calculateFirstSet(grammar, firstSet, firstEquations);
+
+                    calculateFollowEquations(grammar, followSet, firstSet, followEquations);
+                    calculateFollowSet(grammar, followSet, followEquations);
+                    
                     parseTable = intializeParseTable();
                     createParseTable(grammar,parseTable,firstSet,followSet);
                     parseTree = parser(grammar, parseTable);
@@ -173,9 +170,9 @@ int main(int argc, char * argv[])
                         printf("Parsing was successfull......!\n");
                     }
                     fclose(fp);
-                    // astNode * ast = createAST(parseTree, NULL, NULL);
-                    // fp = fopen(argv[3], "w");
-                    // printAST(ast, fp);
+                    astNode * ast = createAST(parseTree, NULL, NULL);
+                    fp = fopen(argv[3], "w");
+                    printAST(ast, fp);
                     break;
 
             case 4: //Time analysis
@@ -189,14 +186,12 @@ int main(int argc, char * argv[])
 
                     firstSet = initializeFirst();
                     followSet = initializeFollow();
-                    for(int  i=0; i<enumNonTerminal; i++)
-                    {
-                        calculateFirstSet(grammar, i, firstSet);
-                    }
-                    for(int i=0; i<enumNonTerminal; i++)
-                    {
-                        calculateFollowSet(grammar, i, followSet, firstSet);
-                    }
+                    calculateFirstEquations(grammar, firstSet, firstEquations);
+                    calculateFirstSet(grammar, firstSet, firstEquations);
+
+                    calculateFollowEquations(grammar, followSet, firstSet, followEquations);
+                    calculateFollowSet(grammar, followSet, followEquations);
+
                     parseTable = intializeParseTable();
                     createParseTable(grammar,parseTable,firstSet,followSet);
                     parseTree = parser(grammar, parseTable);
