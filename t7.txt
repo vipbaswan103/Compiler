@@ -1,6 +1,4 @@
 <<<driver program>>>
 start
-	while(true)
-	start
-	end
+	declare a:array[1..5] of integer;
 end

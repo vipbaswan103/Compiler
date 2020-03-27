@@ -1110,16 +1110,16 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "range1"))
         {
             // Rule 110
-            // <range1> ---- NUM RANGEOP ID 
+            // <range1> ---- NUM RANGEOP <index>
             if(!strcmp(parseNode->child->ele.leaf.tkn.token, "NUM"))
             {
                 astNode *NUM_node = createAST(parseNode->child, NULL, NULL);
-                astNode *ID_node = createAST(parseNode->child->sibling->sibling, NULL, NULL);
+                astNode *index_node = createAST(parseNode->child->sibling->sibling, NULL, NULL);
                 arrASTnodes[0] = NUM_node;
-                arrASTnodes[1] = ID_node;
+                arrASTnodes[1] = index_node;
                 astNode *range1 = makeASTnode("RANGEOP", arrASTnodes, 2);
                 range1->node->ele.internalNode->lineNumStart = parseNode->child->ele.leaf.tkn.lineNum;
-                range1->node->ele.internalNode->lineNumEnd = parseNode->child->sibling->sibling->ele.leaf.tkn.lineNum;
+                range1->node->ele.internalNode->lineNumEnd = range1->child->sibling->node->ele.leafNode->lineNum;
                 return range1;
             }
             // Rule 111

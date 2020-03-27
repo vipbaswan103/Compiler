@@ -180,7 +180,7 @@ symbolTable* intializeSymbolTable(char *str, int lineNumStart, int lineNumEnd)
     ST->lineNumEnd = lineNumEnd;
     hashSym *hashtb = (hashSym*)malloc(sizeof(hashSym));
     intializeHashSym(hashtb);
-    ST->hashtb = hashtb;
+    ST->hashtb = *hashtb;
     return ST;    
 }
 
@@ -195,6 +195,10 @@ void formulation(astNode* astRoot, symbolTable * current)
         formulation(astRoot->child->sibling, programST);
         formulation(astRoot->child->sibling->sibling, programST);
         formulation(astRoot->child->sibling->sibling->sibling, programST);
+
+        // Pass the Root Symbol Table Node
+        // Base case
+        symbolTableRoot = programST;
     }
     else if(!strcmp(astRoot->node->ele.internalNode->label, "DECLARE"))
     {
@@ -295,7 +299,7 @@ void formulation(astNode* astRoot, symbolTable * current)
     }
     else if(!strcmp(astRoot->node->ele.internalNode->label, "MODULE"))
     {
-        char *str = (char*)malloc(sizeof(char)*21); strcpy(str,astRoot->child->node->ele.leafNodes->lexeme);
+        char *str = (char*)malloc(sizeof(char)*21); strcpy(str,astRoot->child->node->ele.leafNode->lexeme);
         symbolTable * moduleST = initializeSymbolTable(str,astRoot->node->ele.internalNode->lineNumStart, astRoot->node->ele.internalNode->lineNumEnd);
         
             // arrASTnodes[0] = ID_node;
@@ -384,10 +388,11 @@ void formulation(astNode* astRoot, symbolTable * current)
             newNode->ele.data.mod.inputList[i] = node->ele;
             //skip two at a time cause we have [ ID -> Datatype -> ID -> DataType .... ]
             traveller = traveller->sibling->sibling;
+            i++;
         }
 
         traveller = astRoot->child->sibling->sibling->child;
-        int i = 0;
+        i = 0;
         while(traveller!=NULL)
         {
             symbolTableNode *node = (symbolTableNode*)malloc(sizeof(symbolTableNode));
@@ -436,9 +441,10 @@ void formulation(astNode* astRoot, symbolTable * current)
                 node->next = NULL;
                 sym_hash_insert(node, &(moduleST->hashtb));
             }
-            newNode->ele.data.mod.inputList[i] = node->ele;
+            newNode->ele.data.mod.outputList[i] = node->ele;
             //skip two at a time cause we have [ ID -> Datatype -> ID -> DataType .... ]
             traveller = traveller->sibling->sibling;
+            i++;
         }
 
         newNode->lineNum = astRoot->child->node->ele.leafNode->lineNum;
@@ -496,6 +502,21 @@ void formulation(astNode* astRoot, symbolTable * current)
             formulation(trav, whileST);
             trav = trav->sibling;
         }
+
+        //linking of symbols tables
+        symbolTable *tmp = current->child;
+        if(tmp == NULL)
+        {
+            current->child = whileST;
+        }
+        else
+        {
+            while(tmp->sibling != NULL)
+            {
+                tmp = tmp->sibling;
+            }
+            tmp->sibling = whileST;
+        }    
     }
     else if(!strcmp(astRoot->node->ele.internalNode->label, "FOR"))
     {
@@ -509,6 +530,22 @@ void formulation(astNode* astRoot, symbolTable * current)
             formulation(trav, forST);
             trav = trav->sibling;
         }
+
+        //linking of symbols tables
+        symbolTable *tmp = current->child;
+        if(tmp == NULL)
+        {
+            current->child = forST;
+        }
+        else
+        {
+            while(tmp->sibling != NULL)
+            {
+                tmp = tmp->sibling;
+            }
+            tmp->sibling = forST;
+        }    
+
     }
     else if(!strcmp(astRoot->node->ele.internalNode->label, "CASE"))
     {
@@ -523,6 +560,21 @@ void formulation(astNode* astRoot, symbolTable * current)
             formulation(trav, caseST);
             trav = trav->sibling;
         }
+
+        //linking of symbols tables
+        symbolTable *tmp = current->child;
+        if(tmp == NULL)
+        {
+            current->child = caseST;
+        }
+        else
+        {
+            while(tmp->sibling != NULL)
+            {
+                tmp = tmp->sibling;
+            }
+            tmp->sibling = caseST;
+        }    
     }
     else if(!strcmp(astRoot->node->ele.internalNode->label, "DEFAULT"))
     {
@@ -537,6 +589,21 @@ void formulation(astNode* astRoot, symbolTable * current)
             formulation(trav, defST);
             trav = trav->sibling;
         }
+
+        //linking of symbols tables
+        symbolTable *tmp = current->child;
+        if(tmp == NULL)
+        {
+            current->child = defST;
+        }
+        else
+        {
+            while(tmp->sibling != NULL)
+            {
+                tmp = tmp->sibling;
+            }
+            tmp->sibling = defST;
+        }    
     }
     else
     {
@@ -555,15 +622,7 @@ void formulation(astNode* astRoot, symbolTable * current)
 }
 
 /*
-    dec func1 - insert in declaration table
-    dec func2 - //
-
-    def - insert in declaration table and create for self scope
-
-    main - create a table for own scope 
-
-    def - insert in program main root (check in declaration table later)
-
+    
     Symbol table to filled for following AST Node
         DECLARE - insert into current symbol table (top of stack)
         MODULEDEC - global insert 
