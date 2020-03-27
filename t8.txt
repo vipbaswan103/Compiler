@@ -7,9 +7,9 @@ start
 	declare index:integer;
 	declare t:boolean;
 	sum:=0.0;
-	for(index in  1..15)
+	for(index in  1..15                         **ERROR 1**
 	start
-		t:= index<=n;
+		t:= index<=n;                            
 		switch(t)
 		start
 			case true: print(list[index]);
@@ -26,7 +26,7 @@ start
 end
 <<<driver program>>>
 start
-	declare A:array[1..15] of real;
+	declare A:array[1..15 of real;              **ERROR 2**
 	declare k:integer;
 	declare s:real;
 	get_value(k);
