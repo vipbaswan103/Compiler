@@ -53,7 +53,7 @@ astNode* makeLeafNode(TreeNode * leafnode)
     return newNode;
 }
 
-// simply same as astSyblingInsert function
+// takes a list and node to add at the end of the list
 astNode * concatenate(astNode * head, astNode * newNode)
 {
     if(head == NULL)
@@ -82,12 +82,10 @@ astNode * makeListNode(char * label, astNode * list)
     parent->node->ele.internalNode->label = label;
     parent->child = list;
     parent->sibling = NULL;
-
-    
-
     return parent;
 }
 
+// takes a list and assign the first elements linNum as startNum, last ones lineNum as end 
 void getLineNums(astNode * list, int * start, int * end)
 {
     astNode * tmp = list;
@@ -110,6 +108,8 @@ void getLineNums(astNode * list, int * start, int * end)
     else
         *end = tmp->node->ele.leafNode->lineNum;
 }
+
+
 astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
 {
     //Non-Terminal
@@ -124,13 +124,12 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
 
             // Rule 1
             // <program> -> <moduleDeclarations> <otherModules> <driverModule> <otherModules>            // Rule 1
-            // <program> -> <moduleDeclarations> <otherModules> <driverModule> <otherModules>
-
             astNode *programNode;
             astNode *modDecSyn = NULL;
             
             //recurcively call the function on the children
             //pass the inhereted and synthesised attributes as needed
+            // mostly synthesised attricbutes are child nodes themselves
             createAST(parseNode->child, NULL, &modDecSyn);
             arrASTnodes[0] = modDecSyn; 
             astNode * modDec = makeASTnode("MODULEDEC",arrASTnodes ,1);
@@ -240,12 +239,14 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
             ret_node = createAST(parseNode->child->sibling->sibling->sibling->sibling->sibling->sibling->sibling->sibling->sibling->sibling, NULL, NULL);
             modDef_node = createAST(parseNode->child->sibling->sibling->sibling->sibling->sibling->sibling->sibling->sibling->sibling->sibling->sibling, NULL, NULL);
 
+            // if ret is NULL make it a makeshift internal node to let it be a part of chain
             astNode * ret = ret_node;
             if(ret == NULL)
             {
                 arrASTnodes[0] = ret_node;
                 ret = makeASTnode("OUTPUT_LIST",arrASTnodes,1);
             }
+
             arrASTnodes[0] = ID_node;
             arrASTnodes[1] = inpList_node;
             arrASTnodes[2] = ret;
@@ -253,7 +254,6 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
             astNode * modNode = makeASTnode("MODULE", arrASTnodes, 4);
             modNode->node->ele.internalNode->lineNumStart = parseNode->child->ele.leaf.tkn.lineNum;
             modNode->node->ele.internalNode->lineNumEnd = modNode->child->sibling->sibling->sibling->node->ele.internalNode->lineNumEnd;
-            return modNode;
             return modNode;
         }
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "ret"))
