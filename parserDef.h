@@ -12,9 +12,6 @@
 #include "lexerDef.h"
 #include<stdio.h>
 #include<stdlib.h>
-#include<string.h>
-#include<math.h>
-#include<ctype.h>
 
 #define HASHSIZE 1000
 #define RULESIZE 1000

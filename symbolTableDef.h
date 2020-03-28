@@ -1,9 +1,19 @@
+/* 
+	GROUP 33
+	Aryan Mehra 2017A7PS0077P
+	Akshit Khanna 2017A7PS0023P
+   	Vipin Baswan 2017A7PS0429P
+   	Swadesh Vaibhav 2017A7PS0030P
+*/
+
+#ifndef SYMBOLTABLEDEF_H_
+#define SYMBOLTABLEDEF_H_
+
 #include<stdio.h>
 #include<stdlib.h>
-#include<string.h>
-#include<math.h>
-#include "ast.h"
-#include "parser.h"
+
+#include "astDef.h"
+
 #define INTIALHASHSIZE 100
 typedef enum {Identifier = 2, Array = 1, Module = 0} entryType;
 
@@ -105,3 +115,5 @@ typedef struct tableStack
     tableStackEle *top;
     tableStackEle *bottom;
 }tableStack;
+
+#endif
