@@ -6,10 +6,13 @@
    	Swadesh Vaibhav 2017A7PS0030P
 */
 
+#define INITIALHASHSIZE 100
+
 #include<string.h>
 #include<math.h>
 #include "symbolTable.h"
 
+// push into symbol table stack
 void sympush(tableStack *stack, tableStackEle *newNode)
 {
     if(stack->top == NULL)
@@ -24,6 +27,7 @@ void sympush(tableStack *stack, tableStackEle *newNode)
     stack->size ++;
 }
 
+//pop from symbol table stack
 tableStackEle * sympop(tableStack *stack)
 {
     if(stack->size != 0)
@@ -41,6 +45,7 @@ tableStackEle * sympop(tableStack *stack)
       return NULL;
 }
 
+//return the hash value of the str in the hash table 
 int sym_hash_func(hashSym *hashtb,char *str)
 {
     int i = 0 ;
@@ -93,6 +98,7 @@ symbolTableNode* sym_hash_find(char * str, hashSym * hash_tb)
     return NULL;
 }
 
+// create a new symbol table twice the size of the previous
 hashSym *rehash(hashSym *oldTable)
 {
     hashSym *newTable = (hashSym *)malloc(sizeof(hashSym));
@@ -180,6 +186,7 @@ void initializeHashSym(hashSym *hash_tb)
     return;
 }
 
+// mallocates memory to the symbol table that use the above function to make a hash table
 symbolTable* intializeSymbolTable(char *str, int lineNumStart, int lineNumEnd)
 {
     symbolTable * ST = (symbolTable*)malloc(sizeof(symbolTable));
@@ -194,11 +201,18 @@ symbolTable* intializeSymbolTable(char *str, int lineNumStart, int lineNumEnd)
     return ST;    
 }
 
+// main function to call on the AST to form the tree of symbol tables
 void formulation(astNode* astRoot, symbolTable * current)
 {
 
     if(!strcmp(astRoot->node->ele.internalNode->label, "PROGRAM"))
     {
+        
+        // Child 1 = declarations
+        // Child 2 = othermodules
+        // Child 3 = driver
+        // Child 4 = othermodules
+
         char *str = (char*)malloc(sizeof(char)*8); strcpy(str,"Program");
         symbolTable *programST = intializeSymbolTable(str, astRoot->node->ele.internalNode->lineNumStart, astRoot->node->ele.internalNode->lineNumEnd);
         formulation(astRoot->child, programST);
@@ -207,31 +221,40 @@ void formulation(astNode* astRoot, symbolTable * current)
         formulation(astRoot->child->sibling->sibling->sibling, programST);
 
         // Pass the Root Symbol Table Node
-        // Base case
+        // Sort of a base case
         symbolTableRoot = programST;
     }
     else if(!strcmp(astRoot->node->ele.internalNode->label, "DECLARE"))
     {
         //ID_LIST - Child1
-        //type - Child2
-                //Child2 can either be of array type or INTEGER/REAL/BOOLEAN
+        //datatype - Child2
+        //Child2 can either be of array type or INTEGER/REAL/BOOLEAN
                 
-        astNode *idlist = astRoot->child->child;
-        astNode *type = astRoot->child->sibling;  
+        astNode *idlist = astRoot->child->child; //inputlist's head 
+        astNode *type = astRoot->child->sibling; //datatype node
         while(idlist != NULL)
         {
-            //Its of array type
+            
             symbolTableNode *newNode = (symbolTableNode*)malloc(sizeof(symbolTableNode));
+            
+            //Its of array type (cause internal node)
             if(type->node->tag == Internal)
             {
                 newNode->ele.tag = Array;
                 newNode->ele.data.arr.lexeme = idlist->node->ele.leafNode->lexeme;
                 newNode->ele.data.arr.type = type->child->sibling->node->ele.leafNode->type;
 
+                
+                //datatype (array) has left node as range and another child as the type
+                //range further has left child as the first number and 
+                //another child (first child's sibling) as the second index
+
+                //the first index
                 newNode->ele.data.arr.lowerIndex->lexeme = type->child->child->node->ele.leafNode->lexeme;
                 newNode->ele.data.arr.lowerIndex->type = type->child->child->node->ele.leafNode->type;
                 newNode->ele.data.arr.lowerIndex->value = type->child->child->node->ele.leafNode->value;
 
+                //the second index
                 newNode->ele.data.arr.upperIndex->lexeme = type->child->child->sibling->node->ele.leafNode->lexeme;
                 newNode->ele.data.arr.upperIndex->type = type->child->child->sibling->node->ele.leafNode->type;
                 newNode->ele.data.arr.upperIndex->value = type->child->child->sibling->node->ele.leafNode->value;
@@ -246,6 +269,13 @@ void formulation(astNode* astRoot, symbolTable * current)
                     newNode->width = 1;
                 
                 newNode->next = NULL;
+
+                //deciding whether the array is dynamic or not
+                if( (!strcmp(newNode->ele.data.arr.lowerIndex->type,"ID")) || (!strcmp(newNode->ele.data.arr.upperIndex->type,"ID")) )
+                    newNode->ele.data.arr.isDynamic = 1;
+                else 
+                    newNode->ele.data.arr.isDynamic = 0;
+
                 sym_hash_insert(newNode, &(current->hashtb));
             }
             //Its an ID
@@ -254,7 +284,7 @@ void formulation(astNode* astRoot, symbolTable * current)
                 newNode->ele.tag = Identifier;
                 newNode->ele.data.id.lexeme = type->node->ele.leafNode->lexeme;
                 newNode->ele.data.id.type = type->node->ele.leafNode->type;
-                newNode->ele.data.id.type = type->node->ele.leafNode->value;
+                newNode->ele.data.id.value = type->node->ele.leafNode->value;
                 newNode->lineNum = idlist->node->ele.leafNode->lineNum;
                 
                 if(!strcmp(type->node->ele.leafNode->type,"INTEGER"))
@@ -312,10 +342,10 @@ void formulation(astNode* astRoot, symbolTable * current)
         char *str = (char*)malloc(sizeof(char)*21); strcpy(str,astRoot->child->node->ele.leafNode->lexeme);
         symbolTable * moduleST = initializeSymbolTable(str,astRoot->node->ele.internalNode->lineNumStart, astRoot->node->ele.internalNode->lineNumEnd);
         
-            // arrASTnodes[0] = ID_node;
-            // arrASTnodes[1] = inpList_node;
-            // arrASTnodes[2] = ret;
-            // arrASTnodes[3] = modDef_node;
+        // Child 1 = ID_node
+        // Child 2 = inpList_node
+        // Child 3 = ret
+        // Child 4 = modDef_node
 
         formulation(astRoot->child,moduleST);
         formulation(astRoot->child->sibling,moduleST);
