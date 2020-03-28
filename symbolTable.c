@@ -1,6 +1,5 @@
 #include "symbolTable.h"
-#include "ast.h"
-#include "parser.h"
+
 
 void sympush(tableStack *stack, tableStackEle *newNode)
 {
@@ -75,7 +74,7 @@ symbolTableNode* sym_hash_find(char * str, hashSym * hash_tb)
             lexeme = trav->ele.data.mod.lexeme;
 		//return the appropriate node
         if(strcmp(lexeme,str) == 0)
-            return &trav;
+            return trav;
 		
 		//keep searching
         trav = trav->next;
@@ -83,32 +82,6 @@ symbolTableNode* sym_hash_find(char * str, hashSym * hash_tb)
 
 	//if not present, returns NULL
     return NULL;
-}
-
-hashSym *rehash(hashSym *oldTable)
-{
-    hashSym *newTable = (hashSym *)malloc(sizeof(hashSym));
-    newTable->hashtbSize = (oldTable->hashtbSize)*2;
-    newTable->eleCount = 0;
-    newTable->arr = (linkedListSym*)malloc(sizeof(linkedListSym)*newTable->hashtbSize);
-
-    symbolTableNode * trav = NULL;
-    symbolTableNode * tmp;
-    for(int i=0; i<oldTable->hashtbSize; i++)
-    {
-        if(oldTable->arr[i].head == NULL && oldTable->arr[i].tail == NULL)
-            continue;
-        trav = oldTable->arr[i].head;
-        while(trav != NULL)
-        {
-            tmp = trav->next;
-            sym_hash_insert(trav, newTable);
-            trav = tmp;
-        }
-    }
-    free(oldTable->arr);
-    free(oldTable);
-    return newTable;    
 }
 
 //common for both hash tables of keywords and TorNT
@@ -157,6 +130,32 @@ void sym_hash_insert(symbolTableNode * newNode, hashSym * hash_tb)
     }
     return ;
 }
+hashSym *rehash(hashSym *oldTable)
+{
+    hashSym *newTable = (hashSym *)malloc(sizeof(hashSym));
+    newTable->hashtbSize = (oldTable->hashtbSize)*2;
+    newTable->eleCount = 0;
+    newTable->arr = (linkedListSym*)malloc(sizeof(linkedListSym)*newTable->hashtbSize);
+
+    symbolTableNode * trav = NULL;
+    symbolTableNode * tmp;
+    for(int i=0; i<oldTable->hashtbSize; i++)
+    {
+        if(oldTable->arr[i].head == NULL && oldTable->arr[i].tail == NULL)
+            continue;
+        trav = oldTable->arr[i].head;
+        while(trav != NULL)
+        {
+            tmp = trav->next;
+            sym_hash_insert(trav, newTable);
+            trav = tmp;
+        }
+    }
+    free(oldTable->arr);
+    free(oldTable);
+    return newTable;    
+}
+
 //simply mallocates memory to the hash table ADT
 void initializeHashSym(hashSym *hash_tb)
 {
@@ -172,7 +171,7 @@ void initializeHashSym(hashSym *hash_tb)
     return;
 }
 
-symbolTable* intializeSymbolTable(char *str, int lineNumStart, int lineNumEnd)
+symbolTable* initializeSymbolTable(char *str, int lineNumStart, int lineNumEnd)
 {
     symbolTable * ST = (symbolTable*)malloc(sizeof(symbolTable));
     ST->child = NULL;
@@ -181,7 +180,7 @@ symbolTable* intializeSymbolTable(char *str, int lineNumStart, int lineNumEnd)
     ST->lineNumStart = lineNumStart;
     ST->lineNumEnd = lineNumEnd;
     hashSym *hashtb = (hashSym*)malloc(sizeof(hashSym));
-    intializeHashSym(hashtb);
+    initializeHashSym(hashtb);
     ST->hashtb = *hashtb;
     return ST;    
 }
@@ -192,7 +191,7 @@ void formulation(astNode* astRoot, symbolTable * current)
     if(!strcmp(astRoot->node->ele.internalNode->label, "PROGRAM"))
     {
         char *str = (char*)malloc(sizeof(char)*8); strcpy(str,"Program");
-        symbolTable *programST = intializeSymbolTable(str, astRoot->node->ele.internalNode->lineNumStart, astRoot->node->ele.internalNode->lineNumEnd);
+        symbolTable *programST = initializeSymbolTable(str, astRoot->node->ele.internalNode->lineNumStart, astRoot->node->ele.internalNode->lineNumEnd);
         formulation(astRoot->child, programST);
         formulation(astRoot->child->sibling, programST);
         formulation(astRoot->child->sibling->sibling, programST);
@@ -497,7 +496,7 @@ void formulation(astNode* astRoot, symbolTable * current)
         char * str = (char *)malloc(sizeof(char)*(strlen(current->symLexeme)+10));
         memset(str, '\0', sizeof(char)*(strlen(str)));
         sprintf(str, "%s_WHILE",current->symLexeme);
-        symbolTable *whileST = intializeSymbolTable(str, astRoot->node->ele.internalNode->lineNumStart, astRoot->node->ele.internalNode->lineNumEnd);
+        symbolTable *whileST = initializeSymbolTable(str, astRoot->node->ele.internalNode->lineNumStart, astRoot->node->ele.internalNode->lineNumEnd);
         astNode *trav = astRoot->child->sibling;
         while(trav != NULL)
         {
@@ -525,7 +524,7 @@ void formulation(astNode* astRoot, symbolTable * current)
         char * str = (char *)malloc(sizeof(char)*(strlen(current->symLexeme)+10));
         memset(str, '\0', sizeof(char)*(strlen(str)));
         sprintf(str, "%s_FOR",current->symLexeme);
-        symbolTable *forST = intializeSymbolTable(str, astRoot->node->ele.internalNode->lineNumStart, astRoot->node->ele.internalNode->lineNumEnd);
+        symbolTable *forST = initializeSymbolTable(str, astRoot->node->ele.internalNode->lineNumStart, astRoot->node->ele.internalNode->lineNumEnd);
         astNode *trav = astRoot->child->sibling->sibling;
         while(trav != NULL)
         {
@@ -554,7 +553,7 @@ void formulation(astNode* astRoot, symbolTable * current)
         char * str = (char *)malloc(sizeof(char)*(strlen(current->symLexeme)+10));
         memset(str, '\0', sizeof(char)*(strlen(str)));
         sprintf(str, "%s_CASE",current->symLexeme);
-        symbolTable *caseST = intializeSymbolTable(str, astRoot->node->ele.internalNode->lineNumStart, astRoot->node->ele.internalNode->lineNumEnd);
+        symbolTable *caseST = initializeSymbolTable(str, astRoot->node->ele.internalNode->lineNumStart, astRoot->node->ele.internalNode->lineNumEnd);
         
         astNode *trav = astRoot->child->sibling;
         while(trav != NULL)
@@ -583,7 +582,7 @@ void formulation(astNode* astRoot, symbolTable * current)
         char * str = (char *)malloc(sizeof(char)*(strlen(current->symLexeme)+10));
         memset(str, '\0', sizeof(char)*(strlen(str)));
         sprintf(str, "%s_DEFAULT",current->symLexeme);
-        symbolTable *defST = intializeSymbolTable(str, astRoot->node->ele.internalNode->lineNumStart, astRoot->node->ele.internalNode->lineNumEnd);
+        symbolTable *defST = initializeSymbolTable(str, astRoot->node->ele.internalNode->lineNumStart, astRoot->node->ele.internalNode->lineNumEnd);
 
         astNode *trav = astRoot->child;
         while(trav != NULL)
@@ -636,4 +635,3 @@ void formulation(astNode* astRoot, symbolTable * current)
         FOR - create
         SWITCH - create
 */
-
