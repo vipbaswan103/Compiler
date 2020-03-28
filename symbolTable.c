@@ -6,8 +6,6 @@
    	Swadesh Vaibhav 2017A7PS0030P
 */
 
-#define INITIALHASHSIZE 100
-
 #include<string.h>
 #include<math.h>
 #include "symbolTable.h"
@@ -187,7 +185,7 @@ void initializeHashSym(hashSym *hash_tb)
 }
 
 // mallocates memory to the symbol table that use the above function to make a hash table
-symbolTable* intializeSymbolTable(char *str, int lineNumStart, int lineNumEnd)
+symbolTable* initializeSymbolTable(char *str, int lineNumStart, int lineNumEnd)
 {
     symbolTable * ST = (symbolTable*)malloc(sizeof(symbolTable));
     ST->child = NULL;
@@ -201,64 +199,58 @@ symbolTable* intializeSymbolTable(char *str, int lineNumStart, int lineNumEnd)
     return ST;    
 }
 
-// main function to call on the AST to form the tree of symbol tables
-void formulation(astNode* astRoot, symbolTable * current)
+
+void formulation(astNode *astRoot, symbolTable *current)
 {
+    if(astRoot->node->tag == Internal)
+        printf("%s\n", astRoot->node->ele.internalNode->label);
+    else
+        printf("%s\n", astRoot->node->ele.leafNode->type);
+    
+    if(astRoot->node->tag == Leaf)
+        return;
 
     if(!strcmp(astRoot->node->ele.internalNode->label, "PROGRAM"))
     {
-        
-        // Child 1 = declarations
-        // Child 2 = othermodules
-        // Child 3 = driver
-        // Child 4 = othermodules
-
         char *str = (char*)malloc(sizeof(char)*8); strcpy(str,"Program");
-        symbolTable *programST = intializeSymbolTable(str, astRoot->node->ele.internalNode->lineNumStart, astRoot->node->ele.internalNode->lineNumEnd);
+        symbolTable *programST = initializeSymbolTable(str, astRoot->node->ele.internalNode->lineNumStart, astRoot->node->ele.internalNode->lineNumEnd);
         formulation(astRoot->child, programST);
         formulation(astRoot->child->sibling, programST);
         formulation(astRoot->child->sibling->sibling, programST);
         formulation(astRoot->child->sibling->sibling->sibling, programST);
 
         // Pass the Root Symbol Table Node
-        // Sort of a base case
+        // Base case
         symbolTableRoot = programST;
     }
     else if(!strcmp(astRoot->node->ele.internalNode->label, "DECLARE"))
     {
         //ID_LIST - Child1
-        //datatype - Child2
-        //Child2 can either be of array type or INTEGER/REAL/BOOLEAN
+        //type - Child2
+                //Child2 can either be of array type or INTEGER/REAL/BOOLEAN
                 
-        astNode *idlist = astRoot->child->child; //inputlist's head 
-        astNode *type = astRoot->child->sibling; //datatype node
+        astNode *idlist = astRoot->child->child;
+        astNode *type = astRoot->child->sibling;
         while(idlist != NULL)
         {
-            
+            //Its of array type
             symbolTableNode *newNode = (symbolTableNode*)malloc(sizeof(symbolTableNode));
-            
-            //Its of array type (cause internal node)
             if(type->node->tag == Internal)
             {
                 newNode->ele.tag = Array;
                 newNode->ele.data.arr.lexeme = idlist->node->ele.leafNode->lexeme;
                 newNode->ele.data.arr.type = type->child->sibling->node->ele.leafNode->type;
 
-                
-                //datatype (array) has left node as range and another child as the type
-                //range further has left child as the first number and 
-                //another child (first child's sibling) as the second index
-
-                //the first index
+                newNode->ele.data.arr.lowerIndex = (identifier*)malloc(sizeof(identifier));
                 newNode->ele.data.arr.lowerIndex->lexeme = type->child->child->node->ele.leafNode->lexeme;
                 newNode->ele.data.arr.lowerIndex->type = type->child->child->node->ele.leafNode->type;
                 newNode->ele.data.arr.lowerIndex->value = type->child->child->node->ele.leafNode->value;
 
-                //the second index
+                newNode->ele.data.arr.upperIndex = (identifier*)malloc(sizeof(identifier));
                 newNode->ele.data.arr.upperIndex->lexeme = type->child->child->sibling->node->ele.leafNode->lexeme;
                 newNode->ele.data.arr.upperIndex->type = type->child->child->sibling->node->ele.leafNode->type;
                 newNode->ele.data.arr.upperIndex->value = type->child->child->sibling->node->ele.leafNode->value;
-
+                
                 newNode->lineNum = idlist->node->ele.leafNode->lineNum;
 
                 if(!strcmp(type->child->sibling->node->ele.leafNode->type,"INTEGER"))
@@ -268,20 +260,19 @@ void formulation(astNode* astRoot, symbolTable * current)
                 else if(!strcmp(type->child->sibling->node->ele.leafNode->type,"BOOLEAN"))
                     newNode->width = 1;
                 
-                newNode->next = NULL;
-
-                //deciding whether the array is dynamic or not
                 if( (!strcmp(newNode->ele.data.arr.lowerIndex->type,"ID")) || (!strcmp(newNode->ele.data.arr.upperIndex->type,"ID")) )
                     newNode->ele.data.arr.isDynamic = 1;
                 else 
                     newNode->ele.data.arr.isDynamic = 0;
 
+                newNode->next = NULL;
                 sym_hash_insert(newNode, &(current->hashtb));
             }
             //Its an ID
             else
             {
                 newNode->ele.tag = Identifier;
+
                 newNode->ele.data.id.lexeme = type->node->ele.leafNode->lexeme;
                 newNode->ele.data.id.type = type->node->ele.leafNode->type;
                 newNode->ele.data.id.value = type->node->ele.leafNode->value;
@@ -319,6 +310,7 @@ void formulation(astNode* astRoot, symbolTable * current)
             newNode->lineNum = trav->node->ele.leafNode->lineNum;
             newNode->next = NULL; 
             sym_hash_insert(newNode, &(moduleDecST->hashtb));
+            trav = trav->sibling;
         }
 
 
@@ -347,10 +339,10 @@ void formulation(astNode* astRoot, symbolTable * current)
         // Child 3 = ret
         // Child 4 = modDef_node
 
-        formulation(astRoot->child,moduleST);
-        formulation(astRoot->child->sibling,moduleST);
-        formulation(astRoot->child->sibling->sibling,moduleST);
-        formulation(astRoot->child->sibling->sibling->sibling,moduleST);
+        formulation(astRoot->child, moduleST);
+        formulation(astRoot->child->sibling, moduleST);
+        formulation(astRoot->child->sibling->sibling, moduleST);
+        formulation(astRoot->child->sibling->sibling->sibling, moduleST);
 
         symbolTableNode *newNode = (symbolTableNode*)malloc(sizeof(symbolTableNode));
         newNode->ele.tag = Module;
@@ -386,10 +378,12 @@ void formulation(astNode* astRoot, symbolTable * current)
                 node->ele.data.arr.lexeme = traveller->node->ele.leafNode->lexeme;
                 node->ele.data.arr.type = traveller->sibling->child->sibling->node->ele.leafNode->type;
 
+                node->ele.data.arr.lowerIndex = (identifier*)malloc(sizeof(identifier));
                 node->ele.data.arr.lowerIndex->lexeme = traveller->sibling->child->child->node->ele.leafNode->lexeme;
                 node->ele.data.arr.lowerIndex->type = traveller->sibling->child->child->node->ele.leafNode->type;
                 node->ele.data.arr.lowerIndex->value = traveller->sibling->child->child->node->ele.leafNode->value;
 
+                node->ele.data.arr.upperIndex = (identifier*)malloc(sizeof(identifier));
                 node->ele.data.arr.upperIndex->lexeme = traveller->sibling->child->child->sibling->node->ele.leafNode->lexeme;
                 node->ele.data.arr.upperIndex->type = traveller->sibling->child->child->sibling->node->ele.leafNode->type;
                 node->ele.data.arr.upperIndex->value = traveller->sibling->child->child->sibling->node->ele.leafNode->value;
@@ -402,7 +396,13 @@ void formulation(astNode* astRoot, symbolTable * current)
                     node->width = 4;
                 else if(!strcmp(traveller->sibling->child->sibling->node->ele.leafNode->type,"BOOLEAN"))
                     node->width = 1;
-                
+
+                //deciding whether the array is dynamic or not
+                if( (!strcmp(node->ele.data.arr.lowerIndex->type,"ID")) || (!strcmp(node->ele.data.arr.upperIndex->type,"ID")) )
+                    node->ele.data.arr.isDynamic = 1;
+                else 
+                    node->ele.data.arr.isDynamic = 0;
+
                 node->next = NULL;
                 sym_hash_insert(node, &(moduleST->hashtb));
             }
@@ -412,7 +412,7 @@ void formulation(astNode* astRoot, symbolTable * current)
                 node->ele.tag = Identifier;
                 node->ele.data.id.lexeme = traveller->sibling->node->ele.leafNode->lexeme;
                 node->ele.data.id.type = traveller->sibling->node->ele.leafNode->type;
-                node->ele.data.id.type = traveller->sibling->node->ele.leafNode->value;
+                node->ele.data.id.value = traveller->sibling->node->ele.leafNode->value;
                 node->lineNum = traveller->node->ele.leafNode->lineNum;
                 
                 if(!strcmp(traveller->sibling->node->ele.leafNode->type,"INTEGER"))
@@ -442,10 +442,12 @@ void formulation(astNode* astRoot, symbolTable * current)
                 node->ele.data.arr.lexeme = traveller->node->ele.leafNode->lexeme;
                 node->ele.data.arr.type = traveller->sibling->child->sibling->node->ele.leafNode->type;
 
+                node->ele.data.arr.lowerIndex = (identifier*)malloc(sizeof(identifier));
                 node->ele.data.arr.lowerIndex->lexeme = traveller->sibling->child->child->node->ele.leafNode->lexeme;
                 node->ele.data.arr.lowerIndex->type = traveller->sibling->child->child->node->ele.leafNode->type;
                 node->ele.data.arr.lowerIndex->value = traveller->sibling->child->child->node->ele.leafNode->value;
 
+                node->ele.data.arr.upperIndex = (identifier*)malloc(sizeof(identifier));
                 node->ele.data.arr.upperIndex->lexeme = traveller->sibling->child->child->sibling->node->ele.leafNode->lexeme;
                 node->ele.data.arr.upperIndex->type = traveller->sibling->child->child->sibling->node->ele.leafNode->type;
                 node->ele.data.arr.upperIndex->value = traveller->sibling->child->child->sibling->node->ele.leafNode->value;
@@ -458,7 +460,12 @@ void formulation(astNode* astRoot, symbolTable * current)
                     node->width = 4;
                 else if(!strcmp(traveller->sibling->child->sibling->node->ele.leafNode->type,"BOOLEAN"))
                     node->width = 1;
-                
+
+                if( (!strcmp(node->ele.data.arr.lowerIndex->type,"ID")) || (!strcmp(node->ele.data.arr.upperIndex->type,"ID")) )
+                    node->ele.data.arr.isDynamic = 1;
+                else 
+                    node->ele.data.arr.isDynamic = 0;
+
                 node->next = NULL;
                 sym_hash_insert(node, &(moduleST->hashtb));
             }
@@ -468,7 +475,7 @@ void formulation(astNode* astRoot, symbolTable * current)
                 node->ele.tag = Identifier;
                 node->ele.data.id.lexeme = traveller->sibling->node->ele.leafNode->lexeme;
                 node->ele.data.id.type = traveller->sibling->node->ele.leafNode->type;
-                node->ele.data.id.type = traveller->sibling->node->ele.leafNode->value;
+                node->ele.data.id.value = traveller->sibling->node->ele.leafNode->value;
                 node->lineNum = traveller->node->ele.leafNode->lineNum;
                 
                 if(!strcmp(traveller->sibling->node->ele.leafNode->type,"INTEGER"))
@@ -534,8 +541,8 @@ void formulation(astNode* astRoot, symbolTable * current)
     {
         char * str = (char *)malloc(sizeof(char)*(strlen(current->symLexeme)+10));
         memset(str, '\0', sizeof(char)*(strlen(str)));
-        sprintf(str, "%s_WHILE",current->symLexeme);
-        symbolTable *whileST = intializeSymbolTable(str, astRoot->node->ele.internalNode->lineNumStart, astRoot->node->ele.internalNode->lineNumEnd);
+        sprintf(str, "%s_While",current->symLexeme);
+        symbolTable *whileST = initializeSymbolTable(str, astRoot->node->ele.internalNode->lineNumStart, astRoot->node->ele.internalNode->lineNumEnd);
         astNode *trav = astRoot->child->sibling;
         while(trav != NULL)
         {
@@ -562,8 +569,8 @@ void formulation(astNode* astRoot, symbolTable * current)
     {
         char * str = (char *)malloc(sizeof(char)*(strlen(current->symLexeme)+10));
         memset(str, '\0', sizeof(char)*(strlen(str)));
-        sprintf(str, "%s_FOR",current->symLexeme);
-        symbolTable *forST = intializeSymbolTable(str, astRoot->node->ele.internalNode->lineNumStart, astRoot->node->ele.internalNode->lineNumEnd);
+        sprintf(str, "%s_For",current->symLexeme);
+        symbolTable *forST = initializeSymbolTable(str, astRoot->node->ele.internalNode->lineNumStart, astRoot->node->ele.internalNode->lineNumEnd);
         astNode *trav = astRoot->child->sibling->sibling;
         while(trav != NULL)
         {
@@ -591,8 +598,8 @@ void formulation(astNode* astRoot, symbolTable * current)
     {
         char * str = (char *)malloc(sizeof(char)*(strlen(current->symLexeme)+10));
         memset(str, '\0', sizeof(char)*(strlen(str)));
-        sprintf(str, "%s_CASE",current->symLexeme);
-        symbolTable *caseST = intializeSymbolTable(str, astRoot->node->ele.internalNode->lineNumStart, astRoot->node->ele.internalNode->lineNumEnd);
+        sprintf(str, "%s_Case",current->symLexeme);
+        symbolTable *caseST = initializeSymbolTable(str, astRoot->node->ele.internalNode->lineNumStart, astRoot->node->ele.internalNode->lineNumEnd);
         
         astNode *trav = astRoot->child->sibling;
         while(trav != NULL)
@@ -620,8 +627,8 @@ void formulation(astNode* astRoot, symbolTable * current)
     {
         char * str = (char *)malloc(sizeof(char)*(strlen(current->symLexeme)+10));
         memset(str, '\0', sizeof(char)*(strlen(str)));
-        sprintf(str, "%s_DEFAULT",current->symLexeme);
-        symbolTable *defST = intializeSymbolTable(str, astRoot->node->ele.internalNode->lineNumStart, astRoot->node->ele.internalNode->lineNumEnd);
+        sprintf(str, "%s_Default",current->symLexeme);
+        symbolTable *defST = initializeSymbolTable(str, astRoot->node->ele.internalNode->lineNumStart, astRoot->node->ele.internalNode->lineNumEnd);
 
         astNode *trav = astRoot->child;
         while(trav != NULL)
@@ -654,11 +661,6 @@ void formulation(astNode* astRoot, symbolTable * current)
             temp = temp->sibling;                  
         }
     }
-    
-    //Traverse all children
-
-    //Add cases for specific AST nodes here
-    
 }
 
 /*
@@ -675,3 +677,79 @@ void formulation(astNode* astRoot, symbolTable * current)
         SWITCH - create
 */
 
+void printSymbolTable(symbolTable *root)
+{
+    if(root == NULL)
+        return;
+
+    printSymTableNode(root);
+    
+    symbolTable * tmp = root->child;
+    while(tmp != NULL)
+    {
+        printSymbolTable(tmp);
+        tmp = tmp->sibling;
+    }
+}
+
+void printSymTableNode(symbolTable *symT)
+{
+    if(symT == NULL)
+        return;
+
+    printf("------------------------------------------------------------------------------------------------\n");
+    printf("Name of Table: %s \n", symT->symLexeme);
+    printf("Start line of scope: %d \n",symT->lineNumStart);
+    printf("End line of scope: %d \n",symT->lineNumEnd);
+    printHashTable(symT->hashtb);
+    printf("------------------------------------------------------------------------------------------------\n\n");
+}
+
+void printHashTable(hashSym hashtb)
+{
+    int index = 0;
+    printf(" %-10s | %-10s | %-10s | %-10s | %-10s | %-10s | %-10s\n", "Scope", "LineNumber","Offset", "Width", "Lexeme", "ItemType", "Type");
+    while(index<=hashtb.hashtbSize)
+    {
+        linkedListSym* trav = &(hashtb.arr[index]);
+        symbolTableNode *temp = trav->head;
+        while(temp!=NULL)
+        {
+            printf(" %-10d | %-10d | %-10d | %-10d |", temp->scope, temp->lineNum, temp->offset, temp->width);
+            
+            if(temp->ele.tag==Identifier)
+            {
+                printf(" %-10s |",temp->ele.data.id.lexeme);
+                printf(" %-10s |","Identifier");
+                printf(" %-10s |", temp->ele.data.id.type);
+                if(!strcmp(temp->ele.data.id.type,"NUM"))
+                {
+                    printf(" %-10d ", *((int*)(temp->ele.data.id.value)));
+                }
+                else if(!strcmp(temp->ele.data.id.type,"RNUM"))
+                {
+                    printf(" %-10f ", *((double*)(temp->ele.data.id.value)));
+                }
+                else
+                {
+                    printf("%-10s ", "----");
+                }
+            }
+            else if(temp->ele.tag==Array)
+            {
+                printf("%-10s |", temp->ele.data.arr.lexeme);
+                printf(" %-10s |","Array");
+                printf("%-10s ", temp->ele.data.arr.type);
+            }
+            else if(temp->ele.tag==Module)
+            {
+                printf("%-10s |", temp->ele.data.mod.lexeme);
+                printf(" %-10s |","Module");
+                printf("%-10s ", "----");
+            }
+            printf("\n");
+            temp = temp->next;
+        }
+        index++;
+    }
+}

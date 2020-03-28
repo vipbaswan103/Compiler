@@ -17,6 +17,7 @@
 #define INTIALHASHSIZE 100
 typedef enum {Identifier = 2, Array = 1, Module = 0} entryType;
 
+//primitive data type 1
 typedef struct identifier
 {
     char *type;
@@ -24,6 +25,7 @@ typedef struct identifier
     void *value;
 }identifier;
 
+//primitive data type 2
 typedef struct array
 {
     char *type;
@@ -33,13 +35,10 @@ typedef struct array
     identifier * upperIndex;
 }array;
 
-// typedef union id_arr
-// {
-//     identifier id;
-//     array arr;
-// }id_arr;
-
+// declaration for future structure
 struct elementSym;
+
+// primitive data type 3
 typedef struct module
 {
     char *lexeme;
@@ -49,6 +48,7 @@ typedef struct module
     struct elementSym * outputList;
 }module;
 
+//union for the primitive data tyoes
 typedef union variable 
 {
     identifier id;
@@ -56,18 +56,14 @@ typedef union variable
     module mod;
 }variable;
 
+// wrapper for the above union
 typedef struct elementSym
 {
-    // union
-    // {
-    //     identifier id;
-    //     array arr;
-    //     module mod;
-    // }data;
     variable data;
     entryType tag;
 }elementSym;
 
+// symbol table's node with elements and theor metadata
 typedef struct symbolTableNode
 {
     elementSym ele;
@@ -78,6 +74,7 @@ typedef struct symbolTableNode
     struct symbolTableNode * next;
 }symbolTableNode;
 
+// linked list ADT of the above elements
 typedef struct linkedListSym
 {
     symbolTableNode *head;
@@ -85,6 +82,8 @@ typedef struct linkedListSym
     int size;
 }linkedListSym;
 
+// hash table of the symbols
+// contains arrays of linked lists indexed by the hash
 typedef struct hashSym
 {
     int hashtbSize;
@@ -92,6 +91,7 @@ typedef struct hashSym
     linkedListSym *arr;
 }hashSym;
 
+//symbol table wrapper to for the symbol table tree
 typedef struct symbolTable{
     char *symLexeme;
     int lineNumStart;
@@ -101,14 +101,17 @@ typedef struct symbolTable{
     struct symbolTable *sibling;
 }symbolTable;
 
+// root of the symbol table tree
 symbolTable *symbolTableRoot;
 
+// node of stack of the symbol table(s)
 typedef struct tableStackEle
 {
     symbolTable *ele;
     struct tableStackEle *next;
 }tableStackEle;
 
+// stack of the symbol table(s)
 typedef struct tableStack
 {
     int size;
