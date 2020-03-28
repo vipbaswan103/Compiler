@@ -1,6 +1,8 @@
-#include "symbolTableDef.h"
+#include "symbolTable.h"
 #include "ast.h"
-void push(tableStack *stack, tableStackEle *newNode)
+#include "parser.h"
+
+void sympush(tableStack *stack, tableStackEle *newNode)
 {
     if(stack->top == NULL)
     {
@@ -14,7 +16,7 @@ void push(tableStack *stack, tableStackEle *newNode)
     stack->size ++;
 }
 
-tableStackEle *pop(tableStack *stack)
+tableStackEle * sympop(tableStack *stack)
 {
     if(stack->size != 0)
     {

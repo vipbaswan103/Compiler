@@ -6,10 +6,10 @@
 #define INTIALHASHSIZE 100
 typedef enum {Identifier = 2, Array = 1, Module = 0} entryType;
 
+// only declaration of struct
+struct elementSym;
 
-symbolTable *symbolTableRoot;
-
-
+// primitive data type 1
 typedef struct identifier
 {
     char *type;
@@ -17,6 +17,7 @@ typedef struct identifier
     int value;
 }identifier;
 
+//primitive data type 2
 typedef struct array
 {
     char *type;
@@ -26,19 +27,7 @@ typedef struct array
     identifier * upperIndex;
 }array;
 
-// typedef union id_arr
-// {
-//     identifier id;
-//     array arr;
-// }id_arr;
-
-typedef union variable 
-{
-    identifier id;
-    array arr;
-    module mod;
-}variable;
-
+// primitive data type 3
 typedef struct module
 {
     char *lexeme;
@@ -48,18 +37,22 @@ typedef struct module
     elementSym * outputList;
 }module;
 
+// union of all data types
+typedef union variable 
+{
+    identifier id;
+    array arr;
+    module mod;
+}variable;
+
+// wrapper for the union above
 typedef struct elementSym
 {
-    // union
-    // {
-    //     identifier id;
-    //     array arr;
-    //     module mod;
-    // }data;
     variable data;
     entryType tag;
 }elementSym;
 
+//Node of the symbol table with the element and meta data
 typedef struct symbolTableNode
 {
     elementSym ele;
@@ -70,6 +63,7 @@ typedef struct symbolTableNode
     struct symbolTableNode * next;
 }symbolTableNode;
 
+// 
 typedef struct linkedListSym
 {
     symbolTableNode *head;
@@ -105,3 +99,5 @@ typedef struct tableStack
     tableStackEle *top;
     tableStackEle *bottom;
 }tableStack;
+
+symbolTable *symbolTableRoot;
