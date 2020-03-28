@@ -2,22 +2,18 @@
 #include<stdlib.h>
 #include<string.h>
 #include<math.h>
-
+#include "ast.h"
+#include "parser.h"
 #define INTIALHASHSIZE 100
 typedef enum {Identifier = 2, Array = 1, Module = 0} entryType;
 
-// only declaration of struct
-struct elementSym;
-
-// primitive data type 1
 typedef struct identifier
 {
     char *type;
     char *lexeme;
-    int value;
+    void *value;
 }identifier;
 
-//primitive data type 2
 typedef struct array
 {
     char *type;
@@ -27,17 +23,22 @@ typedef struct array
     identifier * upperIndex;
 }array;
 
-// primitive data type 3
+// typedef union id_arr
+// {
+//     identifier id;
+//     array arr;
+// }id_arr;
+
+struct elementSym;
 typedef struct module
 {
     char *lexeme;
     int inputcount;
     int outputcount;
-    elementSym * inputList;
-    elementSym * outputList;
+    struct elementSym * inputList;
+    struct elementSym * outputList;
 }module;
 
-// union of all data types
 typedef union variable 
 {
     identifier id;
@@ -45,14 +46,18 @@ typedef union variable
     module mod;
 }variable;
 
-// wrapper for the union above
 typedef struct elementSym
 {
+    // union
+    // {
+    //     identifier id;
+    //     array arr;
+    //     module mod;
+    // }data;
     variable data;
     entryType tag;
 }elementSym;
 
-//Node of the symbol table with the element and meta data
 typedef struct symbolTableNode
 {
     elementSym ele;
@@ -63,7 +68,6 @@ typedef struct symbolTableNode
     struct symbolTableNode * next;
 }symbolTableNode;
 
-// 
 typedef struct linkedListSym
 {
     symbolTableNode *head;
@@ -87,6 +91,8 @@ typedef struct symbolTable{
     struct symbolTable *sibling;
 }symbolTable;
 
+symbolTable *symbolTableRoot;
+
 typedef struct tableStackEle
 {
     symbolTable *ele;
@@ -99,5 +105,3 @@ typedef struct tableStack
     tableStackEle *top;
     tableStackEle *bottom;
 }tableStack;
-
-symbolTable *symbolTableRoot;
