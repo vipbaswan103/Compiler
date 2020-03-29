@@ -273,9 +273,9 @@ void formulation(astNode *astRoot, symbolTable *current)
             {
                 newNode->ele.tag = Identifier;
 
-                newNode->ele.data.id.lexeme = type->node->ele.leafNode->lexeme;
+                newNode->ele.data.id.lexeme = idlist->node->ele.leafNode->lexeme;
                 newNode->ele.data.id.type = type->node->ele.leafNode->type;
-                newNode->ele.data.id.value = type->node->ele.leafNode->value;
+                newNode->ele.data.id.value = idlist->node->ele.leafNode->value;
                 newNode->lineNum = idlist->node->ele.leafNode->lineNum;
                 
                 if(!strcmp(type->node->ele.leafNode->type,"INTEGER"))
@@ -410,9 +410,9 @@ void formulation(astNode *astRoot, symbolTable *current)
             else
             {
                 node->ele.tag = Identifier;
-                node->ele.data.id.lexeme = traveller->sibling->node->ele.leafNode->lexeme;
+                node->ele.data.id.lexeme = traveller->node->ele.leafNode->lexeme;
                 node->ele.data.id.type = traveller->sibling->node->ele.leafNode->type;
-                node->ele.data.id.value = traveller->sibling->node->ele.leafNode->value;
+                node->ele.data.id.value = traveller->node->ele.leafNode->value;
                 node->lineNum = traveller->node->ele.leafNode->lineNum;
                 
                 if(!strcmp(traveller->sibling->node->ele.leafNode->type,"INTEGER"))
@@ -473,9 +473,9 @@ void formulation(astNode *astRoot, symbolTable *current)
             else
             {
                 node->ele.tag = Identifier;
-                node->ele.data.id.lexeme = traveller->sibling->node->ele.leafNode->lexeme;
+                node->ele.data.id.lexeme = traveller->node->ele.leafNode->lexeme;
                 node->ele.data.id.type = traveller->sibling->node->ele.leafNode->type;
-                node->ele.data.id.value = traveller->sibling->node->ele.leafNode->value;
+                node->ele.data.id.value = traveller->node->ele.leafNode->value;
                 node->lineNum = traveller->node->ele.leafNode->lineNum;
                 
                 if(!strcmp(traveller->sibling->node->ele.leafNode->type,"INTEGER"))
@@ -682,8 +682,9 @@ void printSymbolTable(symbolTable *root)
     if(root == NULL)
         return;
 
+    printf("***********************************************************************************************************************************\n");
     printSymTableNode(root);
-    
+    printf("***********************************************************************************************************************************\n\n\n");
     symbolTable * tmp = root->child;
     while(tmp != NULL)
     {
@@ -697,18 +698,17 @@ void printSymTableNode(symbolTable *symT)
     if(symT == NULL)
         return;
 
-    printf("------------------------------------------------------------------------------------------------\n");
     printf("Name of Table: %s \n", symT->symLexeme);
     printf("Start line of scope: %d \n",symT->lineNumStart);
     printf("End line of scope: %d \n",symT->lineNumEnd);
     printHashTable(symT->hashtb);
-    printf("------------------------------------------------------------------------------------------------\n\n");
 }
 
 void printHashTable(hashSym hashtb)
 {
     int index = 0;
     printf(" %-10s | %-10s | %-10s | %-10s | %-10s | %-10s | %-10s\n", "Scope", "LineNumber","Offset", "Width", "Lexeme", "ItemType", "Type");
+    printf("-----------------------------------------------------------------------------------------------------------------------------------\n");
     while(index<=hashtb.hashtbSize)
     {
         linkedListSym* trav = &(hashtb.arr[index]);
