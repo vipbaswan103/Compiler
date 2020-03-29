@@ -16,6 +16,7 @@
 
 #define INTIALHASHSIZE 100
 typedef enum {Identifier = 2, Array = 1, Module = 0} entryType;
+typedef enum {Declaration = 2, Type = 1, Others = 0} errorType;
 
 //primitive data type 1
 typedef struct identifier
@@ -63,7 +64,7 @@ typedef struct elementSym
     entryType tag;
 }elementSym;
 
-// symbol table's node with elements and theor metadata
+// symbol table's node with elements and their metadata
 typedef struct symbolTableNode
 {
     elementSym ele;
@@ -118,5 +119,19 @@ typedef struct tableStack
     tableStackEle *top;
     tableStackEle *bottom;
 }tableStack;
+
+typedef struct semanticErrorNode
+{
+    char * errorMessage;
+    struct semanticErrorNode *next;
+}semanticErrorNode;
+
+typedef struct semanticError
+{
+    int numErrors;
+    semanticErrorNode* head;
+}semanticError;
+
+semanticError* semErrorList;
 
 #endif
