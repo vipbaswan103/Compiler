@@ -663,20 +663,6 @@ void formulation(astNode *astRoot, symbolTable *current)
     }
 }
 
-/*
-    
-    Symbol table to filled for following AST Node
-        DECLARE - insert into current symbol table (top of stack)
-        MODULEDEC - global insert 
-        MODULE - 
-        DRIVER - 
-        MODULEDEF - 
-        PROGRAM - create
-        WHILE - create
-        FOR - create
-        SWITCH - create
-*/
-
 void printSymbolTable(symbolTable *root)
 {
     if(root == NULL)

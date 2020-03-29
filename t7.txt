@@ -1,3 +1,11 @@
+<<module arraySum>>
+takes input[x:real, n:integer];
+returns  [sum:real];
+start
+	declare index:integer;
+	declare t:boolean;
+end
+
 <<<driver program>>>
 start
 	declare a:array[1..5] of integer;

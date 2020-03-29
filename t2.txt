@@ -4,9 +4,10 @@ start
 	
 end
 <<module empty>>
-takes input[a:boolean];
+takes input[a:boolean, x:real];
 start
-
+      declare a,b,c:integer;
+      declare x:boolean;
 end
 
 ** print the following message on the console

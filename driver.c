@@ -10,6 +10,7 @@
 #include "parser.h"
 #include "lexer.h"
 #include "ast.h"
+#include "symbolTable.h"
 #include <time.h>
 
 void seeTokenization()
@@ -173,6 +174,9 @@ int main(int argc, char * argv[])
                     astNode * ast = createAST(parseTree, NULL, NULL);
                     fp = fopen(argv[3], "w");
                     printAST(ast, fp);
+                    symbolTable *table = NULL;
+                    formulation(ast, table);
+                    printSymbolTable(symbolTableRoot);
                     break;
 
             case 4: //Time analysis
