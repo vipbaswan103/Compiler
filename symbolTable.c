@@ -36,7 +36,7 @@ tableStackEle * sympop(tableStack *stack)
 
         if(stack->size==0)
             stack->bottom = NULL;
-
+            
         return temp;
     }
     else

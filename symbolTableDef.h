@@ -24,6 +24,8 @@ typedef struct identifier
     char *type;
     char *lexeme;
     void *value;
+    int isAssigned;
+    int isIndex;
 }identifier;
 
 //primitive data type 2
@@ -68,6 +70,7 @@ typedef struct elementSym
 typedef struct symbolTableNode
 {
     elementSym ele;
+
     int scope;
     int lineNum;
     int offset;
@@ -133,5 +136,4 @@ typedef struct semanticError
 }semanticError;
 
 semanticError* semErrorList;
-
 #endif
