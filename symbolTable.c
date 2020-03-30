@@ -66,7 +66,7 @@ int sym_hash_func(hashSym *hashtb,char *str)
 }
 
 
-symbolTableNode* sym_hash_find(char * str, hashSym * hash_tb)
+symbolTableNode* sym_hash_find(char * str, hashSym * hash_tb, int replace, symbolTableNode *key)
 {
     int hash = sym_hash_func(hash_tb, str);
     
@@ -86,8 +86,13 @@ symbolTableNode* sym_hash_find(char * str, hashSym * hash_tb)
             lexeme = trav->ele.data.mod.lexeme;
 		//return the appropriate node
         if(strcmp(lexeme,str) == 0)
-            return trav;
-		
+        {
+            symbolTableNode *tmp = (symbolTableNode*)malloc(sizeof(symbolTableNode));
+            *tmp = *trav;
+            if(replace == 1)
+                *trav = *key;
+            return tmp;
+        }
 		//keep searching
         trav = trav->next;
     }
@@ -136,7 +141,7 @@ symbolTableNode* sym_hash_insert(symbolTableNode * newNode, hashSym * hash_tb)
         str = newNode->ele.data.mod.lexeme;
     
 	//find if it's already there in the hash table
-    symbolTableNode *find = sym_hash_find(str, hash_tb);
+    symbolTableNode *find = sym_hash_find(str, hash_tb, 1, newNode);
     if(find != NULL)
     {
         //return what you found, there is something fishy
@@ -322,91 +327,9 @@ void formulation(astNode *astRoot, symbolTable *current)
                     
                 newNode->next = NULL;
             }
-            
-            //check if the scope is moduledef_*
-            char * moduleName = NULL;
-            int isModule = gimme_module(current->symLexeme, moduleName);
-
-            int isError = 0, isModError=0;
-            symbolTableNode *ret = NULL;
-            if(isModule == 1)
+            symbolTableNode *ret = sym_hash_insert(newNode, &(current->hashtb));
+            if(ret != NULL) //redeclaration of an ID within the same scope
             {
-                // printf("\n\n\n ******************\n\n");
-                // if(symbolTableRoot != NULL)
-                // {
-                //     printf("PRINTING\n");
-                //     printSymbolTable(symbolTableRoot);
-                // }
-                // printf("\n\n\n ******************\n\n");
-
-                ret = sym_hash_find(moduleName, &(symbolTableRoot->hashtb));
-                
-                
-
-                if(ret != NULL)
-                {
-                    
-
-                    int size = ret->ele.data.mod.outputcount;
-                    char *lexeme = NULL;
-                    for(int i=0; i<size; i++)
-                    {
-
-                        if(ret->ele.data.mod.outputList[i].tag == Identifier)
-                        {
-                            if(!strcmp(ret->ele.data.mod.outputList[i].data.id.lexeme, moduleName))
-                            {
-                                isModError = 1;
-                                lexeme = ret->ele.data.mod.outputList[i].data.id.lexeme;
-                            }
-                        }
-                        else if(ret->ele.data.mod.outputList[i].tag == Array)
-                        {
-                            if(!strcmp(ret->ele.data.mod.outputList[i].data.arr.lexeme, moduleName))
-                            {
-                                isModError = 1;
-                                lexeme = ret->ele.data.mod.outputList[i].data.arr.lexeme;
-                            }
-                        }
-                        if(isModError == 1)
-                        {
-                            
-                            
-
-                            char *err = (char *)malloc(sizeof(char)*250);
-                            sprintf(err, "Line %d: Redeclaration of %s at Line number %d. Already defined in the output list of your scope.", idlist->node->ele.leafNode->lineNum, lexeme, idlist->node->ele.leafNode->lineNum);
-                            semanticErrorNode *errNode = (semanticErrorNode *)malloc(sizeof(semanticErrorNode));
-                            errNode->errorMessage = err;
-                            errNode->next = NULL;
-                            insertSemError(errNode);
-                            break;
-                        }
-                    }
-                    
-                    //check if variable is already defined (as a variable) in the current scope
-                    if(isError == 0 && isModError == 0)
-                    {
-                        ret = sym_hash_insert(newNode, &(current->hashtb));
-                        if(ret != NULL)
-                            isError = 1;
-                    }
-                }
-                else
-                {
-                    ret = sym_hash_insert(newNode, &(current->hashtb));
-                    if(ret != NULL)
-                        isError = 1;
-                }
-            }
-            if(isModule == 0)
-            {
-                ret = sym_hash_insert(newNode, &(current->hashtb));
-                if(ret != NULL)
-                    isError = 1;
-            }
-            if(isError == 1)
-            {
-                
                 char *err = (char *)malloc(sizeof(char)*250);
                 char *whatType = (char *)malloc(sizeof(char)*10);
                 char *lexeme = NULL, *type = NULL;
@@ -437,6 +360,47 @@ void formulation(astNode *astRoot, symbolTable *current)
                 errNode->errorMessage = err;
                 errNode->next = NULL;
                 insertSemError(errNode);
+                free(ret);
+            }
+            else    //No redeclaration error, check for clash with the output_list
+            {
+                int isModError = 0;
+                ret = sym_hash_find(current->symLexeme, &(symbolTableRoot->hashtb), 0, NULL);
+                if(ret != NULL)
+                {
+                    int size = ret->ele.data.mod.outputcount;
+                    char *lexeme = NULL;
+                    for(int i=0; i<size; i++)
+                    {
+                        if(ret->ele.data.mod.outputList[i].tag == Identifier)
+                        {
+                            if(!strcmp(ret->ele.data.mod.outputList[i].data.id.lexeme, idlist->node->ele.leafNode->lexeme))
+                            {
+                                isModError = 1;
+                                lexeme = ret->ele.data.mod.outputList[i].data.id.lexeme;
+                            }
+                        }
+                        else if(ret->ele.data.mod.outputList[i].tag == Array)
+                        {
+                            if(!strcmp(ret->ele.data.mod.outputList[i].data.arr.lexeme, idlist->node->ele.leafNode->lexeme))
+                            {
+                                isModError = 1;
+                                lexeme = ret->ele.data.mod.outputList[i].data.arr.lexeme;
+                            }
+                        }
+                        if(isModError == 1)
+                        {
+                            char *err = (char *)malloc(sizeof(char)*250);
+                            sprintf(err, "Line %d: Redeclaration of %s at Line number %d. Already defined in the output list of module %s.", idlist->node->ele.leafNode->lineNum, lexeme, idlist->node->ele.leafNode->lineNum, current->symLexeme);
+                            semanticErrorNode *errNode = (semanticErrorNode *)malloc(sizeof(semanticErrorNode));
+                            errNode->errorMessage = err;
+                            errNode->next = NULL;
+                            insertSemError(errNode);
+                            break;
+                        }
+                    }
+                }
+                free(ret);
             }
             idlist = idlist->sibling;
         }
@@ -495,6 +459,7 @@ void formulation(astNode *astRoot, symbolTable *current)
                 errNode->errorMessage = err;
                 errNode->next = NULL;
                 insertSemError(errNode);
+                free(ret);
             }
             
             trav = trav->sibling;
@@ -640,6 +605,7 @@ void formulation(astNode *astRoot, symbolTable *current)
                 errNode->errorMessage = err;
                 errNode->next = NULL;
                 insertSemError(errNode);
+                free(ret);
             }
             newNode->ele.data.mod.inputList[i] = node->ele;
             //skip two at a time cause we have [ ID -> Datatype -> ID -> DataType .... ]
@@ -736,6 +702,7 @@ void formulation(astNode *astRoot, symbolTable *current)
                 errNode->errorMessage = err;
                 errNode->next = NULL;
                 insertSemError(errNode);
+                free(ret);
             } 
             newNode->ele.data.mod.outputList[i] = node->ele;
             //skip two at a time cause we have [ ID -> Datatype -> ID -> DataType .... ]
@@ -778,6 +745,7 @@ void formulation(astNode *astRoot, symbolTable *current)
             errNode->errorMessage = err;
             errNode->next = NULL;
             insertSemError(errNode);
+            free(ret);
         }
         
         formulation(astRoot->child, moduleST);
@@ -806,7 +774,7 @@ void formulation(astNode *astRoot, symbolTable *current)
     else if(!strcmp(astRoot->node->ele.internalNode->label, "MODULEDEF"))
     {
         char *str = (char *)malloc(sizeof(char)*25); 
-        sprintf(str, "moduledef_%s",current->symLexeme);
+        sprintf(str, "%s",current->symLexeme);
         
         symbolTable* moduledefST = initializeSymbolTable(str,astRoot->node->ele.internalNode->lineNumStart, astRoot->node->ele.internalNode->lineNumEnd);
 
@@ -861,9 +829,9 @@ void formulation(astNode *astRoot, symbolTable *current)
     }
     else if(!strcmp(astRoot->node->ele.internalNode->label, "WHILE"))
     {
-        char * str = (char *)malloc(sizeof(char)*(strlen(current->symLexeme)+10));
+        char * str = (char *)malloc(sizeof(char)*(strlen(current->symLexeme)));
         memset(str, '\0', sizeof(char)*(strlen(str)));
-        sprintf(str, "%s_While",current->symLexeme);
+        sprintf(str, "%s",current->symLexeme);
         symbolTable *whileST = initializeSymbolTable(str, astRoot->node->ele.internalNode->lineNumStart, astRoot->node->ele.internalNode->lineNumEnd);
         astNode *trav = astRoot->child->sibling;
         while(trav != NULL)
@@ -889,9 +857,9 @@ void formulation(astNode *astRoot, symbolTable *current)
     }
     else if(!strcmp(astRoot->node->ele.internalNode->label, "FOR"))
     {
-        char * str = (char *)malloc(sizeof(char)*(strlen(current->symLexeme)+10));
+        char * str = (char *)malloc(sizeof(char)*(strlen(current->symLexeme)));
         memset(str, '\0', sizeof(char)*(strlen(str)));
-        sprintf(str, "%s_For",current->symLexeme);
+        sprintf(str, "%s",current->symLexeme);
         symbolTable *forST = initializeSymbolTable(str, astRoot->node->ele.internalNode->lineNumStart, astRoot->node->ele.internalNode->lineNumEnd);
         
 
@@ -925,9 +893,9 @@ void formulation(astNode *astRoot, symbolTable *current)
         //caseStmts
                     //ID, stmts
         //default
-        char * str = (char *)malloc(sizeof(char)*(strlen(current->symLexeme)+10));
+        char * str = (char *)malloc(sizeof(char)*(strlen(current->symLexeme)));
         memset(str, '\0', sizeof(char)*(strlen(str)));
-        sprintf(str, "%s_Switch",current->symLexeme);
+        sprintf(str, "%s",current->symLexeme);
         symbolTable *switchST = initializeSymbolTable(str, astRoot->node->ele.internalNode->lineNumStart, astRoot->node->ele.internalNode->lineNumEnd);
         
         

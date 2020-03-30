@@ -2,18 +2,22 @@ declare module readArr;
 **the following function computes the sum of first n elements of the array**
 <<module arraySum>>
 takes input[list:array[1..15] of    real, n:integer];
-returns  [sum:real];
+returns [sum:real];
 start
 	declare index:integer;
 	declare t:boolean;
+	declare sum:integer;
+	declare t:real;
 	sum:=0.0;
 	for(index in  1..15)
 	start
+		declare sum:integer;
 		t:= index<=n;
 		switch(t)
 		start
 			case true: print(list[index]);
 				   sum:=sum+list[index];
+				   declare y:real;
 				   break;
 			case false: print(sum);
 				    print(index);
@@ -50,6 +54,7 @@ start
 	start
 		get_value(tempvar);
 		arr1[i]:=tempvar;
+		declare x:real;
 		i:=i+1;
 		** the semantics of while needs an increment and will be taken care of at the second phase**
 	end

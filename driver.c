@@ -174,9 +174,11 @@ int main(int argc, char * argv[])
                     astNode * ast = createAST(parseTree, NULL, NULL);
                     fp = fopen(argv[3], "w");
                     printAST(ast, fp);
+                    initializeErrorList();
                     symbolTable *table = NULL;
                     formulation(ast, table);
                     printSymbolTable(symbolTableRoot);
+                    printSemanticErrors();
                     break;
 
             case 4: //Time analysis

@@ -8,6 +8,7 @@ takes input[a:boolean, x:real];
 start
       declare a,b,c:integer;
       declare x:boolean;
+      declare x:real;
 end
 
 ** print the following message on the console
