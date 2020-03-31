@@ -12,7 +12,6 @@ astNode* makeASTnode(char * label, astNode ** childs, int size)
     parent->node->ele.internalNode->label = label;
     parent->sibling = NULL;
     parent->child = childs[0];
-    
     // depending on how many children you are passing
     // keep that as the children of the node
     // afterall, makenode combines all the nodes
