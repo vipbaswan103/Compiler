@@ -276,8 +276,10 @@ void formulation(astNode *astRoot, symbolTable *current)
         {
             //Its of array type
             symbolTableNode *newNode = (symbolTableNode*)malloc(sizeof(symbolTableNode));
+            newNode->aux = 0;
             if(type->node->tag == Internal)
             {
+                
                 newNode->ele.tag = Array;
                 newNode->ele.data.arr.lexeme = idlist->node->ele.leafNode->lexeme;
                 newNode->ele.data.arr.type = type->child->sibling->node->ele.leafNode->type;
@@ -415,6 +417,7 @@ void formulation(astNode *astRoot, symbolTable *current)
         while(trav != NULL)
         {
             symbolTableNode *newNode = (symbolTableNode*)malloc(sizeof(symbolTableNode));
+            newNode->aux = 0;
             newNode->ele.tag = Module;
             newNode->ele.data.mod.lexeme = trav->node->ele.leafNode->lexeme;
             newNode->ele.data.mod.inputcount = 0;
@@ -492,6 +495,7 @@ void formulation(astNode *astRoot, symbolTable *current)
         // Child 4 = modDef_node
 
         symbolTableNode *newNode = (symbolTableNode*)malloc(sizeof(symbolTableNode));
+        newNode->aux = 0;
         newNode->ele.tag = Module;
         newNode->ele.data.mod.lexeme = astRoot->child->node->ele.leafNode->lexeme;
         
@@ -522,6 +526,7 @@ void formulation(astNode *astRoot, symbolTable *current)
         while(traveller!=NULL)
         {
             symbolTableNode *node = (symbolTableNode*)malloc(sizeof(symbolTableNode));
+            node->aux = 0;
             if(traveller->sibling->node->tag == Internal)
             {
                 node->ele.tag = Array;
@@ -618,6 +623,7 @@ void formulation(astNode *astRoot, symbolTable *current)
         while(traveller!=NULL)
         {
             symbolTableNode *node = (symbolTableNode*)malloc(sizeof(symbolTableNode));
+            node->aux = 0;
             if(traveller->sibling->node->tag == Internal)
             {
                 node->ele.tag = Array;

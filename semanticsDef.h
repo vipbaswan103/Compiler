@@ -43,8 +43,8 @@ typedef enum {ArrayType = 1, IdentifierType = 0} typeTag;
 typedef struct arrayType
 {
     char *basicType;
-    void *lowerBound;
-    void *upperBound;
+    identifier *lowerBound;
+    identifier *upperBound;
 }arrayType;
 
 typedef union whichType
