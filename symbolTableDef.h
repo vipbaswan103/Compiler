@@ -70,7 +70,7 @@ typedef struct elementSym
 typedef struct symbolTableNode
 {
     elementSym ele;
-
+    int aux;
     int scope;
     int lineNum;
     int offset;

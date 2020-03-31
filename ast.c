@@ -141,9 +141,9 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
             createAST(parseNode->child->sibling->sibling->sibling, NULL, &othMod2_syn);
             
             arrASTnodes[0] = othMod1_syn;
-            othMod1_node = makeASTnode("MODULES", arrASTnodes, 1);
+            othMod1_node = makeASTnode("MODULES1", arrASTnodes, 1);
             arrASTnodes[0] = othMod2_syn;
-            othMod2_node = makeASTnode("MODULES", arrASTnodes, 1);
+            othMod2_node = makeASTnode("MODULES2", arrASTnodes, 1);
             getLineNums(othMod1_syn, &(othMod1_node->node->ele.internalNode->lineNumStart), &(othMod1_node->node->ele.internalNode->lineNumEnd));
             getLineNums(othMod2_syn, &(othMod2_node->node->ele.internalNode->lineNumStart), &(othMod2_node->node->ele.internalNode->lineNumEnd));
             // we have all 4 children to create a program AST node
@@ -578,15 +578,15 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
             
             if(optional_node == NULL)
             {
-                arrASTnodes[0] =optional_node;
+                arrASTnodes[0] = optional_node;
                 optional_node = makeASTnode("ID_LIST", arrASTnodes, 1);
             }
             arrASTnodes[0] = optional_node;
             arrASTnodes[1] = ID_node;
-            arrASTnodes[1] = idList_node;
-            astNode * tmp = makeASTnode("MODULECALL", arrASTnodes, 2);
+            arrASTnodes[2] = idList_node;
+            astNode * tmp = makeASTnode("MODULECALL", arrASTnodes, 3);
 
-            if(optional_node == NULL)
+            if(optional_node->child == NULL)
                 tmp->node->ele.internalNode->lineNumStart = parseNode->child->sibling->sibling->sibling->ele.leaf.tkn.lineNum;
             else
                 tmp->node->ele.internalNode->lineNumStart = optional_node->node->ele.internalNode->lineNumStart;

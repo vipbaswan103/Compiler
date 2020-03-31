@@ -1,3 +1,7 @@
+/*Check for cases where we need to search in a different scope (not in the current scope)*/
+/*Testing for error conditions (when returned type is NULL)*/
+/*Checking line numbers for declaration errors (everything in the same line)*/
+
 /*  AST Node to be used for type checking/semantic rule verification
     
     ASSIGNOP
@@ -21,7 +25,6 @@
     SWITCH 
         - the switch var can't be real
         - check the default clause (shouldn't exist for boolean switch var, must exist for integer switch var)
-
     Stack updates in scope !
         PROGRAM
         MODULE
@@ -36,17 +39,17 @@
 #include "ast.h"
 #include "symbolTable.h"
 
+/*Gives the count of elements in the list pointed by head*/
 int listCount(astNode* head)
 {
     int count=0;
-    while(head!=NULL)
+    while(head != NULL)
     {
         count++;
-        head=head->sibling;
+        head = head->sibling;
     }
     return count;
 }
-
 
 symbolTableNode *searchScope(tableStack *tbStack, astNode *key)
 {
@@ -54,12 +57,6 @@ symbolTableNode *searchScope(tableStack *tbStack, astNode *key)
     tableStack *tempStack = (tableStack *)malloc(sizeof(tableStack));
     symbolTableNode *ret = NULL;
     tableStackEle *temp = NULL;
-
-    //For, while, switch
-    //ModuleDef
-    //Module
-    //Module Dec
-    //Program
     
     //its not the scope of module declarations and I did not find anything, put it on the other stack
     while((strcmp(tbStack->top->ele->symLexeme, "Module Declarations"))
@@ -78,9 +75,11 @@ symbolTableNode *searchScope(tableStack *tbStack, astNode *key)
         //TODO
         //TODO
         //TODO
-
+        free(tempStack);
         return NULL;
     }
+    
+    // You had found the variable in some scope
     else
     {
         //Check whether declaration is above or below the definition (using lineNumbers)
@@ -88,10 +87,24 @@ symbolTableNode *searchScope(tableStack *tbStack, astNode *key)
         //everything is written in the same line 
         if(ret->lineNum >= key->node->ele.leafNode->lineNum)
         {
-            //Declaration is below definition
-            //Not declared, ERROR
-            return NULL;
+            if(ret->lineNum == key->node->ele.leafNode->lineNum)
+            {
+                if(ret->aux != 1)   //Variable hasn't been decalared
+                {
+                    //ERROR
+                    free(tempStack);
+                    return NULL;
+                }
+            }
+            else
+            {
+                //ERROR
+                free(tempStack);
+                return NULL;
+            }
         }
+
+        //Push everything in tempStack into the tbStack
         while(tempStack->size  != 0)
         {
             temp = sympop(tempStack);
@@ -104,7 +117,67 @@ symbolTableNode *searchScope(tableStack *tbStack, astNode *key)
 
 type * typeChecker(astNode * currentNode, tableStack * tbStack)
 {
-    if(!strcmp(currentNode->node->ele.internalNode->label, "Program"))
+    if(currentNode == NULL)
+    {
+        return NULL;
+    }
+    if(currentNode->node->tag == Leaf)
+    {
+        //TODO: Add code for leaf node   
+        //DON NOT FORGET TO RETURN FROM FUNCTION
+        //DO NOT MOVE ON
+        
+        type *typeLeaf = (type*)malloc(sizeof(type));
+        if(!strcmp(currentNode->node->ele.leafNode->type, "TRUE") || !strcmp(currentNode->node->ele.leafNode->type, "FALSE"))
+        {
+            typeLeaf->tag = IdentifierType;
+            typeLeaf->tp.type = "BOOLEAN\0";
+        }
+        else if(!strcmp(currentNode->node->ele.leafNode->type, "NUM"))
+        {
+            typeLeaf->tag = IdentifierType;
+            typeLeaf->tp.type = "INTEGER\0";
+        }
+        else if(!strcmp(currentNode->node->ele.leafNode->type, "RNUM"))
+        {
+            typeLeaf->tag = IdentifierType;
+            typeLeaf->tp.type = "REAL\0";
+        }
+        else if(!strcmp(currentNode->node->ele.leafNode->type,"ID"))
+        {
+            symbolTableNode *idNode = searchScope(tbStack, currentNode);
+            
+            if(idNode->ele.tag == Identifier)
+            {
+                typeLeaf->tag = IdentifierType;
+                typeLeaf->tp.type = idNode->ele.data.id.type;
+            }
+            else if(idNode->ele.tag == Array)
+            {
+                typeLeaf->tag = ArrayType;
+                typeLeaf->tp.arr.basicType = idNode->ele.data.arr.type;
+                typeLeaf->tp.arr.lowerBound = idNode->ele.data.arr.lowerIndex;
+                typeLeaf->tp.arr.upperBound = idNode->ele.data.arr.upperIndex;
+            }
+            else if(idNode->ele.tag == Module)
+            {
+                free(typeLeaf);
+                return NULL;
+                //ERROR
+            }
+        }
+        else
+        {
+            // ERROR : Invalid Leaf Node
+            free(typeLeaf);
+            return NULL;
+        }
+        return typeLeaf;
+    }
+
+    
+    
+    if(!strcmp(currentNode->node->ele.internalNode->label, "PROGRAM"))
     {
         /*
             4 Children:
@@ -113,46 +186,171 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                 3) driver modules
                 4) othermodules
         */
-        
-        //pushing the program table
+
+        // creating and pushing the program table
         tableStackEle *newTable = (tableStackEle *)malloc(sizeof(tableStack));
         newTable->next = NULL;
         newTable->ele = symbolTableRoot;
         sympush(tbStack,newTable);
         
-        //pushing the moduledec table
+        // creating and pushing the moduledec table
+        newTable= (tableStackEle *)malloc(sizeof(tableStack));
         newTable->next = NULL;
         newTable->ele = symbolTableRoot->child;
         sympush(tbStack, newTable);
 
+        //Push
         astNode *trav = currentNode->child->sibling;
         while(trav != NULL)
         {
             typeChecker(trav, tbStack);
             trav = trav->sibling;
         }
+
+        //Pop the ModuleDec symbol table
+        newTable = sympop(tbStack);
+        free(newTable);
+
+        //Pop the Program symbol table
+        newTable = sympop(tbStack);
+        free(newTable);
     }
-    else if(!strcmp(currentNode->node->ele.internalNode->label, "MODULES"))
+    else if(!strcmp(currentNode->node->ele.internalNode->label, "MODULES1"))
     {
         astNode * trav = currentNode->child;
-        tableStackEle *newTable = (tableStackEle *)malloc(sizeof(tableStack));
+        tableStackEle *newTable = NULL;
 
+        symbolTable *st = symbolTableRoot->child->sibling;
+
+        //Iterate over all the modules and push their corresponding scope on the stack (and recursively call typechecker)
         while(trav != NULL)
         {
-            
-        }        
+            newTable = (tableStackEle *)malloc(sizeof(tableStack));
+            newTable->ele = st;
+            newTable->next = NULL;
+            sympush(tbStack, newTable);
+            st = st->sibling;
+            typeChecker(trav, tbStack);
+            trav = trav->sibling;
+        }
+        return NULL;
+    }
+    else if(!strcmp(currentNode->node->ele.internalNode->label, "MODULES2"))
+    {
+        astNode * trav = currentNode->child;
+        tableStackEle *newTable = NULL;
+
+        //Driver must exist (syntactic correctness)
+        symbolTable *st = symbolTableRoot->child->sibling;
+        while(strcmp(st->symLexeme, "Driver"))
+        {
+            st = st->sibling;
+        }
+        st = st->sibling;
+
+        // st is now pointing to the symbol table of these "othermodules2"
+
+        //Iterate over all the modules and push their corresponding scope on the stack (and recursively call typechecker)
+        while(trav != NULL)
+        {
+            newTable = (tableStackEle *)malloc(sizeof(tableStack));
+            newTable->ele = st;
+            newTable->next = NULL;
+            //Always remember pushing this table on stack is responsibility of this parent node
+            //popping will be responsibility of the node itself
+
+            //Also remember that these are the symbol tables of the "module" level
+            //They were made for the input list and output list storage (intermediate levels)
+            sympush(tbStack, newTable);
+            st = st->sibling;
+            typeChecker(trav, tbStack);
+            trav = trav->sibling;
+        }
+        return NULL;
     }
     else if(!strcmp(currentNode->node->ele.internalNode->label, "MODULE"))
     {
+        //only child of module is moduledef
+        symbolTableNode *ret = sym_hash_find(tbStack->top->ele->symLexeme, &(symbolTableRoot->hashtb), 0, NULL);
+        ret->aux = 1;
+        tableStackEle *newTable = (tableStackEle *)malloc(sizeof(tableStackEle));
+        newTable->ele = tbStack->top->ele->child;
+        newTable->next = NULL;
 
+        //Push the moduleDef's symbol table on the stack
+        sympush(tbStack, newTable);
+    
+        //Call typeChecker on moduleDef
+        typeChecker(currentNode->child->sibling->sibling->sibling, tbStack);
+
+        //Pop this moduleDef's symbol table
+        newTable = sympop(tbStack);
+        free(newTable);
+        return NULL;
     }
     else if(!strcmp(currentNode->node->ele.internalNode->label, "DRIVER"))
     {
+        symbolTable *trav = symbolTableRoot->child->sibling;
+        while(!strcmp(trav->symLexeme, "Driver"))
+        {
+            trav = trav->sibling;
+        }
 
+        //Push the driver's symbol table on the stack
+        sympush(tbStack, trav);
+        
+        //Push the moduleDef's symbol table on the stack
+        sympush(tbStack, trav->child);
+
+        //Call type checker on driver's moduleDef
+        typeChecker(currentNode->child, tbStack);
+
+        tableStackEle *table = sympop(tbStack);
+        free(table);
+        return NULL;
     }
     else if(!strcmp(currentNode->node->ele.internalNode->label, "MODULEDEF"))
     {
-
+        //traverse the statements inside the moduledef 
+        astNode *trav = currentNode->child;
+        tableStackEle *newTable = NULL;
+        symbolTable *currentSTNode = tbStack->top->ele->child;
+        
+        //Iterate for all the statements in the moduleDef and recursively call typeChecker
+        //If required, push the new scope on the stack
+        while(trav != NULL)
+        {
+            //New scope starts for FOR, WHILE, SWITCH
+            if(!strcmp(trav->node->ele.internalNode->label, "FOR") || !strcmp(trav->node->ele.internalNode->label, "WHILE") || !strcmp(trav->node->ele.internalNode->label, "SWITCH"))
+            {
+                newTable = (tableStackEle *)malloc(sizeof(tableStackEle));
+                newTable->ele = currentSTNode;
+                newTable->next = NULL;
+                //Always remember pushing this table on stack is responsibility of this parent node
+                //popping will be responsibility of the node itself
+                sympush(tbStack, newTable);
+                
+                //move to the right in the n-ary tree of the tables also
+                currentSTNode = currentSTNode->sibling;
+            }
+            typeChecker(trav, tbStack);
+            trav = trav->sibling;
+        }
+        
+        //Pop this scope from the stack (as this moduleDef is over)
+        newTable = sympop(tbStack);
+        free(newTable);
+    }
+    else if(!strcmp(currentNode->node->ele.internalNode->label, "DECLARE"))
+    {
+        astNode *trav = currentNode->child->child;
+        symbolTableNode *st = NULL;
+        while(trav != NULL)
+        {
+            st = sym_hash_find(trav->node->ele.leafNode->lexeme, &(tbStack->top->ele->child), 0, NULL);
+            st->aux = 1;
+            trav = trav->sibling;   
+        }
     }
     else if(!strcmp(currentNode->node->ele.internalNode->label, "ASSIGNOP"))
     {
@@ -161,24 +359,36 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             2) expression
         */ 
 
-        //find which scope is the LHS of the assignment
+        //Search for ID_node in the symbol table tree
         symbolTableNode *ret = searchScope(tbStack, currentNode->child);
         
-        if(ret == NULL) //Error as ID_node not defined
+        //ID_node is not declared, stop right here
+        //searchscope function has already caught the error
+        if(ret == NULL) 
+        {
             return NULL;
+        }    
         
+        //ID_node var is of type array
         if(ret->ele.tag == Array)
         {
-            //ID_node can't be an array, ERROR
+            //ID_node can't be an array var, ERROR
+            return NULL;
         }
 
         ret->ele.data.id.isAssigned = 1;    //ID_node has been assigned something
+
+        //Find the rightExpression's type
         type *rightType = typeChecker(currentNode->child->sibling, tbStack);
 
-        if((rightType->tag == ArrayType) || strcmp(ret->ele.data.id.type, rightType->tp.type))
+        //Either there was an error in type calculation of rightExpression or the type is an arrayType or type doesn't match
+        if((rightType == NULL) || (rightType->tag == ArrayType) || strcmp(ret->ele.data.id.type, rightType->tp.type))
         {
             //Type mismatch, ERROR
+            free(rightType);
+            return NULL;
         }
+        free(rightType);
         return NULL;
     }
     else if(!strcmp(currentNode->node->ele.internalNode->label, "GET_VALUE"))
@@ -186,15 +396,22 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         /*  1 Child:
                 1) ID_node
         */
+
+        //Search for ID_node in the symbol table tree
         symbolTableNode *ret= searchScope(tbStack, currentNode->child);
+
+        //ID_node isn't declared, stop right here
         if(ret == NULL)
             return NULL;
         
+        //ID_node var is of Arry type
         if(ret->ele.tag == Array)
         {
-            //can't be array varible, ERROR
+            //Can't be array varible, ERROR
             return NULL;
         }
+        
+        //ID_node has been assigned something
         ret->ele.data.id.isAssigned = 1;
         return NULL;
     } 
@@ -205,90 +422,110 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                 2) Index_node
                 3) RHS_expression
         */
+
+        //Search for ID_node in the symbol table tree
         symbolTableNode *leftType_id = searchScope(tbStack, currentNode->child);
         
-        //the left side id should be an array types
+        //The ID_node should be of Array type
         if(leftType_id->ele.tag != Array)
         {
-            //error
+            //Error
+            return NULL;
         }
         
-        
-        //the left side index should be an integer 
+        //The index should be of Integer type or NUM
         if(!strcmp(currentNode->child->sibling->node->ele.leafNode->type, "RNUM"))
         {
             //Index can't be a real constant, ERROR
+            return NULL;
         }
         else if(!strcmp(currentNode->child->sibling->node->ele.leafNode->type, "NUM"))
         {
             //Its OK to have a NUM as index, but still check the bounds if the array is static
             astNode *num = currentNode->child->sibling;
+
+            //Check if the array is static or not
             if(leftType_id->ele.data.arr.isDynamic == 0)
             {
-                //bound checking
+                //Static array, do bound checking
                 if(num->node->ele.leafNode->value < leftType_id->ele.data.arr.lowerIndex->value
                     || num->node->ele.leafNode->value > leftType_id->ele.data.arr.upperIndex->value)
                 {
                     //out of bounds error
+                    return NULL;
                 }
             }
-            
         }
         else if(!strcmp(currentNode->child->sibling->node->ele.leafNode->type, "ID"))
         {
             //the index is not a RNUM, or a NUM -> Its an ID, so search in the symbol Table
+
+            //Check whether index is declared or not
             symbolTableNode * index = searchScope(tbStack, currentNode->child->sibling);
+
+            //Index is not declared
             if(index == NULL)
             {
                 //Undeclared index ID, ERROR
                 return NULL;
             }
+
+            //Index must be an Identifier var (not an Array var)
             if(index->ele.tag != Identifier)
             {
                 //index can't be an array var, ERROR
+                return NULL;
             }
-            //the left side index should be within bounds of the array, if the array is static
-            if(leftType_id->ele.data.arr.isDynamic == 0)
+            
+            //Index ID isn't of integer type 
+            if(strcmp(index->ele.data.id.type, "Integer"))
             {
-                if(index->ele.data.id.value < leftType_id->ele.data.arr.lowerIndex->value
-                    || index->ele.data.id.value > leftType_id->ele.data.arr.upperIndex->value)
-                {
-                    //out  of bounds error
-                }
+                //Error
+                return NULL;
             }
+            
+            /********Not required, since we don't know the value of index (because it's an ID)*********/
+            // //The index should be within the bounds of the array, if the array is static
+            // if(leftType_id->ele.data.arr.isDynamic == 0)
+            // {
+            //     // if(index->ele.data.id.value < leftType_id->ele.data.arr.lowerIndex->value
+            //     //     || index->ele.data.id.value > leftType_id->ele.data.arr.upperIndex->value)
+            //     // {
+            //     //     //out  of bounds error
+            //     // }
+            // }
         }
         
-        //Everything on LHS is fine
-        
+        //Everything on LHS is fine, now do type checking
         type * rightType = typeChecker(currentNode->child->sibling->sibling,tbStack);
         
+        //Error while calculating type of the right side expression
         if(rightType == NULL)
         {
             //Some problem/error on the RHS_expression, return NULL
+            free(rightType);
             return NULL;
         }        
         
+        //RHS expression can't be of an array type
         if(rightType->tag == ArrayType)
         {
             //RHS_expression can't be of an array type, ERROR
+            free(rightType);
             return NULL;
         }
-        //right and left type should match finally
-        if(strcmp(leftType_id->ele.data.arr.type, rightType))
+
+        //Right and left type should finally match
+        if(strcmp(leftType_id->ele.data.arr.type, rightType->tp.type))
         {
             //Type mismatch, ERROR
+            free(rightType);
+            return NULL;
         }
+        
+        free(rightType);
         return NULL;
     } 
-    // else if(!strcmp(currentNode->node->ele.internalNode->label, "MODULEASSIGNOP"))
-    // {
-    //     /*  2 Children
-    //             1) ID_list
-    //             2) Modulecall
-    //                 2.1) Func_name
-    //                 2.2) Id_list_node
-    //     */
-    // }
     else if(!strcmp(currentNode->node->ele.internalNode->label, "MODULECALL"))
     {
         /*  3 Children
@@ -302,18 +539,49 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
 
         //Function is not defined
         if(ret == NULL)
+        {   
+            return NULL;
+        }
+        //Function is defined
+        else
         {
-            //Check whether it is declared in declaration scope
-            ret = sym_hash_find(currentNode->child->sibling->node->ele.leafNode->lexeme, &(symbolTableRoot->child->hashtb), 0, NULL);
-            
-            //It is not declared
-            if(ret == NULL)
+            //Check if its definition has been traversed yet (in this pass or not)
+            if(!ret->aux)
             {
-                //Function neither declared nor defined, ERROR
-                return NULL;
+                //Declaration hasn't been used even once
+                //Search for it in the declaration table
+                ret = sym_hash_find(currentNode->child->sibling->node->ele.leafNode->lexeme, &(symbolTableRoot->child->hashtb), 0, NULL);     
+                
+                //Function not declared (but defined)
+                if(ret == NULL)
+                {
+                    // Function defined but not declared and occurs after it
+                    return NULL;
+                }
+                //Function declared (but defined)
+                else
+                {
+                    // Setting the aux field which signifies that the declaration is used atleast once
+                    ret->aux = 1;
+                }
             }
+            else
+            {
+                //Declaration has been used at least once
+                ret = sym_hash_find(currentNode->child->sibling->node->ele.leafNode->lexeme, &(symbolTableRoot->child->hashtb), 0, NULL);     
+                if(ret != NULL)
+                {
+                    if(!ret->aux)
+                    {
+                        // ERROR (Redundant Declaration) : Declaration not used for module
+                        return NULL;
+                    }
+                }
+            }   
         }
         
+        /***********************************************************************/
+
         /*Now compare the ID_list_node with input_list of the function*/
         int inputsize = listCount(currentNode->child->sibling->sibling);
         
@@ -326,7 +594,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         astNode * trav = currentNode->child->sibling->sibling;
         for(int i=0; i<inputsize; i++)
         {
-            //its an ID
+            //Search for trav in the symbol table tree
             symbolTableNode *id_arr = searchScope(tbStack, trav);
 
             //trav isn't declared
@@ -336,12 +604,13 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                 return NULL;
             }
             
-            //tags match
+            //tags match (either both are Identifier or Array)
             if(ret->ele.data.mod.inputList[i].tag == id_arr->ele.tag)
             {
-                // BOTH ARE IDs //
+                // Both are IDs
                 if(id_arr->ele.tag == Identifier)
                 {
+                    //Type should match
                     if(strcmp(id_arr->ele.data.id.type, ret->ele.data.mod.inputList[i].data.id.type))
                     {
                         //Type mismatch, ERROR
@@ -349,21 +618,21 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                     }
                 }
 
-                // BOTH ARE ARRAYS //
+                // Both are arrays
                 else
                 {
                     int isError = 0;
-                    //Check basic type
+                    //Check basic type, should match
                     if(strcmp(id_arr->ele.data.arr.type, ret->ele.data.mod.inputList[i].data.arr.type))
                     {
                         isError = 1;
                         //Type mismatch, ERROR
                         //arrays are of different type
                     }
-                    //Check bounds
+                    //Check bounds (check only if types match)
                     if(isError = 0)
                     {
-                        //check the lower index matches when they are static NUMS
+                        //check the lower index matches when they are static NUMs
                         if(!strcmp(ret->ele.data.mod.inputList[i].data.arr.lowerIndex->type, "NUM") && 
                         !strcmp(id_arr->ele.data.arr.lowerIndex, "NUM"))
                         {
@@ -404,7 +673,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
 
         /*Now compare the ID_list_node (return) with the output_list of the function*/
         int outputsize = listCount(currentNode->child);
-        if(inputsize != ret->ele.data.mod.outputcount)
+        if(outputsize != ret->ele.data.mod.outputcount)
         {
             //No of input parameters mismatch, ERROR
             return NULL;
@@ -423,14 +692,15 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                 return NULL;
             }
             //tags match
-            if(ret->ele.data.mod.inputList[i].tag == id_arr->ele.tag)
+            if(ret->ele.data.mod.outputList[i].tag == id_arr->ele.tag)
             {
                 // BOTH ARE IDs //
                 if(id_arr->ele.tag == Identifier)
                 {
-                    if(strcmp(id_arr->ele.data.id.type, ret->ele.data.mod.inputList[i].data.id.type))
+                    if(strcmp(id_arr->ele.data.id.type, ret->ele.data.mod.outputList[i].data.id.type))
                     {
                         //Type mismatch, ERROR
+                        id_arr->ele.data.id.isAssigned = 1;
                         return NULL;
                     }
                 }
@@ -455,9 +725,10 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                 3) stmts_list
         */
         /*New scope starts, push the corresponding symbol table on top of the stack*/
-        
-        symbolTableNode *id = sym_hash_find(currentNode->child->node->ele.leafNode->lexeme, &(tbStack->top->ele->hashtb),0,NULL);
-        
+        tableStackEle *temp = sympop(tbStack);
+        symbolTableNode *id = searchScope(tbStack, currentNode->child);//sym_hash_find(currentNode->child->node->ele.leafNode->lexeme, &(tbStack->top->ele->hashtb),0,NULL);
+        sympush(tbStack,temp);
+
         if(id == NULL)
         {
            //Index variable not declared, ERROR
@@ -480,7 +751,6 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
 
         symbolTable *currentSTNode = tbStack->top->ele->child;
         tableStackEle *newTable = (tableStackEle *)malloc(sizeof(tableStackEle));
-
         /* NOT NEEEDED NOW */
         
         // newTable->ele = currenSTNode->child;
@@ -497,16 +767,18 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         {
             if(!strcmp(trav->node->ele.internalNode->label, "FOR") || !strcmp(trav->node->ele.internalNode->label, "SWITCH") || !strcmp(trav->node->ele.internalNode->label, "WHILE"))
             {
-                newTable = sympop(tbStack);
+                // newTable = sympop(tbStack);
                 newTable->ele = currentSTNode;
                 newTable->next = NULL;
                 sympush(tbStack,newTable);
-                currentSTNode = currentSTNode->sibling;
-                typeChecker(trav, tbStack);
+                currentSTNode = currentSTNode->sibling;     
             }
+            typeChecker(trav, tbStack);
             trav = trav->sibling;
         }
+        sympop(tbStack);
         free(newTable);
+        return NULL;
     } 
     else if(!strcmp(currentNode->node->ele.internalNode->label, "WHILE"))
     {
@@ -518,22 +790,34 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         
         symbolTable *currentSTNode = tbStack->top->ele->child;
         tableStackEle *newTable = (tableStackEle *)malloc(sizeof(tableStackEle));
-        
+
+        tableStackEle *temp = sympop(tbStack);
+        type *exprType = typechecker(currentNode->child, tbStack);
+        sympush(tbStack,temp);
+
+        if((exprType == NULL) || (exprType->tag == ArrayType) || (strcmp(exprType->tp.type,"BOOLEAN")))
+        {
+            // ERROR - Expr in While is either has error or of wrong type.
+            return NULL;
+        }
+
         astNode *trav = currentNode->child->sibling;
         while(trav != NULL)
         {
             if(!strcmp(trav->node->ele.internalNode->label, "FOR") || !strcmp(trav->node->ele.internalNode->label, "SWITCH") || !strcmp(trav->node->ele.internalNode->label, "WHILE"))
             {
-                newTable = sympop(tbStack);
+                // newTable = sympop(tbStack);
                 newTable->ele = currentSTNode;
                 newTable->next = NULL;
                 sympush(tbStack,newTable);
                 currentSTNode = currentSTNode->sibling;
-                typeChecker(trav, tbStack);
             }
+            typeChecker(trav, tbStack);
             trav = trav->sibling;
         }
+        sympop(tbStack);
         free(newTable);
+        return NULL;
     } 
     else if(!strcmp(currentNode->node->ele.internalNode->label, "SWITCH"))
     {
@@ -542,7 +826,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                 2) Case
                 3) Default
         */
-        symbolTableNode *id = sym_hash_find(currentNode->child->node->ele.leafNode->lexeme, &(tbStack->top->ele->hashtb),0,NULL);
+        symbolTableNode *id = searchScope(tbStack, currentNode->child); //sym_hash_find(currentNode->child->node->ele.leafNode->lexeme, &(tbStack->top->ele->hashtb),0,NULL);
         
         if(id == NULL)
         {
@@ -654,7 +938,8 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         {
             typeChecker(trav, tbStack);
             trav = trav->sibling;
-        }   
+        }
+        return NULL;   
     }
     else if (!strcmp(currentNode->node->ele.internalNode->label, "CASE"))
     {
@@ -673,18 +958,20 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         {
             if(!strcmp(trav->node->ele.internalNode->label, "FOR") || !strcmp(trav->node->ele.internalNode->label, "SWITCH") || !strcmp(trav->node->ele.internalNode->label, "WHILE"))
             {
-                newTable = sympop(tbStack);
+                // newTable = sympop(tbStack);
                 newTable->ele = currentSTNode;
                 newTable->next = NULL;
                 sympush(tbStack,newTable);
                 currentSTNode = currentSTNode->sibling;
-                typeChecker(trav, tbStack);
             }
+            typeChecker(trav, tbStack);
             trav = trav->sibling;
         }
+        sympop(tbStack);
         free(newTable);
+        return NULL;
     }
-     
+
     else if(!strcmp(currentNode->node->ele.internalNode->label, "PLUS") || 
     !strcmp(currentNode->node->ele.internalNode->label, "MINUS") || 
     !strcmp(currentNode->node->ele.internalNode->label, "MUL") || 
