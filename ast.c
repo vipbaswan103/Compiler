@@ -577,24 +577,35 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
             astNode *ID_node = createAST(parseNode->child->sibling->sibling->sibling, NULL, NULL);
             astNode *idList_node = createAST(parseNode->child->sibling->sibling->sibling->sibling->sibling->sibling, NULL, NULL);
             
-            arrASTnodes[0] = ID_node;
-            arrASTnodes[1] = idList_node;
-            astNode * tmp = makeASTnode("MODULECALL", arrASTnodes, 2);
-            tmp->node->ele.internalNode->lineNumStart = parseNode->child->sibling->sibling->sibling->ele.leaf.tkn.lineNum;
-            tmp->node->ele.internalNode->lineNumEnd = tmp->child->sibling->node->ele.internalNode->lineNumEnd;
             if(optional_node == NULL)
             {
-                return tmp;
+                arrASTnodes[0] =optional_node;
+                optional_node = makeASTnode("ID_LIST", arrASTnodes, 1);
             }
+            arrASTnodes[0] = optional_node;
+            arrASTnodes[1] = ID_node;
+            arrASTnodes[1] = idList_node;
+            astNode * tmp = makeASTnode("MODULECALL", arrASTnodes, 2);
+
+            if(optional_node == NULL)
+                tmp->node->ele.internalNode->lineNumStart = parseNode->child->sibling->sibling->sibling->ele.leaf.tkn.lineNum;
             else
-            {
-                arrASTnodes[0] = optional_node;
-                arrASTnodes[1] = tmp;
-                astNode * assgNode = makeASTnode("MODULEASSIGNOP", arrASTnodes, 2);
-                assgNode->node->ele.internalNode->lineNumStart = assgNode->child->node->ele.internalNode->lineNumStart;
-                assgNode->node->ele.internalNode->lineNumEnd = assgNode->child->sibling->node->ele.internalNode->lineNumEnd;
-                return assgNode;
-            }
+                tmp->node->ele.internalNode->lineNumStart = optional_node->node->ele.internalNode->lineNumStart;
+            tmp->node->ele.internalNode->lineNumEnd = tmp->child->sibling->sibling->node->ele.internalNode->lineNumEnd;
+            // if(optional_node == NULL)
+            // {
+            //     return tmp;
+            // }
+            // else
+            // {
+            //     arrASTnodes[0] = optional_node;
+            //     arrASTnodes[1] = tmp;
+            //     astNode * assgNode = makeASTnode("MODULEASSIGNOP", arrASTnodes, 2);
+            //     assgNode->node->ele.internalNode->lineNumStart = assgNode->child->node->ele.internalNode->lineNumStart;
+            //     assgNode->node->ele.internalNode->lineNumEnd = assgNode->child->sibling->node->ele.internalNode->lineNumEnd;
+            //     return assgNode;
+            // }
+            return tmp;
         }
         else if(!strcmp(parseNode->ele.nonleaf.nt.str, "optional"))
         {
@@ -603,7 +614,7 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
             if(!strcmp(parseNode->child->ele.leaf.tkn.token, "SQBO"))
                 return createAST(parseNode->child->sibling, NULL, NULL);
             // Rule 52
-            // <optional> ---- ε 
+            // <optional> ---- ε s
             else
                 return NULL;            
         }
