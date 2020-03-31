@@ -55,7 +55,6 @@ symbolTableNode *searchScope(tableStack *tbStack, astNode *key)
     symbolTableNode *ret = NULL;
     tableStackEle *temp = NULL;
 
-    
     //For, while, switch
     //ModuleDef
     //Module
@@ -69,7 +68,7 @@ symbolTableNode *searchScope(tableStack *tbStack, astNode *key)
         temp = sympop(tbStack);
         sympush(tempStack, temp);
     }
-
+    
     //We reached the topmost symbol table (broadest scope), key doesn't exist in the symbol table
     if((!strcmp(tbStack->top->ele->symLexeme, "Module Declarations")))
     {
@@ -105,7 +104,57 @@ symbolTableNode *searchScope(tableStack *tbStack, astNode *key)
 
 type * typeChecker(astNode * currentNode, tableStack * tbStack)
 {
-    if(!strcmp(currentNode->node->ele.internalNode->label, "ASSIGNOP"))
+    if(!strcmp(currentNode->node->ele.internalNode->label, "Program"))
+    {
+        /*
+            4 Children:
+                1) ModuleDec
+                2) Othermodules
+                3) driver modules
+                4) othermodules
+        */
+        
+        //pushing the program table
+        tableStackEle *newTable = (tableStackEle *)malloc(sizeof(tableStack));
+        newTable->next = NULL;
+        newTable->ele = symbolTableRoot;
+        sympush(tbStack,newTable);
+        
+        //pushing the moduledec table
+        newTable->next = NULL;
+        newTable->ele = symbolTableRoot->child;
+        sympush(tbStack, newTable);
+
+        astNode *trav = currentNode->child->sibling;
+        while(trav != NULL)
+        {
+            typeChecker(trav, tbStack);
+            trav = trav->sibling;
+        }
+    }
+    else if(!strcmp(currentNode->node->ele.internalNode->label, "MODULES"))
+    {
+        astNode * trav = currentNode->child;
+        tableStackEle *newTable = (tableStackEle *)malloc(sizeof(tableStack));
+
+        while(trav != NULL)
+        {
+            
+        }        
+    }
+    else if(!strcmp(currentNode->node->ele.internalNode->label, "MODULE"))
+    {
+
+    }
+    else if(!strcmp(currentNode->node->ele.internalNode->label, "DRIVER"))
+    {
+
+    }
+    else if(!strcmp(currentNode->node->ele.internalNode->label, "MODULEDEF"))
+    {
+
+    }
+    else if(!strcmp(currentNode->node->ele.internalNode->label, "ASSIGNOP"))
     {
         /*2 children:
             1) ID_node
@@ -239,8 +288,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
     //                 2.1) Func_name
     //                 2.2) Id_list_node
     //     */
-
-    // } 
+    // }
     else if(!strcmp(currentNode->node->ele.internalNode->label, "MODULECALL"))
     {
         /*  3 Children
@@ -407,14 +455,42 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                 3) stmts_list
         */
         /*New scope starts, push the corresponding symbol table on top of the stack*/
+        
+        symbolTableNode *id = sym_hash_find(currentNode->child->node->ele.leafNode->lexeme, &(tbStack->top->ele->hashtb),0,NULL);
+        
+        if(id == NULL)
+        {
+           //Index variable not declared, ERROR
+           return NULL; 
+        }
+        
+        if(id->ele.tag == Array)
+        {
+            //Can't be an array variable, ERROR
+            return NULL;
+        }
 
-        symbolTable *currenSTNode = tbStack->top->ele;
+        if(!strcmp(id->ele.data.id.type,"REAL") || !strcmp(id->ele.data.id.type,"BOOLEAN"))
+        {
+            //Type invalid, ERROR
+            return NULL;
+        }
+        
+        id->ele.data.id.isIndex = 1;    //Mark this variable as index variable
 
-        tableStackEle *newTable = (tableStackEle*)malloc(sizeof(tableStackEle));
-        newTable->ele = currenSTNode->child;
-        newTable->next = NULL;
-        sympush(tbStack, newTable);
-        currenSTNode = currenSTNode->child;
+        symbolTable *currentSTNode = tbStack->top->ele->child;
+        tableStackEle *newTable = (tableStackEle *)malloc(sizeof(tableStackEle));
+
+        /* NOT NEEEDED NOW */
+        
+        // newTable->ele = currenSTNode->child;
+        // newTable->next = NULL;
+        // sympush(tbStack, newTable);
+
+        // //entering new scope
+        // currenSTNode = tbStack->top->ele;
+
+        /* NOT NEEEDED NOW */
         
         astNode *trav = currentNode->child->sibling->sibling;
         while(trav != NULL)
@@ -422,20 +498,193 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             if(!strcmp(trav->node->ele.internalNode->label, "FOR") || !strcmp(trav->node->ele.internalNode->label, "SWITCH") || !strcmp(trav->node->ele.internalNode->label, "WHILE"))
             {
                 newTable = sympop(tbStack);
-                free(newTable);
-                newTable->ele = currenSTNode->sibling;
+                newTable->ele = currentSTNode;
+                newTable->next = NULL;
+                sympush(tbStack,newTable);
+                currentSTNode = currentSTNode->sibling;
+                typeChecker(trav, tbStack);
             }
             trav = trav->sibling;
         }
+        free(newTable);
     } 
     else if(!strcmp(currentNode->node->ele.internalNode->label, "WHILE"))
     {
+        /*  2 Children
+                1) Epxr_node
+                2) stmts_node
+        */
+        //make a function to take a astNode and that marks all its leaves to be "while" variables 
         
+        symbolTable *currentSTNode = tbStack->top->ele->child;
+        tableStackEle *newTable = (tableStackEle *)malloc(sizeof(tableStackEle));
+        
+        astNode *trav = currentNode->child->sibling;
+        while(trav != NULL)
+        {
+            if(!strcmp(trav->node->ele.internalNode->label, "FOR") || !strcmp(trav->node->ele.internalNode->label, "SWITCH") || !strcmp(trav->node->ele.internalNode->label, "WHILE"))
+            {
+                newTable = sympop(tbStack);
+                newTable->ele = currentSTNode;
+                newTable->next = NULL;
+                sympush(tbStack,newTable);
+                currentSTNode = currentSTNode->sibling;
+                typeChecker(trav, tbStack);
+            }
+            trav = trav->sibling;
+        }
+        free(newTable);
     } 
     else if(!strcmp(currentNode->node->ele.internalNode->label, "SWITCH"))
     {
+        /*  3 Children
+                1) ID
+                2) Case
+                3) Default
+        */
+        symbolTableNode *id = sym_hash_find(currentNode->child->node->ele.leafNode->lexeme, &(tbStack->top->ele->hashtb),0,NULL);
         
-    } 
+        if(id == NULL)
+        {
+           //Index variable not declared, ERROR
+           return NULL;
+        }
+        
+        if(id->ele.tag == Array)
+        {
+            //Can't be an array variable, ERROR
+            return NULL;
+        }
+
+        if(!strcmp(id->ele.data.id.type,"REAL"))
+        {
+            //Type invalid, ERROR
+            return NULL;
+        }
+
+                
+        astNode * trav = currentNode->child->sibling;
+        if(!strcmp(id->ele.data.id.type,"INTEGER"))
+        {
+            astNode* findDefault = currentNode->child;
+            while(findDefault->sibling!=NULL)
+            {
+                findDefault = findDefault->sibling;
+            }
+            if(strcmp(findDefault->node->ele.internalNode->label,"DEFAULT"))
+            {
+                //error DEFAULT IS MISSING
+                return NULL;
+            }
+            
+            while(!strcmp(trav->node->ele.internalNode->label, "DEFAULT"))
+            {
+                if(!strcmp(trav->child->node->ele.leafNode->type, "RNUM") || !strcmp(trav->child->node->ele.leafNode->type, "TRUE") || !strcmp(trav->child->node->ele.leafNode->type, "FALSE"))
+                {
+                    //Value can't be a real constant, true or false, ERROR
+                }
+                //Now value is either ID or NUM
+                if(!strcmp(trav->child->node->ele.leafNode->type, "ID"))
+                {
+                    type *valType = typeChecker(trav->child, tbStack);
+
+                    if(valType == NULL)
+                    {
+                        //ID isn't declared, ERROR
+                        return NULL;
+                    }
+                    if(valType->tag == ArrayType)
+                    {
+                        //ID can't be a array var, ERROR
+                        return NULL;
+                    }
+                    if(strcmp(valType->tp.type, "INTEGER"))
+                    {
+                        //ID can't be of any type except integer, ERROR
+                        return NULL;
+                    }
+                }
+                trav = trav->sibling;
+            }
+        }
+        astNode * trav = currentNode->child->sibling;
+        if(!strcmp(id->ele.data.id.type,"BOOLEAN"))
+        {
+            astNode* findDefault = currentNode->child;
+            while(findDefault->sibling!=NULL)
+            {
+                findDefault = findDefault->sibling;
+            }
+            if(!strcmp(findDefault->node->ele.internalNode->label,"DEFAULT"))
+            {
+                //error DEFAULT IS PRESENT
+                return NULL;
+            }
+            while(trav != NULL)
+            {
+                if(!strcmp(trav->child->node->ele.leafNode->type, "RNUM") || !strcmp(trav->child->node->ele.leafNode->type, "NUM"))
+                {
+                    //Value can't be a real constant, ERROR
+                }
+                if(!strcmp(trav->child->node->ele.leafNode->type, "ID"))
+                {
+                    type *valType = typeChecker(trav->child, tbStack);
+                    if(valType == NULL)
+                    {
+                        //ID isn't declared, ERROR
+                        return NULL;
+                    }
+                    if(valType->tag == ArrayType)
+                    {
+                        //ID can't be a array var, ERROR
+                        return NULL;
+                    }
+                    if(strcmp(valType->tp.type, "BOOLEAN"))
+                    {
+                        //ID can't be of any type except integer, ERROR
+                        return NULL;
+                    }
+                }
+                trav = trav->sibling;
+            }
+        }     
+        astNode * trav = currentNode->child;
+
+        while(trav != NULL)
+        {
+            typeChecker(trav, tbStack);
+            trav = trav->sibling;
+        }   
+    }
+    else if (!strcmp(currentNode->node->ele.internalNode->label, "CASE"))
+    {
+        /* 
+            Structure of CASE
+                Child 1 is Value
+                Child 2 is Statements
+        */
+        
+        
+        symbolTable *currentSTNode = tbStack->top->ele->child;
+        tableStackEle *newTable = (tableStackEle *)malloc(sizeof(tableStackEle));
+        
+        astNode *trav = currentNode->child->sibling;
+        while(trav != NULL)
+        {
+            if(!strcmp(trav->node->ele.internalNode->label, "FOR") || !strcmp(trav->node->ele.internalNode->label, "SWITCH") || !strcmp(trav->node->ele.internalNode->label, "WHILE"))
+            {
+                newTable = sympop(tbStack);
+                newTable->ele = currentSTNode;
+                newTable->next = NULL;
+                sympush(tbStack,newTable);
+                currentSTNode = currentSTNode->sibling;
+                typeChecker(trav, tbStack);
+            }
+            trav = trav->sibling;
+        }
+        free(newTable);
+    }
+     
     else if(!strcmp(currentNode->node->ele.internalNode->label, "PLUS") || 
     !strcmp(currentNode->node->ele.internalNode->label, "MINUS") || 
     !strcmp(currentNode->node->ele.internalNode->label, "MUL") || 
@@ -457,6 +706,8 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
 
             if(leftType->tag == ArrayType || rightType->tag == ArrayType)
             {
+                free(leftType);
+                free(rightType);
                 //None of the operands can be of array type, ERROR
                 return NULL;
             }
@@ -483,13 +734,20 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                     {
                         //Type can't be boolean, ERROR
                         free(retType);
+                        free(leftType);
+                        free(rightType);
                         return  NULL;
-                    }           
+                    } 
+
+                    free(leftType);
+                    free(rightType);          
                     return retType;         
                 }
                 else
                 {
                     //Type mismatch among operands, ERROR
+                    free(leftType);
+                    free(rightType);
                     free(retType);
                     return NULL;
                 }
@@ -512,13 +770,19 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                     {
                         //Type can't be boolean, ERROR
                         free(retType);
+                        free(leftType);
+                        free(rightType);
                         return  NULL;
-                    }           
+                    } 
+                    free(leftType);
+                    free(rightType);          
                     return retType;         
                 }
                 else
                 {
                     //Type mismatch among operands, ERROR
+                    free(leftType);
+                    free(rightType);
                     free(retType);
                     return NULL;
                 }
@@ -537,14 +801,20 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                     {
                         //Type can't be boolean, ERROR
                         free(retType);
+                        free(leftType);
+                        free(rightType);
                         return  NULL;
-                    }           
+                    }   
+                    free(leftType);
+                    free(rightType);        
                     return retType;         
                 }
                 else
                 {
                     //Type mismatch among operands, ERROR
                     free(retType);
+                    free(leftType);
+                    free(rightType);
                     return NULL;
                 }
             }
@@ -556,6 +826,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             if(childType->tag == ArrayType)
             {
                 //Operand can't be of an array type, ERROR
+                free(childType);
                 return NULL;
             }
             type *retType = (type *)malloc(sizeof(type));
@@ -563,20 +834,22 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             {
                 retType->tag = IdentifierType;
                 retType->tp.type = "INTEGER";
-                return retType;
+                
             }
             else if(!strcmp(childType->tp.type, "REAL"))
             {
                 retType->tag = IdentifierType;
                 retType->tp.type = "REAL";
-                return retType;
             }
             else
             {
                 //Type of operand is wrong, ERROR
                 free(retType);
+                free(childType);
                 return NULL;
             }
+            free(childType);
+            return retType;
         }
     } 
 }
