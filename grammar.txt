@@ -33,7 +33,7 @@ ioStmt GET_VALUE BO ID BC SEMICOL
 ioStmt PRINT BO varAndBool BC SEMICOL
 varAndBool var 
 varAndBool boolConst
-var ID whichId 
+var ID whichId
 var NUM 
 var RNUM
 whichId SQBO index SQBC 
