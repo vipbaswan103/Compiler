@@ -1179,12 +1179,12 @@ void printAST(astNode * ast, FILE * fp)
         return;
     if(ast->node->tag == Leaf)
     {
-        // printf("%s %d\n", ast->node->ele.leafNode->type, ast->node->ele.leafNode->lineNum);
+        printf("%s %d\n", ast->node->ele.leafNode->type, ast->node->ele.leafNode->lineNum);
         fprintf(fp, "%s %d\n", ast->node->ele.leafNode->type, ast->node->ele.leafNode->lineNum);
     }
     else
     {
-        // printf("%s %d %d\n", ast->node->ele.internalNode->label, ast->node->ele.internalNode->lineNumStart, ast->node->ele.internalNode->lineNumEnd);
+        printf("%s %d %d\n", ast->node->ele.internalNode->label, ast->node->ele.internalNode->lineNumStart, ast->node->ele.internalNode->lineNumEnd);
         fprintf(fp, "%s %d %d\n", ast->node->ele.internalNode->label, ast->node->ele.internalNode->lineNumStart, ast->node->ele.internalNode->lineNumEnd);
     }
     astNode * tmp = ast->child;

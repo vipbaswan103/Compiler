@@ -1,3 +1,5 @@
+/*Check that 5..1 is invalid*/
+
 /* 
 	GROUP 33
 	Aryan Mehra 2017A7PS0077P
@@ -100,7 +102,7 @@ symbolTableNode* sym_hash_find(char * str, hashSym * hash_tb, int replace, symbo
                 return tmp;         
             else
             {
-                free(tmp);
+                if(tmp!=NULL) free(tmp);
                 return trav;
             }
         }
@@ -134,8 +136,8 @@ hashSym *rehash(hashSym *oldTable)
             trav = tmp;
         }
     }
-    free(oldTable->arr);
-    free(oldTable);
+    if(oldTable->arr!=NULL) free(oldTable->arr);
+    if(oldTable!=NULL) free(oldTable);
     return newTable;    
 }
 
@@ -319,6 +321,7 @@ void formulation(astNode *astRoot, symbolTable *current)
                 else 
                     newNode->ele.data.arr.isDynamic = 0;
 
+
                 newNode->next = NULL;
             }
             //Its an ID
@@ -373,7 +376,7 @@ void formulation(astNode *astRoot, symbolTable *current)
                 errNode->errorMessage = err;
                 errNode->next = NULL;
                 insertSemError(errNode);
-                free(ret);
+                if(ret!=NULL) free(ret);
             }
             else    //No redeclaration error, check for clash with the output_list
             {
@@ -472,7 +475,7 @@ void formulation(astNode *astRoot, symbolTable *current)
                 errNode->errorMessage = err;
                 errNode->next = NULL;
                 insertSemError(errNode);
-                free(ret);
+                if(ret!=NULL) free(ret);
             }
             
             trav = trav->sibling;
@@ -508,7 +511,8 @@ void formulation(astNode *astRoot, symbolTable *current)
         newNode->aux = 0;
         newNode->ele.tag = Module;
         newNode->ele.data.mod.lexeme = astRoot->child->node->ele.leafNode->lexeme;
-        
+        newNode->ele.data.mod.inputcount = 0;
+        newNode->ele.data.mod.outputcount = 0;
         //head of the input list
         astNode *traveller = astRoot->child->sibling->child;
         while(traveller!=NULL)
@@ -588,6 +592,7 @@ void formulation(astNode *astRoot, symbolTable *current)
                     
                 node->next = NULL;
             }
+            newNode->ele.data.mod.inputList[i] = node->ele;
             symbolTableNode *ret = sym_hash_insert(node, &(moduleST->hashtb));
             if(ret != NULL)
             {
@@ -620,9 +625,8 @@ void formulation(astNode *astRoot, symbolTable *current)
                 errNode->errorMessage = err;
                 errNode->next = NULL;
                 insertSemError(errNode);
-                free(ret);
+                if(ret!=NULL) free(ret);
             }
-            newNode->ele.data.mod.inputList[i] = node->ele;
             //skip two at a time cause we have [ ID -> Datatype -> ID -> DataType .... ]
             traveller = traveller->sibling->sibling;
             i++;
@@ -684,9 +688,8 @@ void formulation(astNode *astRoot, symbolTable *current)
                     
                 node->next = NULL;
             }
-
+            newNode->ele.data.mod.outputList[i] = node->ele;
             symbolTableNode *ret = sym_hash_insert(node, &(moduleST->hashtb));
-            
             if(ret != NULL)
             {
                 char *err = (char *)malloc(sizeof(char)*250);
@@ -718,9 +721,8 @@ void formulation(astNode *astRoot, symbolTable *current)
                 errNode->errorMessage = err;
                 errNode->next = NULL;
                 insertSemError(errNode);
-                free(ret);
+                if(ret!=NULL) free(ret);
             } 
-            newNode->ele.data.mod.outputList[i] = node->ele;
             //skip two at a time cause we have [ ID -> Datatype -> ID -> DataType .... ]
             traveller = traveller->sibling->sibling;
             i++;
@@ -761,7 +763,7 @@ void formulation(astNode *astRoot, symbolTable *current)
             errNode->errorMessage = err;
             errNode->next = NULL;
             insertSemError(errNode);
-            free(ret);
+            if(ret!=NULL) free(ret);
         }
         
         formulation(astRoot->child, moduleST);
@@ -784,7 +786,6 @@ void formulation(astNode *astRoot, symbolTable *current)
             }
             tmp->sibling = moduleST;
         }
-
     }
     
     else if(!strcmp(astRoot->node->ele.internalNode->label, "MODULEDEF"))
@@ -1019,69 +1020,53 @@ void printHashTable(hashSym hashtb)
                 printf("\n Input List:\n");
                 elementSym trav;
                 int count = 0;
-                trav = temp->ele.data.mod.inputList[0];
+                
                 while(count<temp->ele.data.mod.inputcount)
                 {
+                    // printf("Reached here 1");
+                    //     getchar();getchar();
+                    trav = temp->ele.data.mod.inputList[count];
                     if(trav.tag==Identifier)
                     {
+                        // printf("Reached here 2");
+                        // getchar();getchar();
                         printf(" %-10s |",trav.data.id.lexeme);
-                        // printf(" %-10s |","Identifier");
-                        // printf(" %-10s |", temp->ele.data.id.type);
-                        // if(!strcmp(temp->ele.data.id.type,"NUM"))
-                        // {
-                        //     printf(" %-10d ", *((int*)(temp->ele.data.id.value)));
-                        // }
-                        // else if(!strcmp(temp->ele.data.id.type,"RNUM"))
-                        // {
-                        //     printf(" %-10f ", *((double*)(temp->ele.data.id.value)));
-                        // }
-                        // else
-                        // {
-                        //     printf("%-10s ", "----");
-                        // }
+                        
                     }
                     else if(trav.tag==Array)
                     {
+                        // printf("Reached here 3");
+                        // getchar();getchar();
                         printf("%-10s |", trav.data.arr.lexeme);
-                        // printf(" %-10s |","Array");
-                        // printf("%-10s ", temp->ele.data.arr.type);
+                        
                     }
                     count++;
-                    trav = temp->ele.data.mod.inputList[count];
                 }
 
-                //OP List
+                // printf("Reached here 4");
+                //         getchar();getchar();
+
+                // OP List
                 printf("\n Output List:\n");
                 count = 0;
-                trav = temp->ele.data.mod.outputList[0];
                 while(count<temp->ele.data.mod.outputcount)
                 {
+                    // printf("Reached here 5");
+                    //     getchar();getchar();
+                    trav = temp->ele.data.mod.outputList[count];
                     if(trav.tag==Identifier)
                     {
+                        // printf("Reached here 6");
+                        // getchar();getchar();
                         printf(" %-10s |",trav.data.id.lexeme);
-                        // printf(" %-10s |","Identifier");
-                        // printf(" %-10s |", temp->ele.data.id.type);
-                        // if(!strcmp(temp->ele.data.id.type,"NUM"))
-                        // {
-                        //     printf(" %-10d ", *((int*)(temp->ele.data.id.value)));
-                        // }
-                        // else if(!strcmp(temp->ele.data.id.type,"RNUM"))
-                        // {
-                        //     printf(" %-10f ", *((double*)(temp->ele.data.id.value)));
-                        // }
-                        // else
-                        // {
-                        //     printf("%-10s ", "----");
-                        // }
                     }
                     else if(trav.tag==Array)
                     {
+                        // printf("Reached here 7");
+                        // getchar();getchar();
                         printf("%-10s |", trav.data.arr.lexeme);
-                        // printf(" %-10s |","Array");
-                        // printf("%-10s ", temp->ele.data.arr.type);
                     }
                     count++;
-                    trav = temp->ele.data.mod.outputList[count];
                 }
             }
             printf("\n");

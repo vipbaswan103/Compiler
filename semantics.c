@@ -372,8 +372,8 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                 if(tmp->ele.data.id.isAssigned == 0)
                 {
                     //Some var in O/P is unassigned, ERROR.
-                    sprintf(err,"Line %d: %s variable not assigned during module call.", 
-                    tmp->lineNum, tmp->ele.data.id.lexeme);
+                    sprintf(err,"Line %d: %s (returned) variable not assigned in module %s", 
+                    tmp->lineNum, tmp->ele.data.id.lexeme, currentNode->child->node->ele.leafNode->lexeme);
                     pushSemanticError(err);
                     // newTable = sympop(tbStack);
                     // free(newTable);
@@ -517,7 +517,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         if(rightType->tag == ArrayType)
         {
             sprintf(err,"Line %d: '%s' variable's type (%s) does not match the expression type (Array).", 
-            ret->lineNum, ret->ele.data.id.lexeme, ret->ele.data.id.type);
+            currentNode->child->node->ele.leafNode->lineNum, ret->ele.data.id.lexeme, ret->ele.data.id.type);
             pushSemanticError(err);
             free(rightType);
             free(err);
@@ -527,7 +527,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         {
             //Type mismatch, ERROR
             sprintf(err,"Line %d: '%s' variable's type (%s) does not match the expression type (%s).", 
-            ret->lineNum, ret->ele.data.id.lexeme, ret->ele.data.id.type, rightType->tp.type);
+            currentNode->child->node->ele.leafNode->lineNum,ret->ele.data.id.lexeme, ret->ele.data.id.type, rightType->tp.type);
             pushSemanticError(err);
             free(rightType);
             free(err);
@@ -822,6 +822,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         int inputsize = listCount(currentNode->child->sibling->sibling->child);
         
         
+
         if(inputsize != ret->ele.data.mod.inputcount)
         {
             //No of input parameters mismatch, ERROR

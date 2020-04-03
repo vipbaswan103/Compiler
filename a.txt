@@ -6,83 +6,61 @@
         readArr          1              ID            ----    moduleDeclaration        YES                 ----
               ;          1         SEMICOL            ----    moduleDeclaration        YES                 ----
            ----       ----            ----            ----              program         NO   moduleDeclarations
+        declare          2         DECLARE            ----    moduleDeclaration        YES                 ----
+           ----       ----            ----            ----   moduleDeclarations         NO    moduleDeclaration
+         module          2          MODULE            ----    moduleDeclaration        YES                 ----
+            sum          2              ID            ----    moduleDeclaration        YES                 ----
+              ;          2         SEMICOL            ----    moduleDeclaration        YES                 ----
+           ----       ----            ----            ----   moduleDeclarations         NO   moduleDeclarations
+        declare          3         DECLARE            ----    moduleDeclaration        YES                 ----
+           ----       ----            ----            ----   moduleDeclarations         NO    moduleDeclaration
+         module          3          MODULE            ----    moduleDeclaration        YES                 ----
+       arraySum          3              ID            ----    moduleDeclaration        YES                 ----
+              ;          3         SEMICOL            ----    moduleDeclaration        YES                 ----
+           ----       ----            ----            ----   moduleDeclarations         NO   moduleDeclarations
         EPSILON          0         EPSILON            ----   moduleDeclarations        YES                 ----
            ----       ----            ----            ----   moduleDeclarations         NO   moduleDeclarations
            ----       ----            ----            ----                 ROOT         NO              program
-             <<          3             DEF            ----               module        YES                 ----
+             <<          5             DEF            ----               module        YES                 ----
            ----       ----            ----            ----         otherModules         NO               module
-         module          3          MODULE            ----               module        YES                 ----
-       arraySum          3              ID            ----               module        YES                 ----
-             >>          3          ENDDEF            ----               module        YES                 ----
-          takes          4           TAKES            ----               module        YES                 ----
-          input          4           INPUT            ----               module        YES                 ----
-              [          4            SQBO            ----               module        YES                 ----
-           list          4              ID            ----          input_plist        YES                 ----
+         module          5          MODULE            ----               module        YES                 ----
+       subtract          5              ID            ----               module        YES                 ----
+             >>          5          ENDDEF            ----               module        YES                 ----
+          takes          6           TAKES            ----               module        YES                 ----
+          input          6           INPUT            ----               module        YES                 ----
+              [          6            SQBO            ----               module        YES                 ----
+              a          6              ID            ----          input_plist        YES                 ----
            ----       ----            ----            ----               module         NO          input_plist
-              :          4           COLON            ----          input_plist        YES                 ----
-          array          4           ARRAY            ----             dataType        YES                 ----
+              :          6           COLON            ----          input_plist        YES                 ----
+        integer          6         INTEGER            ----             dataType        YES                 ----
            ----       ----            ----            ----          input_plist         NO             dataType
-              [          4            SQBO            ----             dataType        YES                 ----
-              1          4             NUM               1               range1        YES                 ----
-           ----       ----            ----            ----             dataType         NO               range1
-             ..          4         RANGEOP            ----               range1        YES                 ----
-             15          4             NUM              15                index        YES                 ----
-           ----       ----            ----            ----               range1         NO                index
-              ]          4            SQBC            ----             dataType        YES                 ----
-             of          4              OF            ----             dataType        YES                 ----
-           real          4            REAL            ----                 type        YES                 ----
-           ----       ----            ----            ----             dataType         NO                 type
-              ,          4           COMMA            ----         input_plist2        YES                 ----
+              ,          6           COMMA            ----         input_plist2        YES                 ----
            ----       ----            ----            ----          input_plist         NO         input_plist2
-              n          4              ID            ----         input_plist2        YES                 ----
-              :          4           COLON            ----         input_plist2        YES                 ----
-        integer          4         INTEGER            ----             dataType        YES                 ----
+              b          6              ID            ----         input_plist2        YES                 ----
+              :          6           COLON            ----         input_plist2        YES                 ----
+        integer          6         INTEGER            ----             dataType        YES                 ----
            ----       ----            ----            ----         input_plist2         NO             dataType
         EPSILON          0         EPSILON            ----         input_plist2        YES                 ----
            ----       ----            ----            ----         input_plist2         NO         input_plist2
-              ]          4            SQBC            ----               module        YES                 ----
-              ;          4         SEMICOL            ----               module        YES                 ----
-        returns          5         RETURNS            ----                  ret        YES                 ----
+              ]          6            SQBC            ----               module        YES                 ----
+              ;          6         SEMICOL            ----               module        YES                 ----
+        returns          7         RETURNS            ----                  ret        YES                 ----
            ----       ----            ----            ----               module         NO                  ret
-              [          5            SQBO            ----                  ret        YES                 ----
-            sum          5              ID            ----         output_plist        YES                 ----
+              [          7            SQBO            ----                  ret        YES                 ----
+           diff          7              ID            ----         output_plist        YES                 ----
            ----       ----            ----            ----                  ret         NO         output_plist
-              :          5           COLON            ----         output_plist        YES                 ----
-           real          5            REAL            ----                 type        YES                 ----
+              :          7           COLON            ----         output_plist        YES                 ----
+        integer          7         INTEGER            ----                 type        YES                 ----
            ----       ----            ----            ----         output_plist         NO                 type
         EPSILON          0         EPSILON            ----        output_plist2        YES                 ----
            ----       ----            ----            ----         output_plist         NO        output_plist2
-              ]          5            SQBC            ----                  ret        YES                 ----
-              ;          5         SEMICOL            ----                  ret        YES                 ----
-          start          6           START            ----            moduleDef        YES                 ----
+              ]          7            SQBC            ----                  ret        YES                 ----
+              ;          7         SEMICOL            ----                  ret        YES                 ----
+          start          8           START            ----            moduleDef        YES                 ----
            ----       ----            ----            ----               module         NO            moduleDef
-        declare          7         DECLARE            ----          declareStmt        YES                 ----
-           ----       ----            ----            ----            statement         NO          declareStmt
-          index          7              ID            ----               idList        YES                 ----
-           ----       ----            ----            ----          declareStmt         NO               idList
-        EPSILON          0         EPSILON            ----              idList2        YES                 ----
-           ----       ----            ----            ----               idList         NO              idList2
-              :          7           COLON            ----          declareStmt        YES                 ----
-        integer          7         INTEGER            ----             dataType        YES                 ----
-           ----       ----            ----            ----          declareStmt         NO             dataType
-              ;          7         SEMICOL            ----          declareStmt        YES                 ----
-           ----       ----            ----            ----           statements         NO            statement
-           ----       ----            ----            ----            moduleDef         NO           statements
-        declare          8         DECLARE            ----          declareStmt        YES                 ----
-           ----       ----            ----            ----            statement         NO          declareStmt
-              t          8              ID            ----               idList        YES                 ----
-           ----       ----            ----            ----          declareStmt         NO               idList
-        EPSILON          0         EPSILON            ----              idList2        YES                 ----
-           ----       ----            ----            ----               idList         NO              idList2
-              :          8           COLON            ----          declareStmt        YES                 ----
-        boolean          8         BOOLEAN            ----             dataType        YES                 ----
-           ----       ----            ----            ----          declareStmt         NO             dataType
-              ;          8         SEMICOL            ----          declareStmt        YES                 ----
-           ----       ----            ----            ----           statements         NO            statement
-           ----       ----            ----            ----           statements         NO           statements
         declare          9         DECLARE            ----          declareStmt        YES                 ----
            ----       ----            ----            ----            statement         NO          declareStmt
-            sum          9              ID            ----               idList        YES                 ----
+        halfsum          9              ID            ----               idList        YES                 ----
            ----       ----            ----            ----          declareStmt         NO               idList
         EPSILON          0         EPSILON            ----              idList2        YES                 ----
            ----       ----            ----            ----               idList         NO              idList2
@@ -91,24 +69,73 @@
            ----       ----            ----            ----          declareStmt         NO             dataType
               ;          9         SEMICOL            ----          declareStmt        YES                 ----
            ----       ----            ----            ----           statements         NO            statement
-           ----       ----            ----            ----           statements         NO           statements
-        declare         10         DECLARE            ----          declareStmt        YES                 ----
-           ----       ----            ----            ----            statement         NO          declareStmt
-              t         10              ID            ----               idList        YES                 ----
-           ----       ----            ----            ----          declareStmt         NO               idList
-        EPSILON          0         EPSILON            ----              idList2        YES                 ----
-           ----       ----            ----            ----               idList         NO              idList2
-              :         10           COLON            ----          declareStmt        YES                 ----
-           real         10            REAL            ----             dataType        YES                 ----
-           ----       ----            ----            ----          declareStmt         NO             dataType
-              ;         10         SEMICOL            ----          declareStmt        YES                 ----
+           ----       ----            ----            ----            moduleDef         NO           statements
+        halfsum         10              ID            ----       assignmentStmt        YES                 ----
+           ----       ----            ----            ----           simpleStmt         NO       assignmentStmt
+             :=         10        ASSIGNOP            ----         lvalueIDStmt        YES                 ----
+           ----       ----            ----            ----            whichStmt         NO         lvalueIDStmt
+              (         10              BO            ----               factor        YES                 ----
+           ----       ----            ----            ----                 term         NO               factor
+              a         10              ID            ----                  var        YES                 ----
+           ----       ----            ----            ----               factor         NO                  var
+        EPSILON          0         EPSILON            ----              whichId        YES                 ----
+           ----       ----            ----            ----                  var         NO              whichId
+           ----       ----            ----            ----                 term         NO               factor
+           ----       ----            ----            ----       arithmeticExpr         NO                 term
+        EPSILON          0         EPSILON            ----                term2        YES                 ----
+           ----       ----            ----            ----                 term         NO                term2
+           ----       ----            ----            ----          logicalExpr         NO       arithmeticExpr
+              +         10            PLUS            ----                  op1        YES                 ----
+           ----       ----            ----            ----      arithmeticExpr2         NO                  op1
+           ----       ----            ----            ----       arithmeticExpr         NO      arithmeticExpr2
+              b         10              ID            ----                  var        YES                 ----
+           ----       ----            ----            ----               factor         NO                  var
+        EPSILON          0         EPSILON            ----              whichId        YES                 ----
+           ----       ----            ----            ----                  var         NO              whichId
+           ----       ----            ----            ----                 term         NO               factor
+           ----       ----            ----            ----       arithmeticExpr         NO                 term
+        EPSILON          0         EPSILON            ----                term2        YES                 ----
+           ----       ----            ----            ----                 term         NO                term2
+           ----       ----            ----            ----      arithmeticExpr2         NO       arithmeticExpr
+        EPSILON          0         EPSILON            ----      arithmeticExpr2        YES                 ----
+           ----       ----            ----            ----       arithmeticExpr         NO      arithmeticExpr2
+           ----       ----            ----            ----          expression2         NO          logicalExpr
+        EPSILON          0         EPSILON            ----         logicalExpr2        YES                 ----
+           ----       ----            ----            ----          logicalExpr         NO         logicalExpr2
+           ----       ----            ----            ----               factor         NO          expression2
+        EPSILON          0         EPSILON            ----          expression3        YES                 ----
+           ----       ----            ----            ----          expression2         NO          expression3
+              )         10              BC            ----               factor        YES                 ----
+           ----       ----            ----            ----       arithmeticExpr         NO                 term
+              /         10             DIV            ----                  op2        YES                 ----
+           ----       ----            ----            ----                term2         NO                  op2
+           ----       ----            ----            ----                 term         NO                term2
+              2         10             NUM               2                  var        YES                 ----
+           ----       ----            ----            ----               factor         NO                  var
+           ----       ----            ----            ----                 term         NO               factor
+           ----       ----            ----            ----                term2         NO                 term
+        EPSILON          0         EPSILON            ----                term2        YES                 ----
+           ----       ----            ----            ----                 term         NO                term2
+           ----       ----            ----            ----          logicalExpr         NO       arithmeticExpr
+        EPSILON          0         EPSILON            ----      arithmeticExpr2        YES                 ----
+           ----       ----            ----            ----       arithmeticExpr         NO      arithmeticExpr2
+           ----       ----            ----            ----          expression2         NO          logicalExpr
+        EPSILON          0         EPSILON            ----         logicalExpr2        YES                 ----
+           ----       ----            ----            ----          logicalExpr         NO         logicalExpr2
+           ----       ----            ----            ----           expression         NO          expression2
+        EPSILON          0         EPSILON            ----          expression3        YES                 ----
+           ----       ----            ----            ----          expression2         NO          expression3
+           ----       ----            ----            ----         lvalueIDStmt         NO           expression
+              ;         10         SEMICOL            ----         lvalueIDStmt        YES                 ----
+           ----       ----            ----            ----       assignmentStmt         NO            whichStmt
+           ----       ----            ----            ----            statement         NO           simpleStmt
            ----       ----            ----            ----           statements         NO            statement
            ----       ----            ----            ----           statements         NO           statements
-            sum         11              ID            ----       assignmentStmt        YES                 ----
+           diff         11              ID            ----       assignmentStmt        YES                 ----
            ----       ----            ----            ----           simpleStmt         NO       assignmentStmt
              :=         11        ASSIGNOP            ----         lvalueIDStmt        YES                 ----
            ----       ----            ----            ----            whichStmt         NO         lvalueIDStmt
-            0.0         11            RNUM        0.000000                  var        YES                 ----
+              5         11             NUM               5                  var        YES                 ----
            ----       ----            ----            ----               factor         NO                  var
            ----       ----            ----            ----                 term         NO               factor
            ----       ----            ----            ----       arithmeticExpr         NO                 term
@@ -129,34 +156,145 @@
            ----       ----            ----            ----            statement         NO           simpleStmt
            ----       ----            ----            ----           statements         NO            statement
            ----       ----            ----            ----           statements         NO           statements
-            for         12             FOR            ----        iterativeStmt        YES                 ----
-           ----       ----            ----            ----            statement         NO        iterativeStmt
-              (         12              BO            ----        iterativeStmt        YES                 ----
-          index         12              ID            ----        iterativeStmt        YES                 ----
-             in         12              IN            ----        iterativeStmt        YES                 ----
-              1         12             NUM               1               range2        YES                 ----
-           ----       ----            ----            ----        iterativeStmt         NO               range2
-             ..         12         RANGEOP            ----               range2        YES                 ----
-             15         12             NUM              15               range2        YES                 ----
-              )         12              BC            ----        iterativeStmt        YES                 ----
-          start         13           START            ----        iterativeStmt        YES                 ----
-        declare         14         DECLARE            ----          declareStmt        YES                 ----
+        EPSILON          0         EPSILON            ----           statements        YES                 ----
+           ----       ----            ----            ----           statements         NO           statements
+            end         12             END            ----            moduleDef        YES                 ----
+           ----       ----            ----            ----              program         NO         otherModules
+             <<         14             DEF            ----               module        YES                 ----
+           ----       ----            ----            ----         otherModules         NO               module
+         module         14          MODULE            ----               module        YES                 ----
+       arraySum         14              ID            ----               module        YES                 ----
+             >>         14          ENDDEF            ----               module        YES                 ----
+          takes         15           TAKES            ----               module        YES                 ----
+          input         15           INPUT            ----               module        YES                 ----
+              [         15            SQBO            ----               module        YES                 ----
+           list         15              ID            ----          input_plist        YES                 ----
+           ----       ----            ----            ----               module         NO          input_plist
+              :         15           COLON            ----          input_plist        YES                 ----
+          array         15           ARRAY            ----             dataType        YES                 ----
+           ----       ----            ----            ----          input_plist         NO             dataType
+              [         15            SQBO            ----             dataType        YES                 ----
+              1         15             NUM               1               range1        YES                 ----
+           ----       ----            ----            ----             dataType         NO               range1
+             ..         15         RANGEOP            ----               range1        YES                 ----
+             15         15             NUM              15                index        YES                 ----
+           ----       ----            ----            ----               range1         NO                index
+              ]         15            SQBC            ----             dataType        YES                 ----
+             of         15              OF            ----             dataType        YES                 ----
+           real         15            REAL            ----                 type        YES                 ----
+           ----       ----            ----            ----             dataType         NO                 type
+              ,         15           COMMA            ----         input_plist2        YES                 ----
+           ----       ----            ----            ----          input_plist         NO         input_plist2
+              n         15              ID            ----         input_plist2        YES                 ----
+              :         15           COLON            ----         input_plist2        YES                 ----
+        integer         15         INTEGER            ----             dataType        YES                 ----
+           ----       ----            ----            ----         input_plist2         NO             dataType
+              ,         15           COMMA            ----         input_plist2        YES                 ----
+           ----       ----            ----            ----         input_plist2         NO         input_plist2
+              m         15              ID            ----         input_plist2        YES                 ----
+              :         15           COLON            ----         input_plist2        YES                 ----
+           real         15            REAL            ----             dataType        YES                 ----
+           ----       ----            ----            ----         input_plist2         NO             dataType
+        EPSILON          0         EPSILON            ----         input_plist2        YES                 ----
+           ----       ----            ----            ----         input_plist2         NO         input_plist2
+              ]         15            SQBC            ----               module        YES                 ----
+              ;         15         SEMICOL            ----               module        YES                 ----
+        EPSILON          0         EPSILON            ----                  ret        YES                 ----
+           ----       ----            ----            ----               module         NO                  ret
+          start         16           START            ----            moduleDef        YES                 ----
+           ----       ----            ----            ----               module         NO            moduleDef
+        declare         17         DECLARE            ----          declareStmt        YES                 ----
            ----       ----            ----            ----            statement         NO          declareStmt
-            sum         14              ID            ----               idList        YES                 ----
+            sum         17              ID            ----               idList        YES                 ----
            ----       ----            ----            ----          declareStmt         NO               idList
         EPSILON          0         EPSILON            ----              idList2        YES                 ----
            ----       ----            ----            ----               idList         NO              idList2
-              :         14           COLON            ----          declareStmt        YES                 ----
-        integer         14         INTEGER            ----             dataType        YES                 ----
+              :         17           COLON            ----          declareStmt        YES                 ----
+        integer         17         INTEGER            ----             dataType        YES                 ----
            ----       ----            ----            ----          declareStmt         NO             dataType
-              ;         14         SEMICOL            ----          declareStmt        YES                 ----
+              ;         17         SEMICOL            ----          declareStmt        YES                 ----
            ----       ----            ----            ----           statements         NO            statement
-           ----       ----            ----            ----        iterativeStmt         NO           statements
-              t         15              ID            ----       assignmentStmt        YES                 ----
+           ----       ----            ----            ----            moduleDef         NO           statements
+        declare         18         DECLARE            ----          declareStmt        YES                 ----
+           ----       ----            ----            ----            statement         NO          declareStmt
+          index         18              ID            ----               idList        YES                 ----
+           ----       ----            ----            ----          declareStmt         NO               idList
+        EPSILON          0         EPSILON            ----              idList2        YES                 ----
+           ----       ----            ----            ----               idList         NO              idList2
+              :         18           COLON            ----          declareStmt        YES                 ----
+        integer         18         INTEGER            ----             dataType        YES                 ----
+           ----       ----            ----            ----          declareStmt         NO             dataType
+              ;         18         SEMICOL            ----          declareStmt        YES                 ----
+           ----       ----            ----            ----           statements         NO            statement
+           ----       ----            ----            ----           statements         NO           statements
+        declare         19         DECLARE            ----          declareStmt        YES                 ----
+           ----       ----            ----            ----            statement         NO          declareStmt
+              t         19              ID            ----               idList        YES                 ----
+           ----       ----            ----            ----          declareStmt         NO               idList
+        EPSILON          0         EPSILON            ----              idList2        YES                 ----
+           ----       ----            ----            ----               idList         NO              idList2
+              :         19           COLON            ----          declareStmt        YES                 ----
+        boolean         19         BOOLEAN            ----             dataType        YES                 ----
+           ----       ----            ----            ----          declareStmt         NO             dataType
+              ;         19         SEMICOL            ----          declareStmt        YES                 ----
+           ----       ----            ----            ----           statements         NO            statement
+           ----       ----            ----            ----           statements         NO           statements
+              t         20              ID            ----       assignmentStmt        YES                 ----
            ----       ----            ----            ----           simpleStmt         NO       assignmentStmt
-             :=         15        ASSIGNOP            ----         lvalueIDStmt        YES                 ----
+             :=         20        ASSIGNOP            ----         lvalueIDStmt        YES                 ----
            ----       ----            ----            ----            whichStmt         NO         lvalueIDStmt
-          index         15              ID            ----                  var        YES                 ----
+           true         20            TRUE            ----            boolConst        YES                 ----
+           ----       ----            ----            ----          expression2         NO            boolConst
+           ----       ----            ----            ----           expression         NO          expression2
+        EPSILON          0         EPSILON            ----          expression3        YES                 ----
+           ----       ----            ----            ----          expression2         NO          expression3
+           ----       ----            ----            ----         lvalueIDStmt         NO           expression
+              ;         20         SEMICOL            ----         lvalueIDStmt        YES                 ----
+           ----       ----            ----            ----       assignmentStmt         NO            whichStmt
+           ----       ----            ----            ----            statement         NO           simpleStmt
+           ----       ----            ----            ----           statements         NO            statement
+           ----       ----            ----            ----           statements         NO           statements
+            sum         21              ID            ----       assignmentStmt        YES                 ----
+           ----       ----            ----            ----           simpleStmt         NO       assignmentStmt
+             :=         21        ASSIGNOP            ----         lvalueIDStmt        YES                 ----
+           ----       ----            ----            ----            whichStmt         NO         lvalueIDStmt
+            0.0         21            RNUM        0.000000                  var        YES                 ----
+           ----       ----            ----            ----               factor         NO                  var
+           ----       ----            ----            ----                 term         NO               factor
+           ----       ----            ----            ----       arithmeticExpr         NO                 term
+        EPSILON          0         EPSILON            ----                term2        YES                 ----
+           ----       ----            ----            ----                 term         NO                term2
+           ----       ----            ----            ----          logicalExpr         NO       arithmeticExpr
+        EPSILON          0         EPSILON            ----      arithmeticExpr2        YES                 ----
+           ----       ----            ----            ----       arithmeticExpr         NO      arithmeticExpr2
+           ----       ----            ----            ----          expression2         NO          logicalExpr
+        EPSILON          0         EPSILON            ----         logicalExpr2        YES                 ----
+           ----       ----            ----            ----          logicalExpr         NO         logicalExpr2
+           ----       ----            ----            ----           expression         NO          expression2
+        EPSILON          0         EPSILON            ----          expression3        YES                 ----
+           ----       ----            ----            ----          expression2         NO          expression3
+           ----       ----            ----            ----         lvalueIDStmt         NO           expression
+              ;         21         SEMICOL            ----         lvalueIDStmt        YES                 ----
+           ----       ----            ----            ----       assignmentStmt         NO            whichStmt
+           ----       ----            ----            ----            statement         NO           simpleStmt
+           ----       ----            ----            ----           statements         NO            statement
+           ----       ----            ----            ----           statements         NO           statements
+            for         22             FOR            ----        iterativeStmt        YES                 ----
+           ----       ----            ----            ----            statement         NO        iterativeStmt
+              (         22              BO            ----        iterativeStmt        YES                 ----
+          index         22              ID            ----        iterativeStmt        YES                 ----
+             in         22              IN            ----        iterativeStmt        YES                 ----
+              1         22             NUM               1               range2        YES                 ----
+           ----       ----            ----            ----        iterativeStmt         NO               range2
+             ..         22         RANGEOP            ----               range2        YES                 ----
+             15         22             NUM              15               range2        YES                 ----
+              )         22              BC            ----        iterativeStmt        YES                 ----
+          start         23           START            ----        iterativeStmt        YES                 ----
+              t         24              ID            ----       assignmentStmt        YES                 ----
+           ----       ----            ----            ----           simpleStmt         NO       assignmentStmt
+             :=         24        ASSIGNOP            ----         lvalueIDStmt        YES                 ----
+           ----       ----            ----            ----            whichStmt         NO         lvalueIDStmt
+          index         24              ID            ----                  var        YES                 ----
            ----       ----            ----            ----               factor         NO                  var
         EPSILON          0         EPSILON            ----              whichId        YES                 ----
            ----       ----            ----            ----                  var         NO              whichId
@@ -168,10 +306,10 @@
         EPSILON          0         EPSILON            ----      arithmeticExpr2        YES                 ----
            ----       ----            ----            ----       arithmeticExpr         NO      arithmeticExpr2
            ----       ----            ----            ----          expression2         NO          logicalExpr
-             <=         15              LE            ----         relationalOp        YES                 ----
+             <=         24              LE            ----         relationalOp        YES                 ----
            ----       ----            ----            ----         logicalExpr2         NO         relationalOp
            ----       ----            ----            ----          logicalExpr         NO         logicalExpr2
-              n         15              ID            ----                  var        YES                 ----
+              n         24              ID            ----                  var        YES                 ----
            ----       ----            ----            ----               factor         NO                  var
         EPSILON          0         EPSILON            ----              whichId        YES                 ----
            ----       ----            ----            ----                  var         NO              whichId
@@ -186,42 +324,42 @@
         EPSILON          0         EPSILON            ----          expression3        YES                 ----
            ----       ----            ----            ----          expression2         NO          expression3
            ----       ----            ----            ----         lvalueIDStmt         NO           expression
-              ;         15         SEMICOL            ----         lvalueIDStmt        YES                 ----
+              ;         24         SEMICOL            ----         lvalueIDStmt        YES                 ----
            ----       ----            ----            ----       assignmentStmt         NO            whichStmt
            ----       ----            ----            ----            statement         NO           simpleStmt
            ----       ----            ----            ----           statements         NO            statement
-           ----       ----            ----            ----           statements         NO           statements
-         switch         16          SWITCH            ----      conditionalStmt        YES                 ----
+           ----       ----            ----            ----        iterativeStmt         NO           statements
+         switch         25          SWITCH            ----      conditionalStmt        YES                 ----
            ----       ----            ----            ----            statement         NO      conditionalStmt
-              (         16              BO            ----      conditionalStmt        YES                 ----
-              t         16              ID            ----      conditionalStmt        YES                 ----
-              )         16              BC            ----      conditionalStmt        YES                 ----
-          start         17           START            ----      conditionalStmt        YES                 ----
-           case         18            CASE            ----             caseStmt        YES                 ----
+              (         25              BO            ----      conditionalStmt        YES                 ----
+              t         25              ID            ----      conditionalStmt        YES                 ----
+              )         25              BC            ----      conditionalStmt        YES                 ----
+          start         26           START            ----      conditionalStmt        YES                 ----
+           case         27            CASE            ----             caseStmt        YES                 ----
            ----       ----            ----            ----      conditionalStmt         NO             caseStmt
-           true         18            TRUE            ----                value        YES                 ----
+           true         27            TRUE            ----                value        YES                 ----
            ----       ----            ----            ----             caseStmt         NO                value
-              :         18           COLON            ----             caseStmt        YES                 ----
-          print         18           PRINT            ----               ioStmt        YES                 ----
+              :         27           COLON            ----             caseStmt        YES                 ----
+          print         27           PRINT            ----               ioStmt        YES                 ----
            ----       ----            ----            ----            statement         NO               ioStmt
-              (         18              BO            ----               ioStmt        YES                 ----
-           list         18              ID            ----                  var        YES                 ----
+              (         27              BO            ----               ioStmt        YES                 ----
+           list         27              ID            ----                  var        YES                 ----
            ----       ----            ----            ----           varAndBool         NO                  var
-              [         18            SQBO            ----              whichId        YES                 ----
+              [         27            SQBO            ----              whichId        YES                 ----
            ----       ----            ----            ----                  var         NO              whichId
-          index         18              ID            ----                index        YES                 ----
+          index         27              ID            ----                index        YES                 ----
            ----       ----            ----            ----              whichId         NO                index
-              ]         18            SQBC            ----              whichId        YES                 ----
+              ]         27            SQBC            ----              whichId        YES                 ----
            ----       ----            ----            ----               ioStmt         NO           varAndBool
-              )         18              BC            ----               ioStmt        YES                 ----
-              ;         18         SEMICOL            ----               ioStmt        YES                 ----
+              )         27              BC            ----               ioStmt        YES                 ----
+              ;         27         SEMICOL            ----               ioStmt        YES                 ----
            ----       ----            ----            ----           statements         NO            statement
            ----       ----            ----            ----             caseStmt         NO           statements
-            sum         19              ID            ----       assignmentStmt        YES                 ----
+            sum         28              ID            ----       assignmentStmt        YES                 ----
            ----       ----            ----            ----           simpleStmt         NO       assignmentStmt
-             :=         19        ASSIGNOP            ----         lvalueIDStmt        YES                 ----
+             :=         28        ASSIGNOP            ----         lvalueIDStmt        YES                 ----
            ----       ----            ----            ----            whichStmt         NO         lvalueIDStmt
-            sum         19              ID            ----                  var        YES                 ----
+            sum         28              ID            ----                  var        YES                 ----
            ----       ----            ----            ----               factor         NO                  var
         EPSILON          0         EPSILON            ----              whichId        YES                 ----
            ----       ----            ----            ----                  var         NO              whichId
@@ -230,16 +368,16 @@
         EPSILON          0         EPSILON            ----                term2        YES                 ----
            ----       ----            ----            ----                 term         NO                term2
            ----       ----            ----            ----          logicalExpr         NO       arithmeticExpr
-              +         19            PLUS            ----                  op1        YES                 ----
+              +         28            PLUS            ----                  op1        YES                 ----
            ----       ----            ----            ----      arithmeticExpr2         NO                  op1
            ----       ----            ----            ----       arithmeticExpr         NO      arithmeticExpr2
-           list         19              ID            ----                  var        YES                 ----
+           list         28              ID            ----                  var        YES                 ----
            ----       ----            ----            ----               factor         NO                  var
-              [         19            SQBO            ----              whichId        YES                 ----
+              [         28            SQBO            ----              whichId        YES                 ----
            ----       ----            ----            ----                  var         NO              whichId
-          index         19              ID            ----                index        YES                 ----
+          index         28              ID            ----                index        YES                 ----
            ----       ----            ----            ----              whichId         NO                index
-              ]         19            SQBC            ----              whichId        YES                 ----
+              ]         28            SQBC            ----              whichId        YES                 ----
            ----       ----            ----            ----                 term         NO               factor
            ----       ----            ----            ----       arithmeticExpr         NO                 term
         EPSILON          0         EPSILON            ----                term2        YES                 ----
@@ -254,276 +392,261 @@
         EPSILON          0         EPSILON            ----          expression3        YES                 ----
            ----       ----            ----            ----          expression2         NO          expression3
            ----       ----            ----            ----         lvalueIDStmt         NO           expression
-              ;         19         SEMICOL            ----         lvalueIDStmt        YES                 ----
+              ;         28         SEMICOL            ----         lvalueIDStmt        YES                 ----
            ----       ----            ----            ----       assignmentStmt         NO            whichStmt
            ----       ----            ----            ----            statement         NO           simpleStmt
            ----       ----            ----            ----           statements         NO            statement
            ----       ----            ----            ----           statements         NO           statements
-        declare         20         DECLARE            ----          declareStmt        YES                 ----
-           ----       ----            ----            ----            statement         NO          declareStmt
-              y         20              ID            ----               idList        YES                 ----
-           ----       ----            ----            ----          declareStmt         NO               idList
-        EPSILON          0         EPSILON            ----              idList2        YES                 ----
-           ----       ----            ----            ----               idList         NO              idList2
-              :         20           COLON            ----          declareStmt        YES                 ----
-           real         20            REAL            ----             dataType        YES                 ----
-           ----       ----            ----            ----          declareStmt         NO             dataType
-              ;         20         SEMICOL            ----          declareStmt        YES                 ----
-           ----       ----            ----            ----           statements         NO            statement
-           ----       ----            ----            ----           statements         NO           statements
         EPSILON          0         EPSILON            ----           statements        YES                 ----
            ----       ----            ----            ----           statements         NO           statements
-          break         21           BREAK            ----             caseStmt        YES                 ----
-              ;         21         SEMICOL            ----             caseStmt        YES                 ----
-           case         22            CASE            ----            caseStmts        YES                 ----
+          break         29           BREAK            ----             caseStmt        YES                 ----
+              ;         29         SEMICOL            ----             caseStmt        YES                 ----
+           case         30            CASE            ----            caseStmts        YES                 ----
            ----       ----            ----            ----             caseStmt         NO            caseStmts
-          false         22           FALSE            ----                value        YES                 ----
+          false         30           FALSE            ----                value        YES                 ----
            ----       ----            ----            ----            caseStmts         NO                value
-              :         22           COLON            ----            caseStmts        YES                 ----
-          print         22           PRINT            ----               ioStmt        YES                 ----
+              :         30           COLON            ----            caseStmts        YES                 ----
+          print         30           PRINT            ----               ioStmt        YES                 ----
            ----       ----            ----            ----            statement         NO               ioStmt
-              (         22              BO            ----               ioStmt        YES                 ----
-            sum         22              ID            ----                  var        YES                 ----
+              (         30              BO            ----               ioStmt        YES                 ----
+            sum         30              ID            ----                  var        YES                 ----
            ----       ----            ----            ----           varAndBool         NO                  var
         EPSILON          0         EPSILON            ----              whichId        YES                 ----
            ----       ----            ----            ----                  var         NO              whichId
            ----       ----            ----            ----               ioStmt         NO           varAndBool
-              )         22              BC            ----               ioStmt        YES                 ----
-              ;         22         SEMICOL            ----               ioStmt        YES                 ----
+              )         30              BC            ----               ioStmt        YES                 ----
+              ;         30         SEMICOL            ----               ioStmt        YES                 ----
            ----       ----            ----            ----           statements         NO            statement
            ----       ----            ----            ----            caseStmts         NO           statements
-          print         23           PRINT            ----               ioStmt        YES                 ----
+          print         31           PRINT            ----               ioStmt        YES                 ----
            ----       ----            ----            ----            statement         NO               ioStmt
-              (         23              BO            ----               ioStmt        YES                 ----
-          index         23              ID            ----                  var        YES                 ----
+              (         31              BO            ----               ioStmt        YES                 ----
+          index         31              ID            ----                  var        YES                 ----
            ----       ----            ----            ----           varAndBool         NO                  var
         EPSILON          0         EPSILON            ----              whichId        YES                 ----
            ----       ----            ----            ----                  var         NO              whichId
            ----       ----            ----            ----               ioStmt         NO           varAndBool
-              )         23              BC            ----               ioStmt        YES                 ----
-              ;         23         SEMICOL            ----               ioStmt        YES                 ----
+              )         31              BC            ----               ioStmt        YES                 ----
+              ;         31         SEMICOL            ----               ioStmt        YES                 ----
            ----       ----            ----            ----           statements         NO            statement
            ----       ----            ----            ----           statements         NO           statements
         EPSILON          0         EPSILON            ----           statements        YES                 ----
            ----       ----            ----            ----           statements         NO           statements
-          break         25           BREAK            ----            caseStmts        YES                 ----
-              ;         25         SEMICOL            ----            caseStmts        YES                 ----
+          break         32           BREAK            ----            caseStmts        YES                 ----
+              ;         32         SEMICOL            ----            caseStmts        YES                 ----
         EPSILON          0         EPSILON            ----            caseStmts        YES                 ----
            ----       ----            ----            ----            caseStmts         NO            caseStmts
         EPSILON          0         EPSILON            ----              default        YES                 ----
            ----       ----            ----            ----      conditionalStmt         NO              default
-            end         26             END            ----      conditionalStmt        YES                 ----
+            end         33             END            ----      conditionalStmt        YES                 ----
            ----       ----            ----            ----           statements         NO            statement
            ----       ----            ----            ----           statements         NO           statements
         EPSILON          0         EPSILON            ----           statements        YES                 ----
            ----       ----            ----            ----           statements         NO           statements
-            end         28             END            ----        iterativeStmt        YES                 ----
+            end         34             END            ----        iterativeStmt        YES                 ----
            ----       ----            ----            ----           statements         NO            statement
            ----       ----            ----            ----           statements         NO           statements
-          print         29           PRINT            ----               ioStmt        YES                 ----
+          print         35           PRINT            ----               ioStmt        YES                 ----
            ----       ----            ----            ----            statement         NO               ioStmt
-              (         29              BO            ----               ioStmt        YES                 ----
-            sum         29              ID            ----                  var        YES                 ----
+              (         35              BO            ----               ioStmt        YES                 ----
+            sum         35              ID            ----                  var        YES                 ----
            ----       ----            ----            ----           varAndBool         NO                  var
         EPSILON          0         EPSILON            ----              whichId        YES                 ----
            ----       ----            ----            ----                  var         NO              whichId
            ----       ----            ----            ----               ioStmt         NO           varAndBool
-              )         29              BC            ----               ioStmt        YES                 ----
-              ;         29         SEMICOL            ----               ioStmt        YES                 ----
+              )         35              BC            ----               ioStmt        YES                 ----
+              ;         35         SEMICOL            ----               ioStmt        YES                 ----
            ----       ----            ----            ----           statements         NO            statement
            ----       ----            ----            ----           statements         NO           statements
         EPSILON          0         EPSILON            ----           statements        YES                 ----
            ----       ----            ----            ----           statements         NO           statements
-            end         30             END            ----            moduleDef        YES                 ----
-           ----       ----            ----            ----              program         NO         otherModules
+            end         36             END            ----            moduleDef        YES                 ----
+           ----       ----            ----            ----         otherModules         NO         otherModules
         EPSILON          0         EPSILON            ----         otherModules        YES                 ----
            ----       ----            ----            ----         otherModules         NO         otherModules
-            <<<         31       DRIVERDEF            ----         driverModule        YES                 ----
+            <<<         38       DRIVERDEF            ----         driverModule        YES                 ----
            ----       ----            ----            ----              program         NO         driverModule
-         driver         31          DRIVER            ----         driverModule        YES                 ----
-        program         31         PROGRAM            ----         driverModule        YES                 ----
-            >>>         31    DRIVERENDDEF            ----         driverModule        YES                 ----
-          start         32           START            ----            moduleDef        YES                 ----
+         driver         38          DRIVER            ----         driverModule        YES                 ----
+        program         38         PROGRAM            ----         driverModule        YES                 ----
+            >>>         38    DRIVERENDDEF            ----         driverModule        YES                 ----
+          start         39           START            ----            moduleDef        YES                 ----
            ----       ----            ----            ----         driverModule         NO            moduleDef
-        declare         33         DECLARE            ----          declareStmt        YES                 ----
+        declare         40         DECLARE            ----          declareStmt        YES                 ----
            ----       ----            ----            ----            statement         NO          declareStmt
-              A         33              ID            ----               idList        YES                 ----
+              A         40              ID            ----               idList        YES                 ----
            ----       ----            ----            ----          declareStmt         NO               idList
         EPSILON          0         EPSILON            ----              idList2        YES                 ----
            ----       ----            ----            ----               idList         NO              idList2
-              :         33           COLON            ----          declareStmt        YES                 ----
-          array         33           ARRAY            ----             dataType        YES                 ----
+              :         40           COLON            ----          declareStmt        YES                 ----
+          array         40           ARRAY            ----             dataType        YES                 ----
            ----       ----            ----            ----          declareStmt         NO             dataType
-              [         33            SQBO            ----             dataType        YES                 ----
-              1         33             NUM               1               range1        YES                 ----
+              [         40            SQBO            ----             dataType        YES                 ----
+              1         40             NUM               1               range1        YES                 ----
            ----       ----            ----            ----             dataType         NO               range1
-             ..         33         RANGEOP            ----               range1        YES                 ----
-             15         33             NUM              15                index        YES                 ----
+             ..         40         RANGEOP            ----               range1        YES                 ----
+             15         40             NUM              15                index        YES                 ----
            ----       ----            ----            ----               range1         NO                index
-              ]         33            SQBC            ----             dataType        YES                 ----
-             of         33              OF            ----             dataType        YES                 ----
-           real         33            REAL            ----                 type        YES                 ----
+              ]         40            SQBC            ----             dataType        YES                 ----
+             of         40              OF            ----             dataType        YES                 ----
+           real         40            REAL            ----                 type        YES                 ----
            ----       ----            ----            ----             dataType         NO                 type
-              ;         33         SEMICOL            ----          declareStmt        YES                 ----
+              ;         40         SEMICOL            ----          declareStmt        YES                 ----
            ----       ----            ----            ----           statements         NO            statement
            ----       ----            ----            ----            moduleDef         NO           statements
-        declare         34         DECLARE            ----          declareStmt        YES                 ----
+        declare         41         DECLARE            ----          declareStmt        YES                 ----
            ----       ----            ----            ----            statement         NO          declareStmt
-              k         34              ID            ----               idList        YES                 ----
+              k         41              ID            ----               idList        YES                 ----
            ----       ----            ----            ----          declareStmt         NO               idList
         EPSILON          0         EPSILON            ----              idList2        YES                 ----
            ----       ----            ----            ----               idList         NO              idList2
-              :         34           COLON            ----          declareStmt        YES                 ----
-        integer         34         INTEGER            ----             dataType        YES                 ----
+              :         41           COLON            ----          declareStmt        YES                 ----
+        integer         41         INTEGER            ----             dataType        YES                 ----
            ----       ----            ----            ----          declareStmt         NO             dataType
-              ;         34         SEMICOL            ----          declareStmt        YES                 ----
+              ;         41         SEMICOL            ----          declareStmt        YES                 ----
            ----       ----            ----            ----           statements         NO            statement
            ----       ----            ----            ----           statements         NO           statements
-        declare         35         DECLARE            ----          declareStmt        YES                 ----
+        declare         42         DECLARE            ----          declareStmt        YES                 ----
            ----       ----            ----            ----            statement         NO          declareStmt
-              s         35              ID            ----               idList        YES                 ----
+              s         42              ID            ----               idList        YES                 ----
            ----       ----            ----            ----          declareStmt         NO               idList
         EPSILON          0         EPSILON            ----              idList2        YES                 ----
            ----       ----            ----            ----               idList         NO              idList2
-              :         35           COLON            ----          declareStmt        YES                 ----
-           real         35            REAL            ----             dataType        YES                 ----
+              :         42           COLON            ----          declareStmt        YES                 ----
+           real         42            REAL            ----             dataType        YES                 ----
            ----       ----            ----            ----          declareStmt         NO             dataType
-              ;         35         SEMICOL            ----          declareStmt        YES                 ----
+              ;         42         SEMICOL            ----          declareStmt        YES                 ----
            ----       ----            ----            ----           statements         NO            statement
            ----       ----            ----            ----           statements         NO           statements
-      get_value         36       GET_VALUE            ----               ioStmt        YES                 ----
+      get_value         43       GET_VALUE            ----               ioStmt        YES                 ----
            ----       ----            ----            ----            statement         NO               ioStmt
-              (         36              BO            ----               ioStmt        YES                 ----
-              k         36              ID            ----               ioStmt        YES                 ----
-              )         36              BC            ----               ioStmt        YES                 ----
-              ;         36         SEMICOL            ----               ioStmt        YES                 ----
+              (         43              BO            ----               ioStmt        YES                 ----
+              k         43              ID            ----               ioStmt        YES                 ----
+              )         43              BC            ----               ioStmt        YES                 ----
+              ;         43         SEMICOL            ----               ioStmt        YES                 ----
            ----       ----            ----            ----           statements         NO            statement
            ----       ----            ----            ----           statements         NO           statements
         EPSILON          0         EPSILON            ----             optional        YES                 ----
            ----       ----            ----            ----      moduleReuseStmt         NO             optional
            ----       ----            ----            ----           simpleStmt         NO      moduleReuseStmt
-            use         37             USE            ----      moduleReuseStmt        YES                 ----
-         module         37          MODULE            ----      moduleReuseStmt        YES                 ----
-        readArr         37              ID            ----      moduleReuseStmt        YES                 ----
-           with         37            WITH            ----      moduleReuseStmt        YES                 ----
-     parameters         37      PARAMETERS            ----      moduleReuseStmt        YES                 ----
-              A         37              ID            ----               idList        YES                 ----
+            use         44             USE            ----      moduleReuseStmt        YES                 ----
+         module         44          MODULE            ----      moduleReuseStmt        YES                 ----
+        readArr         44              ID            ----      moduleReuseStmt        YES                 ----
+           with         44            WITH            ----      moduleReuseStmt        YES                 ----
+     parameters         44      PARAMETERS            ----      moduleReuseStmt        YES                 ----
+              A         44              ID            ----               idList        YES                 ----
            ----       ----            ----            ----      moduleReuseStmt         NO               idList
-              ,         37           COMMA            ----              idList2        YES                 ----
+              ,         44           COMMA            ----              idList2        YES                 ----
            ----       ----            ----            ----               idList         NO              idList2
-              k         37              ID            ----              idList2        YES                 ----
+              k         44              ID            ----              idList2        YES                 ----
         EPSILON          0         EPSILON            ----              idList2        YES                 ----
            ----       ----            ----            ----              idList2         NO              idList2
-              ;         37         SEMICOL            ----      moduleReuseStmt        YES                 ----
+              ;         44         SEMICOL            ----      moduleReuseStmt        YES                 ----
            ----       ----            ----            ----            statement         NO           simpleStmt
            ----       ----            ----            ----           statements         NO            statement
            ----       ----            ----            ----           statements         NO           statements
-              [         38            SQBO            ----             optional        YES                 ----
+        EPSILON          0         EPSILON            ----             optional        YES                 ----
            ----       ----            ----            ----      moduleReuseStmt         NO             optional
-              s         38              ID            ----               idList        YES                 ----
-           ----       ----            ----            ----             optional         NO               idList
-        EPSILON          0         EPSILON            ----              idList2        YES                 ----
-           ----       ----            ----            ----               idList         NO              idList2
-              ]         38            SQBC            ----             optional        YES                 ----
-             :=         38        ASSIGNOP            ----             optional        YES                 ----
            ----       ----            ----            ----           simpleStmt         NO      moduleReuseStmt
-            use         38             USE            ----      moduleReuseStmt        YES                 ----
-         module         38          MODULE            ----      moduleReuseStmt        YES                 ----
-       arraySum         38              ID            ----      moduleReuseStmt        YES                 ----
-           with         38            WITH            ----      moduleReuseStmt        YES                 ----
-     parameters         38      PARAMETERS            ----      moduleReuseStmt        YES                 ----
-              A         38              ID            ----               idList        YES                 ----
+            use         45             USE            ----      moduleReuseStmt        YES                 ----
+         module         45          MODULE            ----      moduleReuseStmt        YES                 ----
+       arraySum         45              ID            ----      moduleReuseStmt        YES                 ----
+           with         45            WITH            ----      moduleReuseStmt        YES                 ----
+     parameters         45      PARAMETERS            ----      moduleReuseStmt        YES                 ----
+              A         45              ID            ----               idList        YES                 ----
            ----       ----            ----            ----      moduleReuseStmt         NO               idList
-              ,         38           COMMA            ----              idList2        YES                 ----
+              ,         45           COMMA            ----              idList2        YES                 ----
            ----       ----            ----            ----               idList         NO              idList2
-              k         38              ID            ----              idList2        YES                 ----
+              k         45              ID            ----              idList2        YES                 ----
+              ,         45           COMMA            ----              idList2        YES                 ----
+           ----       ----            ----            ----              idList2         NO              idList2
+              s         45              ID            ----              idList2        YES                 ----
         EPSILON          0         EPSILON            ----              idList2        YES                 ----
            ----       ----            ----            ----              idList2         NO              idList2
-              ;         38         SEMICOL            ----      moduleReuseStmt        YES                 ----
+              ;         45         SEMICOL            ----      moduleReuseStmt        YES                 ----
            ----       ----            ----            ----            statement         NO           simpleStmt
            ----       ----            ----            ----           statements         NO            statement
            ----       ----            ----            ----           statements         NO           statements
-          print         39           PRINT            ----               ioStmt        YES                 ----
+          print         46           PRINT            ----               ioStmt        YES                 ----
            ----       ----            ----            ----            statement         NO               ioStmt
-              (         39              BO            ----               ioStmt        YES                 ----
-              s         39              ID            ----                  var        YES                 ----
+              (         46              BO            ----               ioStmt        YES                 ----
+              s         46              ID            ----                  var        YES                 ----
            ----       ----            ----            ----           varAndBool         NO                  var
         EPSILON          0         EPSILON            ----              whichId        YES                 ----
            ----       ----            ----            ----                  var         NO              whichId
            ----       ----            ----            ----               ioStmt         NO           varAndBool
-              )         39              BC            ----               ioStmt        YES                 ----
-              ;         39         SEMICOL            ----               ioStmt        YES                 ----
+              )         46              BC            ----               ioStmt        YES                 ----
+              ;         46         SEMICOL            ----               ioStmt        YES                 ----
            ----       ----            ----            ----           statements         NO            statement
            ----       ----            ----            ----           statements         NO           statements
         EPSILON          0         EPSILON            ----           statements        YES                 ----
            ----       ----            ----            ----           statements         NO           statements
-            end         40             END            ----            moduleDef        YES                 ----
-             <<         47             DEF            ----               module        YES                 ----
+            end         47             END            ----            moduleDef        YES                 ----
+             <<         49             DEF            ----               module        YES                 ----
            ----       ----            ----            ----         otherModules         NO               module
-         module         47          MODULE            ----               module        YES                 ----
-        readArr         47              ID            ----               module        YES                 ----
-             >>         47          ENDDEF            ----               module        YES                 ----
-          takes         48           TAKES            ----               module        YES                 ----
-          input         48           INPUT            ----               module        YES                 ----
-              [         48            SQBO            ----               module        YES                 ----
-           arr1         48              ID            ----          input_plist        YES                 ----
+         module         49          MODULE            ----               module        YES                 ----
+        readArr         49              ID            ----               module        YES                 ----
+             >>         49          ENDDEF            ----               module        YES                 ----
+          takes         50           TAKES            ----               module        YES                 ----
+          input         50           INPUT            ----               module        YES                 ----
+              [         50            SQBO            ----               module        YES                 ----
+           arr1         50              ID            ----          input_plist        YES                 ----
            ----       ----            ----            ----               module         NO          input_plist
-              :         48           COLON            ----          input_plist        YES                 ----
-          array         48           ARRAY            ----             dataType        YES                 ----
+              :         50           COLON            ----          input_plist        YES                 ----
+          array         50           ARRAY            ----             dataType        YES                 ----
            ----       ----            ----            ----          input_plist         NO             dataType
-              [         48            SQBO            ----             dataType        YES                 ----
-              1         48             NUM               1               range1        YES                 ----
+              [         50            SQBO            ----             dataType        YES                 ----
+              1         50             NUM               1               range1        YES                 ----
            ----       ----            ----            ----             dataType         NO               range1
-             ..         48         RANGEOP            ----               range1        YES                 ----
-             15         48             NUM              15                index        YES                 ----
+             ..         50         RANGEOP            ----               range1        YES                 ----
+             15         50             NUM              15                index        YES                 ----
            ----       ----            ----            ----               range1         NO                index
-              ]         48            SQBC            ----             dataType        YES                 ----
-             of         48              OF            ----             dataType        YES                 ----
-           real         48            REAL            ----                 type        YES                 ----
+              ]         50            SQBC            ----             dataType        YES                 ----
+             of         50              OF            ----             dataType        YES                 ----
+           real         50            REAL            ----                 type        YES                 ----
            ----       ----            ----            ----             dataType         NO                 type
-              ,         48           COMMA            ----         input_plist2        YES                 ----
+              ,         50           COMMA            ----         input_plist2        YES                 ----
            ----       ----            ----            ----          input_plist         NO         input_plist2
-              k         48              ID            ----         input_plist2        YES                 ----
-              :         48           COLON            ----         input_plist2        YES                 ----
-        integer         48         INTEGER            ----             dataType        YES                 ----
+              k         50              ID            ----         input_plist2        YES                 ----
+              :         50           COLON            ----         input_plist2        YES                 ----
+        integer         50         INTEGER            ----             dataType        YES                 ----
            ----       ----            ----            ----         input_plist2         NO             dataType
         EPSILON          0         EPSILON            ----         input_plist2        YES                 ----
            ----       ----            ----            ----         input_plist2         NO         input_plist2
-              ]         48            SQBC            ----               module        YES                 ----
-              ;         48         SEMICOL            ----               module        YES                 ----
+              ]         50            SQBC            ----               module        YES                 ----
+              ;         50         SEMICOL            ----               module        YES                 ----
         EPSILON          0         EPSILON            ----                  ret        YES                 ----
            ----       ----            ----            ----               module         NO                  ret
-          start         49           START            ----            moduleDef        YES                 ----
+          start         51           START            ----            moduleDef        YES                 ----
            ----       ----            ----            ----               module         NO            moduleDef
-        declare         50         DECLARE            ----          declareStmt        YES                 ----
+        declare         52         DECLARE            ----          declareStmt        YES                 ----
            ----       ----            ----            ----            statement         NO          declareStmt
-        tempvar         50              ID            ----               idList        YES                 ----
+        tempvar         52              ID            ----               idList        YES                 ----
            ----       ----            ----            ----          declareStmt         NO               idList
         EPSILON          0         EPSILON            ----              idList2        YES                 ----
            ----       ----            ----            ----               idList         NO              idList2
-              :         50           COLON            ----          declareStmt        YES                 ----
-           real         50            REAL            ----             dataType        YES                 ----
+              :         52           COLON            ----          declareStmt        YES                 ----
+           real         52            REAL            ----             dataType        YES                 ----
            ----       ----            ----            ----          declareStmt         NO             dataType
-              ;         50         SEMICOL            ----          declareStmt        YES                 ----
+              ;         52         SEMICOL            ----          declareStmt        YES                 ----
            ----       ----            ----            ----           statements         NO            statement
            ----       ----            ----            ----            moduleDef         NO           statements
-        declare         51         DECLARE            ----          declareStmt        YES                 ----
+        declare         53         DECLARE            ----          declareStmt        YES                 ----
            ----       ----            ----            ----            statement         NO          declareStmt
-              i         51              ID            ----               idList        YES                 ----
+              i         53              ID            ----               idList        YES                 ----
            ----       ----            ----            ----          declareStmt         NO               idList
         EPSILON          0         EPSILON            ----              idList2        YES                 ----
            ----       ----            ----            ----               idList         NO              idList2
-              :         51           COLON            ----          declareStmt        YES                 ----
-        integer         51         INTEGER            ----             dataType        YES                 ----
+              :         53           COLON            ----          declareStmt        YES                 ----
+        integer         53         INTEGER            ----             dataType        YES                 ----
            ----       ----            ----            ----          declareStmt         NO             dataType
-              ;         51         SEMICOL            ----          declareStmt        YES                 ----
+              ;         53         SEMICOL            ----          declareStmt        YES                 ----
            ----       ----            ----            ----           statements         NO            statement
            ----       ----            ----            ----           statements         NO           statements
-              i         52              ID            ----       assignmentStmt        YES                 ----
+              i         54              ID            ----       assignmentStmt        YES                 ----
            ----       ----            ----            ----           simpleStmt         NO       assignmentStmt
-             :=         52        ASSIGNOP            ----         lvalueIDStmt        YES                 ----
+             :=         54        ASSIGNOP            ----         lvalueIDStmt        YES                 ----
            ----       ----            ----            ----            whichStmt         NO         lvalueIDStmt
-              1         52             NUM               1                  var        YES                 ----
+              1         54             NUM               1                  var        YES                 ----
            ----       ----            ----            ----               factor         NO                  var
            ----       ----            ----            ----                 term         NO               factor
            ----       ----            ----            ----       arithmeticExpr         NO                 term
@@ -539,15 +662,15 @@
         EPSILON          0         EPSILON            ----          expression3        YES                 ----
            ----       ----            ----            ----          expression2         NO          expression3
            ----       ----            ----            ----         lvalueIDStmt         NO           expression
-              ;         52         SEMICOL            ----         lvalueIDStmt        YES                 ----
+              ;         54         SEMICOL            ----         lvalueIDStmt        YES                 ----
            ----       ----            ----            ----       assignmentStmt         NO            whichStmt
            ----       ----            ----            ----            statement         NO           simpleStmt
            ----       ----            ----            ----           statements         NO            statement
            ----       ----            ----            ----           statements         NO           statements
-          while         53           WHILE            ----        iterativeStmt        YES                 ----
+          while         56           WHILE            ----        iterativeStmt        YES                 ----
            ----       ----            ----            ----            statement         NO        iterativeStmt
-              (         53              BO            ----        iterativeStmt        YES                 ----
-              i         53              ID            ----                  var        YES                 ----
+              (         56              BO            ----        iterativeStmt        YES                 ----
+              i         56              ID            ----                  var        YES                 ----
            ----       ----            ----            ----               factor         NO                  var
         EPSILON          0         EPSILON            ----              whichId        YES                 ----
            ----       ----            ----            ----                  var         NO              whichId
@@ -559,10 +682,10 @@
         EPSILON          0         EPSILON            ----      arithmeticExpr2        YES                 ----
            ----       ----            ----            ----       arithmeticExpr         NO      arithmeticExpr2
            ----       ----            ----            ----          expression2         NO          logicalExpr
-             <=         53              LE            ----         relationalOp        YES                 ----
+             <=         56              LE            ----         relationalOp        YES                 ----
            ----       ----            ----            ----         logicalExpr2         NO         relationalOp
            ----       ----            ----            ----          logicalExpr         NO         logicalExpr2
-              k         53              ID            ----                  var        YES                 ----
+              k         56              ID            ----                  var        YES                 ----
            ----       ----            ----            ----               factor         NO                  var
         EPSILON          0         EPSILON            ----              whichId        YES                 ----
            ----       ----            ----            ----                  var         NO              whichId
@@ -576,25 +699,25 @@
            ----       ----            ----            ----        iterativeStmt         NO          expression2
         EPSILON          0         EPSILON            ----          expression3        YES                 ----
            ----       ----            ----            ----          expression2         NO          expression3
-              )         53              BC            ----        iterativeStmt        YES                 ----
-          start         54           START            ----        iterativeStmt        YES                 ----
-      get_value         55       GET_VALUE            ----               ioStmt        YES                 ----
+              )         56              BC            ----        iterativeStmt        YES                 ----
+          start         57           START            ----        iterativeStmt        YES                 ----
+      get_value         58       GET_VALUE            ----               ioStmt        YES                 ----
            ----       ----            ----            ----            statement         NO               ioStmt
-              (         55              BO            ----               ioStmt        YES                 ----
-        tempvar         55              ID            ----               ioStmt        YES                 ----
-              )         55              BC            ----               ioStmt        YES                 ----
-              ;         55         SEMICOL            ----               ioStmt        YES                 ----
+              (         58              BO            ----               ioStmt        YES                 ----
+        tempvar         58              ID            ----               ioStmt        YES                 ----
+              )         58              BC            ----               ioStmt        YES                 ----
+              ;         58         SEMICOL            ----               ioStmt        YES                 ----
            ----       ----            ----            ----           statements         NO            statement
            ----       ----            ----            ----        iterativeStmt         NO           statements
-           arr1         56              ID            ----       assignmentStmt        YES                 ----
+           arr1         59              ID            ----       assignmentStmt        YES                 ----
            ----       ----            ----            ----           simpleStmt         NO       assignmentStmt
-              [         56            SQBO            ----        lvalueARRStmt        YES                 ----
+              [         59            SQBO            ----        lvalueARRStmt        YES                 ----
            ----       ----            ----            ----            whichStmt         NO        lvalueARRStmt
-              i         56              ID            ----                index        YES                 ----
+              i         59              ID            ----                index        YES                 ----
            ----       ----            ----            ----        lvalueARRStmt         NO                index
-              ]         56            SQBC            ----        lvalueARRStmt        YES                 ----
-             :=         56        ASSIGNOP            ----        lvalueARRStmt        YES                 ----
-        tempvar         56              ID            ----                  var        YES                 ----
+              ]         59            SQBC            ----        lvalueARRStmt        YES                 ----
+             :=         59        ASSIGNOP            ----        lvalueARRStmt        YES                 ----
+        tempvar         59              ID            ----                  var        YES                 ----
            ----       ----            ----            ----               factor         NO                  var
         EPSILON          0         EPSILON            ----              whichId        YES                 ----
            ----       ----            ----            ----                  var         NO              whichId
@@ -612,28 +735,28 @@
         EPSILON          0         EPSILON            ----          expression3        YES                 ----
            ----       ----            ----            ----          expression2         NO          expression3
            ----       ----            ----            ----        lvalueARRStmt         NO           expression
-              ;         56         SEMICOL            ----        lvalueARRStmt        YES                 ----
+              ;         59         SEMICOL            ----        lvalueARRStmt        YES                 ----
            ----       ----            ----            ----       assignmentStmt         NO            whichStmt
            ----       ----            ----            ----            statement         NO           simpleStmt
            ----       ----            ----            ----           statements         NO            statement
            ----       ----            ----            ----           statements         NO           statements
-        declare         57         DECLARE            ----          declareStmt        YES                 ----
+        declare         60         DECLARE            ----          declareStmt        YES                 ----
            ----       ----            ----            ----            statement         NO          declareStmt
-              x         57              ID            ----               idList        YES                 ----
+              x         60              ID            ----               idList        YES                 ----
            ----       ----            ----            ----          declareStmt         NO               idList
         EPSILON          0         EPSILON            ----              idList2        YES                 ----
            ----       ----            ----            ----               idList         NO              idList2
-              :         57           COLON            ----          declareStmt        YES                 ----
-           real         57            REAL            ----             dataType        YES                 ----
+              :         60           COLON            ----          declareStmt        YES                 ----
+           real         60            REAL            ----             dataType        YES                 ----
            ----       ----            ----            ----          declareStmt         NO             dataType
-              ;         57         SEMICOL            ----          declareStmt        YES                 ----
+              ;         60         SEMICOL            ----          declareStmt        YES                 ----
            ----       ----            ----            ----           statements         NO            statement
            ----       ----            ----            ----           statements         NO           statements
-              i         58              ID            ----       assignmentStmt        YES                 ----
+              i         61              ID            ----       assignmentStmt        YES                 ----
            ----       ----            ----            ----           simpleStmt         NO       assignmentStmt
-             :=         58        ASSIGNOP            ----         lvalueIDStmt        YES                 ----
+             :=         61        ASSIGNOP            ----         lvalueIDStmt        YES                 ----
            ----       ----            ----            ----            whichStmt         NO         lvalueIDStmt
-              i         58              ID            ----                  var        YES                 ----
+              i         61              ID            ----                  var        YES                 ----
            ----       ----            ----            ----               factor         NO                  var
         EPSILON          0         EPSILON            ----              whichId        YES                 ----
            ----       ----            ----            ----                  var         NO              whichId
@@ -642,10 +765,10 @@
         EPSILON          0         EPSILON            ----                term2        YES                 ----
            ----       ----            ----            ----                 term         NO                term2
            ----       ----            ----            ----          logicalExpr         NO       arithmeticExpr
-              +         58            PLUS            ----                  op1        YES                 ----
+              +         61            PLUS            ----                  op1        YES                 ----
            ----       ----            ----            ----      arithmeticExpr2         NO                  op1
            ----       ----            ----            ----       arithmeticExpr         NO      arithmeticExpr2
-              1         58             NUM               1                  var        YES                 ----
+              1         61             NUM               1                  var        YES                 ----
            ----       ----            ----            ----               factor         NO                  var
            ----       ----            ----            ----                 term         NO               factor
            ----       ----            ----            ----       arithmeticExpr         NO                 term
@@ -661,19 +784,200 @@
         EPSILON          0         EPSILON            ----          expression3        YES                 ----
            ----       ----            ----            ----          expression2         NO          expression3
            ----       ----            ----            ----         lvalueIDStmt         NO           expression
-              ;         58         SEMICOL            ----         lvalueIDStmt        YES                 ----
+              ;         61         SEMICOL            ----         lvalueIDStmt        YES                 ----
+           ----       ----            ----            ----       assignmentStmt         NO            whichStmt
+           ----       ----            ----            ----            statement         NO           simpleStmt
+           ----       ----            ----            ----           statements         NO            statement
+           ----       ----            ----            ----           statements         NO           statements
+        declare         62         DECLARE            ----          declareStmt        YES                 ----
+           ----       ----            ----            ----            statement         NO          declareStmt
+              x         62              ID            ----               idList        YES                 ----
+           ----       ----            ----            ----          declareStmt         NO               idList
+        EPSILON          0         EPSILON            ----              idList2        YES                 ----
+           ----       ----            ----            ----               idList         NO              idList2
+              :         62           COLON            ----          declareStmt        YES                 ----
+        integer         62         INTEGER            ----             dataType        YES                 ----
+           ----       ----            ----            ----          declareStmt         NO             dataType
+              ;         62         SEMICOL            ----          declareStmt        YES                 ----
+           ----       ----            ----            ----           statements         NO            statement
+           ----       ----            ----            ----           statements         NO           statements
+              x         63              ID            ----       assignmentStmt        YES                 ----
+           ----       ----            ----            ----           simpleStmt         NO       assignmentStmt
+             :=         63        ASSIGNOP            ----         lvalueIDStmt        YES                 ----
+           ----       ----            ----            ----            whichStmt         NO         lvalueIDStmt
+              5         63             NUM               5                  var        YES                 ----
+           ----       ----            ----            ----               factor         NO                  var
+           ----       ----            ----            ----                 term         NO               factor
+           ----       ----            ----            ----       arithmeticExpr         NO                 term
+        EPSILON          0         EPSILON            ----                term2        YES                 ----
+           ----       ----            ----            ----                 term         NO                term2
+           ----       ----            ----            ----          logicalExpr         NO       arithmeticExpr
+        EPSILON          0         EPSILON            ----      arithmeticExpr2        YES                 ----
+           ----       ----            ----            ----       arithmeticExpr         NO      arithmeticExpr2
+           ----       ----            ----            ----          expression2         NO          logicalExpr
+        EPSILON          0         EPSILON            ----         logicalExpr2        YES                 ----
+           ----       ----            ----            ----          logicalExpr         NO         logicalExpr2
+           ----       ----            ----            ----           expression         NO          expression2
+        EPSILON          0         EPSILON            ----          expression3        YES                 ----
+           ----       ----            ----            ----          expression2         NO          expression3
+           ----       ----            ----            ----         lvalueIDStmt         NO           expression
+              ;         63         SEMICOL            ----         lvalueIDStmt        YES                 ----
            ----       ----            ----            ----       assignmentStmt         NO            whichStmt
            ----       ----            ----            ----            statement         NO           simpleStmt
            ----       ----            ----            ----           statements         NO            statement
            ----       ----            ----            ----           statements         NO           statements
         EPSILON          0         EPSILON            ----           statements        YES                 ----
            ----       ----            ----            ----           statements         NO           statements
-            end         60             END            ----        iterativeStmt        YES                 ----
+            end         64             END            ----        iterativeStmt        YES                 ----
+           ----       ----            ----            ----           statements         NO            statement
+           ----       ----            ----            ----           statements         NO           statements
+            for         66             FOR            ----        iterativeStmt        YES                 ----
+           ----       ----            ----            ----            statement         NO        iterativeStmt
+              (         66              BO            ----        iterativeStmt        YES                 ----
+              x         66              ID            ----        iterativeStmt        YES                 ----
+             in         66              IN            ----        iterativeStmt        YES                 ----
+             10         66             NUM              10               range2        YES                 ----
+           ----       ----            ----            ----        iterativeStmt         NO               range2
+             ..         66         RANGEOP            ----               range2        YES                 ----
+              5         66             NUM               5               range2        YES                 ----
+              )         66              BC            ----        iterativeStmt        YES                 ----
+          start         67           START            ----        iterativeStmt        YES                 ----
+        EPSILON          0         EPSILON            ----           statements        YES                 ----
+           ----       ----            ----            ----        iterativeStmt         NO           statements
+            end         68             END            ----        iterativeStmt        YES                 ----
            ----       ----            ----            ----           statements         NO            statement
            ----       ----            ----            ----           statements         NO           statements
         EPSILON          0         EPSILON            ----           statements        YES                 ----
            ----       ----            ----            ----           statements         NO           statements
-            end         61             END            ----            moduleDef        YES                 ----
+            end         69             END            ----            moduleDef        YES                 ----
            ----       ----            ----            ----              program         NO         otherModules
+             <<         71             DEF            ----               module        YES                 ----
+           ----       ----            ----            ----         otherModules         NO               module
+         module         71          MODULE            ----               module        YES                 ----
+            sum         71              ID            ----               module        YES                 ----
+             >>         71          ENDDEF            ----               module        YES                 ----
+          takes         72           TAKES            ----               module        YES                 ----
+          input         72           INPUT            ----               module        YES                 ----
+              [         72            SQBO            ----               module        YES                 ----
+              a         72              ID            ----          input_plist        YES                 ----
+           ----       ----            ----            ----               module         NO          input_plist
+              :         72           COLON            ----          input_plist        YES                 ----
+        integer         72         INTEGER            ----             dataType        YES                 ----
+           ----       ----            ----            ----          input_plist         NO             dataType
+              ,         72           COMMA            ----         input_plist2        YES                 ----
+           ----       ----            ----            ----          input_plist         NO         input_plist2
+              b         72              ID            ----         input_plist2        YES                 ----
+              :         72           COLON            ----         input_plist2        YES                 ----
+        integer         72         INTEGER            ----             dataType        YES                 ----
+           ----       ----            ----            ----         input_plist2         NO             dataType
+        EPSILON          0         EPSILON            ----         input_plist2        YES                 ----
+           ----       ----            ----            ----         input_plist2         NO         input_plist2
+              ]         72            SQBC            ----               module        YES                 ----
+              ;         72         SEMICOL            ----               module        YES                 ----
+        returns         73         RETURNS            ----                  ret        YES                 ----
+           ----       ----            ----            ----               module         NO                  ret
+              [         73            SQBO            ----                  ret        YES                 ----
+            sum         73              ID            ----         output_plist        YES                 ----
+           ----       ----            ----            ----                  ret         NO         output_plist
+              :         73           COLON            ----         output_plist        YES                 ----
+        integer         73         INTEGER            ----                 type        YES                 ----
+           ----       ----            ----            ----         output_plist         NO                 type
+        EPSILON          0         EPSILON            ----        output_plist2        YES                 ----
+           ----       ----            ----            ----         output_plist         NO        output_plist2
+              ]         73            SQBC            ----                  ret        YES                 ----
+              ;         73         SEMICOL            ----                  ret        YES                 ----
+          start         74           START            ----            moduleDef        YES                 ----
+           ----       ----            ----            ----               module         NO            moduleDef
+            sum         75              ID            ----       assignmentStmt        YES                 ----
+           ----       ----            ----            ----           simpleStmt         NO       assignmentStmt
+             :=         75        ASSIGNOP            ----         lvalueIDStmt        YES                 ----
+           ----       ----            ----            ----            whichStmt         NO         lvalueIDStmt
+              4         75             NUM               4                  var        YES                 ----
+           ----       ----            ----            ----               factor         NO                  var
+           ----       ----            ----            ----                 term         NO               factor
+           ----       ----            ----            ----       arithmeticExpr         NO                 term
+        EPSILON          0         EPSILON            ----                term2        YES                 ----
+           ----       ----            ----            ----                 term         NO                term2
+           ----       ----            ----            ----          logicalExpr         NO       arithmeticExpr
+        EPSILON          0         EPSILON            ----      arithmeticExpr2        YES                 ----
+           ----       ----            ----            ----       arithmeticExpr         NO      arithmeticExpr2
+           ----       ----            ----            ----          expression2         NO          logicalExpr
+        EPSILON          0         EPSILON            ----         logicalExpr2        YES                 ----
+           ----       ----            ----            ----          logicalExpr         NO         logicalExpr2
+           ----       ----            ----            ----           expression         NO          expression2
+        EPSILON          0         EPSILON            ----          expression3        YES                 ----
+           ----       ----            ----            ----          expression2         NO          expression3
+           ----       ----            ----            ----         lvalueIDStmt         NO           expression
+              ;         75         SEMICOL            ----         lvalueIDStmt        YES                 ----
+           ----       ----            ----            ----       assignmentStmt         NO            whichStmt
+           ----       ----            ----            ----            statement         NO           simpleStmt
+           ----       ----            ----            ----           statements         NO            statement
+           ----       ----            ----            ----            moduleDef         NO           statements
+        declare         76         DECLARE            ----          declareStmt        YES                 ----
+           ----       ----            ----            ----            statement         NO          declareStmt
+              a         76              ID            ----               idList        YES                 ----
+           ----       ----            ----            ----          declareStmt         NO               idList
+        EPSILON          0         EPSILON            ----              idList2        YES                 ----
+           ----       ----            ----            ----               idList         NO              idList2
+              :         76           COLON            ----          declareStmt        YES                 ----
+        integer         76         INTEGER            ----             dataType        YES                 ----
+           ----       ----            ----            ----          declareStmt         NO             dataType
+              ;         76         SEMICOL            ----          declareStmt        YES                 ----
+           ----       ----            ----            ----           statements         NO            statement
+           ----       ----            ----            ----           statements         NO           statements
+              a         77              ID            ----       assignmentStmt        YES                 ----
+           ----       ----            ----            ----           simpleStmt         NO       assignmentStmt
+             :=         77        ASSIGNOP            ----         lvalueIDStmt        YES                 ----
+           ----       ----            ----            ----            whichStmt         NO         lvalueIDStmt
+              2         77             NUM               2                  var        YES                 ----
+           ----       ----            ----            ----               factor         NO                  var
+           ----       ----            ----            ----                 term         NO               factor
+           ----       ----            ----            ----       arithmeticExpr         NO                 term
+        EPSILON          0         EPSILON            ----                term2        YES                 ----
+           ----       ----            ----            ----                 term         NO                term2
+           ----       ----            ----            ----          logicalExpr         NO       arithmeticExpr
+        EPSILON          0         EPSILON            ----      arithmeticExpr2        YES                 ----
+           ----       ----            ----            ----       arithmeticExpr         NO      arithmeticExpr2
+           ----       ----            ----            ----          expression2         NO          logicalExpr
+        EPSILON          0         EPSILON            ----         logicalExpr2        YES                 ----
+           ----       ----            ----            ----          logicalExpr         NO         logicalExpr2
+           ----       ----            ----            ----           expression         NO          expression2
+        EPSILON          0         EPSILON            ----          expression3        YES                 ----
+           ----       ----            ----            ----          expression2         NO          expression3
+           ----       ----            ----            ----         lvalueIDStmt         NO           expression
+              ;         77         SEMICOL            ----         lvalueIDStmt        YES                 ----
+           ----       ----            ----            ----       assignmentStmt         NO            whichStmt
+           ----       ----            ----            ----            statement         NO           simpleStmt
+           ----       ----            ----            ----           statements         NO            statement
+           ----       ----            ----            ----           statements         NO           statements
+            sum         78              ID            ----       assignmentStmt        YES                 ----
+           ----       ----            ----            ----           simpleStmt         NO       assignmentStmt
+             :=         78        ASSIGNOP            ----         lvalueIDStmt        YES                 ----
+           ----       ----            ----            ----            whichStmt         NO         lvalueIDStmt
+              3         78             NUM               3                  var        YES                 ----
+           ----       ----            ----            ----               factor         NO                  var
+           ----       ----            ----            ----                 term         NO               factor
+           ----       ----            ----            ----       arithmeticExpr         NO                 term
+        EPSILON          0         EPSILON            ----                term2        YES                 ----
+           ----       ----            ----            ----                 term         NO                term2
+           ----       ----            ----            ----          logicalExpr         NO       arithmeticExpr
+        EPSILON          0         EPSILON            ----      arithmeticExpr2        YES                 ----
+           ----       ----            ----            ----       arithmeticExpr         NO      arithmeticExpr2
+           ----       ----            ----            ----          expression2         NO          logicalExpr
+        EPSILON          0         EPSILON            ----         logicalExpr2        YES                 ----
+           ----       ----            ----            ----          logicalExpr         NO         logicalExpr2
+           ----       ----            ----            ----           expression         NO          expression2
+        EPSILON          0         EPSILON            ----          expression3        YES                 ----
+           ----       ----            ----            ----          expression2         NO          expression3
+           ----       ----            ----            ----         lvalueIDStmt         NO           expression
+              ;         78         SEMICOL            ----         lvalueIDStmt        YES                 ----
+           ----       ----            ----            ----       assignmentStmt         NO            whichStmt
+           ----       ----            ----            ----            statement         NO           simpleStmt
+           ----       ----            ----            ----           statements         NO            statement
+           ----       ----            ----            ----           statements         NO           statements
+        EPSILON          0         EPSILON            ----           statements        YES                 ----
+           ----       ----            ----            ----           statements         NO           statements
+            end         79             END            ----            moduleDef        YES                 ----
+           ----       ----            ----            ----         otherModules         NO         otherModules
         EPSILON          0         EPSILON            ----         otherModules        YES                 ----
            ----       ----            ----            ----         otherModules         NO         otherModules
