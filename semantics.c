@@ -226,13 +226,13 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         */
 
         // creating and pushing the program table
-        tableStackEle *newTable = (tableStackEle *)malloc(sizeof(tableStack));
+        tableStackEle *newTable = (tableStackEle *)malloc(sizeof(tableStackEle));
         newTable->next = NULL;
         newTable->ele = symbolTableRoot;
         sympush(tbStack,newTable);
         
         // creating and pushing the moduledec table
-        newTable= (tableStackEle *)malloc(sizeof(tableStack));
+        newTable= (tableStackEle *)malloc(sizeof(tableStackEle));
         newTable->next = NULL;
         newTable->ele = symbolTableRoot->child;
         sympush(tbStack, newTable);
@@ -267,7 +267,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         while(strcmp(st->symLexeme, "Driver") && trav != NULL)
         {
             x++;
-            newTable = (tableStackEle *)malloc(sizeof(tableStack));
+            newTable = (tableStackEle *)malloc(sizeof(tableStackEle));
             newTable->ele = st;
             newTable->next = NULL;
             sympush(tbStack, newTable);
@@ -304,7 +304,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         while(trav != NULL)
         {
             x++;
-            newTable = (tableStackEle *)malloc(sizeof(tableStack));
+            newTable = (tableStackEle *)malloc(sizeof(tableStackEle));
             newTable->ele = st;
             newTable->next = NULL;
             //Always remember pushing this table on stack is responsibility of this parent node
@@ -350,7 +350,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                 tmp = sym_hash_find(st->ele.data.mod.inputList[i].data.id.lexeme, &(tbStack->top->ele->hashtb), 0, NULL);
                 tmp->aux = 1;
             }
-            else
+            else if(st->ele.data.mod.inputList[i].tag == Array)
             {
                 tmp = sym_hash_find(st->ele.data.mod.inputList[i].data.arr.lexeme, &(tbStack->top->ele->hashtb), 0, NULL);
                 tmp->aux = 1;
@@ -366,17 +366,19 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         memset(err, '\0', sizeof(char)*200);
         for(int i=0; i<st->ele.data.mod.outputcount; i++)
         {
-            tmp = sym_hash_find(st->ele.data.mod.outputList[i].data.id.lexeme, &(tbStack->top->ele->hashtb), 0, NULL);
-            
-            if(tmp->ele.data.id.isAssigned == 0)
+            if(tmp->ele.tag == Identifier)
             {
-                //Some var in O/P is unassigned, ERROR
-                sprintf(err,"Line %d: %s variable not assigned during module call.", 
-                tmp->lineNum, tmp->ele.data.id.lexeme);
-                pushSemanticError(err);
-                // newTable = sympop(tbStack);
-                // free(newTable);
-                // return NULL;
+                tmp = sym_hash_find(st->ele.data.mod.outputList[i].data.id.lexeme, &(tbStack->top->ele->hashtb), 0, NULL);
+                if(tmp->ele.data.id.isAssigned == 0)
+                {
+                    //Some var in O/P is unassigned, ERROR.
+                    sprintf(err,"Line %d: %s variable not assigned during module call.", 
+                    tmp->lineNum, tmp->ele.data.id.lexeme);
+                    pushSemanticError(err);
+                    // newTable = sympop(tbStack);
+                    // free(newTable);
+                    // return NULL;
+                }
             }
         }
         //Pop this module's symbol table (moduleDef's symbol table will be popped in its own scope)
@@ -445,6 +447,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         //Pop this scope from the stack (as this moduleDef is over)
         newTable = sympop(tbStack);
         free(newTable);
+        return NULL;
     }
     else if(!strcmp(currentNode->node->ele.internalNode->label, "DECLARE"))
     {
@@ -508,7 +511,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         if(rightType == NULL)
         {
             free(err);
-            free(rightType);
+            // free(rightType);
             return NULL;
         }
         if(rightType->tag == ArrayType)
@@ -678,7 +681,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             }
             
             //Index ID isn't of integer type 
-            if(strcmp(index->ele.data.id.type, "Integer"))
+            if(strcmp(index->ele.data.id.type, "INTEGER"))
             {
                 //Error
                 sprintf(err,"Line %d: Index variable (%s) is of %s type (Index variable of an array must be of Integer type).", 
@@ -696,7 +699,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         if(rightType == NULL)
         {
             //Some problem/error on the RHS_expression, return NULL
-            free(rightType);
+            // free(rightType);
             free(err);
             return NULL;
         }        
@@ -1106,7 +1109,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             id->ele.data.id.isIndex = 1;    //Mark this variable as index variable
 
         symbolTable *currentSTNode = tbStack->top->ele->child;
-        tableStackEle *newTable = (tableStackEle *)malloc(sizeof(tableStackEle));
+        tableStackEle *newTable = NULL;
         
         astNode *trav = currentNode->child->sibling->sibling;
         while(trav != NULL)
@@ -1116,6 +1119,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             || !strcmp(trav->node->ele.internalNode->label, "WHILE"))
             {
                 // newTable = sympop(tbStack);
+                newTable = (tableStackEle *)malloc(sizeof(tableStackEle));
                 newTable->ele = currentSTNode;
                 newTable->next = NULL;
                 sympush(tbStack,newTable);
@@ -1126,7 +1130,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         }
         
         free(sympop(tbStack));
-        free(newTable);
+        // free(newTable);
         free(err);
         if(isNull == 0)
             id->ele.data.id.isIndex = 0; //isIndex restored back. Now it can change!
@@ -1142,7 +1146,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
        
         //make a function to take a astNode and that marks all its leaves to be "while" variables
         symbolTable *currentSTNode = tbStack->top->ele->child;
-        tableStackEle *newTable = (tableStackEle *)malloc(sizeof(tableStackEle));
+        tableStackEle *newTable = NULL;
 
         tableStackEle *temp = sympop(tbStack);
         type *exprType = typeChecker(currentNode->child, tbStack);
@@ -1210,6 +1214,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             || !strcmp(trav->node->ele.internalNode->label, "WHILE"))
             {
                 // newTable = sympop(tbStack);
+                newTable = (tableStackEle *)malloc(sizeof(tableStackEle));
                 newTable->ele = currentSTNode;
                 newTable->next = NULL;
                 sympush(tbStack,newTable);
@@ -1253,7 +1258,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         if(isNull == 0)
             free(exprType);
         free(sympop(tbStack));
-        free(newTable);
+        // free(newTable);
         return NULL;
     } 
     else if(!strcmp(currentNode->node->ele.internalNode->label, "SWITCH"))
@@ -1338,6 +1343,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                             trav->child->node->ele.leafNode->lineNum, 
                             trav->child->node->ele.leafNode->lexeme, 
                             "Boolean");
+                            pushSemanticError(err);
                         }
                         else if(!strcmp(trav->child->node->ele.leafNode->type, "RNUM"))
                         {
@@ -1345,6 +1351,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                             trav->child->node->ele.leafNode->lineNum, 
                             trav->child->node->ele.leafNode->lexeme, 
                             "Real");
+                            pushSemanticError(err);
                         }
                         // free(sympop(tbStack));
                         // pushSemanticError(err);
@@ -1500,7 +1507,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         
         
         symbolTable *currentSTNode = tbStack->top->ele->child;
-        tableStackEle *newTable = (tableStackEle *)malloc(sizeof(tableStackEle));
+        tableStackEle *newTable = NULL;
         
         astNode *trav = currentNode->child->sibling;
         while(trav != NULL)
@@ -1510,6 +1517,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             || !strcmp(trav->node->ele.internalNode->label, "WHILE"))
             {
                 // newTable = sympop(tbStack);
+                newTable = (tableStackEle *)malloc(sizeof(tableStackEle));
                 newTable->ele = currentSTNode;
                 newTable->next = NULL;
                 sympush(tbStack,newTable);
@@ -1520,7 +1528,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         }
         
         // free(sympop(tbStack));
-        free(newTable);
+        // free(newTable);
         return NULL;
     }
     else if(!strcmp(currentNode->node->ele.internalNode->label,"ID_ARR"))
@@ -1619,7 +1627,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                 }
 
                 //Index node is an identifier of type Integer
-                answer->tp.type = st->ele.data.id.type;
+                answer->tp.type = myNode->ele.data.arr.type;
             }
 
             else if (!strcmp(currentNode->child->sibling->node->ele.leafNode->type,"NUM"))
@@ -1807,8 +1815,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                 free(err);
             }
             
-            
-            if(!strcmp(currentNode->node->ele.internalNode->label, "LT") || 
+            else if(!strcmp(currentNode->node->ele.internalNode->label, "LT") || 
             !strcmp(currentNode->node->ele.internalNode->label, "GT") ||
             !strcmp(currentNode->node->ele.internalNode->label, "LE") || 
             !strcmp(currentNode->node->ele.internalNode->label, "GE") || 
@@ -1887,7 +1894,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                     return NULL;
                 }
             }
-            if(!strcmp(currentNode->node->ele.internalNode->label, "AND") || 
+            else if(!strcmp(currentNode->node->ele.internalNode->label, "AND") || 
             !strcmp(currentNode->node->ele.internalNode->label, "OR"))
             {
                 if(!strcmp(leftType->tp.type, rightType->tp.type))
@@ -1964,8 +1971,6 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                     rightType->tp.type,
                     currentNode->node->ele.internalNode->label);
                     pushSemanticError(err);
-
-                    
                     free(retType);
                     free(leftType);
                     free(rightType);
@@ -1978,6 +1983,8 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         else
         {
             type *childType = typeChecker(currentNode->child, tbStack);
+            if(childType == NULL)
+                return NULL;
             if(childType->tag == ArrayType)
             {
                 //Operand can't be of an array type, ERROR
@@ -2001,6 +2008,8 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                 return NULL;
             }
             type *retType = (type *)malloc(sizeof(type));
+            if(retType == NULL)
+                return NULL;
             if(!strcmp(childType->tp.type, "INTEGER"))
             {
                 retType->tag = IdentifierType;
@@ -2043,7 +2052,6 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
     else
     {
         astNode *trav = currentNode->child;
-
         while(trav !=  NULL)
         {
             return typeChecker(trav, tbStack);

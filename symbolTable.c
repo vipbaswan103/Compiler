@@ -38,7 +38,7 @@ tableStackEle * sympop(tableStack *stack)
 
         if(stack->size==0)
             stack->bottom = NULL;
-            
+        temp->next = NULL;
         return temp;
     }
     else
@@ -1014,6 +1014,75 @@ void printHashTable(hashSym hashtb)
                 printf("%-10s |", temp->ele.data.mod.lexeme);
                 printf(" %-10s |","Module");
                 printf("%-10s ", "----");
+
+                //IPList
+                printf("\n Input List:\n");
+                elementSym trav;
+                int count = 0;
+                trav = temp->ele.data.mod.inputList[0];
+                while(count<temp->ele.data.mod.inputcount)
+                {
+                    if(trav.tag==Identifier)
+                    {
+                        printf(" %-10s |",trav.data.id.lexeme);
+                        // printf(" %-10s |","Identifier");
+                        // printf(" %-10s |", temp->ele.data.id.type);
+                        // if(!strcmp(temp->ele.data.id.type,"NUM"))
+                        // {
+                        //     printf(" %-10d ", *((int*)(temp->ele.data.id.value)));
+                        // }
+                        // else if(!strcmp(temp->ele.data.id.type,"RNUM"))
+                        // {
+                        //     printf(" %-10f ", *((double*)(temp->ele.data.id.value)));
+                        // }
+                        // else
+                        // {
+                        //     printf("%-10s ", "----");
+                        // }
+                    }
+                    else if(trav.tag==Array)
+                    {
+                        printf("%-10s |", trav.data.arr.lexeme);
+                        // printf(" %-10s |","Array");
+                        // printf("%-10s ", temp->ele.data.arr.type);
+                    }
+                    count++;
+                    trav = temp->ele.data.mod.inputList[count];
+                }
+
+                //OP List
+                printf("\n Output List:\n");
+                count = 0;
+                trav = temp->ele.data.mod.outputList[0];
+                while(count<temp->ele.data.mod.outputcount)
+                {
+                    if(trav.tag==Identifier)
+                    {
+                        printf(" %-10s |",trav.data.id.lexeme);
+                        // printf(" %-10s |","Identifier");
+                        // printf(" %-10s |", temp->ele.data.id.type);
+                        // if(!strcmp(temp->ele.data.id.type,"NUM"))
+                        // {
+                        //     printf(" %-10d ", *((int*)(temp->ele.data.id.value)));
+                        // }
+                        // else if(!strcmp(temp->ele.data.id.type,"RNUM"))
+                        // {
+                        //     printf(" %-10f ", *((double*)(temp->ele.data.id.value)));
+                        // }
+                        // else
+                        // {
+                        //     printf("%-10s ", "----");
+                        // }
+                    }
+                    else if(trav.tag==Array)
+                    {
+                        printf("%-10s |", trav.data.arr.lexeme);
+                        // printf(" %-10s |","Array");
+                        // printf("%-10s ", temp->ele.data.arr.type);
+                    }
+                    count++;
+                    trav = temp->ele.data.mod.outputList[count];
+                }
             }
             printf("\n");
             temp = temp->next;
