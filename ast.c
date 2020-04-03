@@ -26,6 +26,9 @@ astNode* makeASTnode(char * label, astNode ** childs, int size)
         temp = childs[0];
         for(int i=1 ; i<size ; i++)
         {
+            while(temp->sibling!=NULL)
+                temp =temp->sibling;
+
             temp->sibling = childs[i];
             temp = childs[i];
         }
@@ -114,7 +117,7 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
     //Non-Terminal
     if(parseNode->tag == 1)
     {
-        printf("Non Terminal - %s\n",parseNode->ele.nonleaf.nt.str);
+        // printf("Non Terminal - %s\n",parseNode->ele.nonleaf.nt.str);
 
         astNode* arrASTnodes[4];
 
@@ -1003,9 +1006,9 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
             astNode *ID_node = createAST(parseNode->child->sibling->sibling, NULL, NULL);
             astNode *caseStmt_node = createAST(parseNode->child->sibling->sibling->sibling->sibling->sibling, NULL, NULL);
             astNode *default_node = createAST(parseNode->child->sibling->sibling->sibling->sibling->sibling->sibling, NULL, NULL);
-            arrASTnodes[0] = ID_node;
-            arrASTnodes[1] = caseStmt_node;
-            arrASTnodes[2] = default_node;
+            arrASTnodes[0] = ID_node; 
+            arrASTnodes[1] = caseStmt_node;    
+            arrASTnodes[2] = default_node;   
             astNode * condNode = makeASTnode("SWITCH", arrASTnodes, 3);
             condNode->node->ele.internalNode->lineNumStart = parseNode->child->ele.leaf.tkn.lineNum;
             condNode->node->ele.internalNode->lineNumEnd = parseNode->child->sibling->sibling->sibling->sibling->sibling->sibling->sibling->ele.leaf.tkn.lineNum;
@@ -1163,7 +1166,7 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
     //Terminal
     else
     {
-        printf("Terminal - %s\n",parseNode->ele.leaf.tkn.lexeme);
+        // printf("Terminal - %s\n",parseNode->ele.leaf.tkn.lexeme);
         return makeLeafNode(parseNode);
     }
 }

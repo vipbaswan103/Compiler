@@ -252,10 +252,10 @@ void formulation(astNode *astRoot, symbolTable *current)
 {
     if(astRoot == NULL)
         return;
-    if(astRoot->node->tag == Internal)
-        printf("%s\n", astRoot->node->ele.internalNode->label);
-    else
-        printf("%s\n", astRoot->node->ele.leafNode->type);
+    // if(astRoot->node->tag == Internal)
+    //     printf("%s\n", astRoot->node->ele.internalNode->label);
+    // else
+    //     printf("%s\n", astRoot->node->ele.leafNode->type);
     
     if(astRoot->node->tag == Leaf)
         return;

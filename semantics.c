@@ -54,7 +54,9 @@ int listCount(astNode* head)
 void pushSemanticError(char *str)
 {
     semanticErrorNode *errNode = (semanticErrorNode *)malloc(sizeof(semanticErrorNode));
-    errNode->errorMessage = str;
+    char * err = (char*)malloc(sizeof(char)*200);
+    strcpy(err,str);
+    errNode->errorMessage = err;
     errNode->next = NULL;
     insertSemError(errNode);
 }
@@ -79,8 +81,8 @@ symbolTableNode *searchScope(tableStack *tbStack, astNode *key)
         temp = sympop(tbStack);
         sympush(tempStack, temp);
     }
-    char * err = (char *)malloc(sizeof(char)*100);
-    memset(err, '\0', sizeof(char)*100);
+    char * err = (char *)malloc(sizeof(char)*200);
+    memset(err, '\0', sizeof(char)*200);
     //We reached the topmost symbol table (broadest scope), key doesn't exist in the symbol table tree
     if((!strcmp(tbStack->top->ele->symLexeme, "Module Declarations")))
     {
@@ -88,7 +90,7 @@ symbolTableNode *searchScope(tableStack *tbStack, astNode *key)
         
         sprintf(err, "Line %d: %s variable is not declared.", 
         key->node->ele.leafNode->lineNum, key->node->ele.leafNode->lexeme);
-        pushSemanticError(err);   
+        pushSemanticError(err);
         while(tempStack->size  != 0)
         {
             temp = sympop(tempStack);
@@ -108,16 +110,33 @@ symbolTableNode *searchScope(tableStack *tbStack, astNode *key)
         if(ret->aux == 0)   //Variable hasn't been decalared
         {
             //ERROR
-            sprintf(err, "Line %d: %s variable not declared (Declaration at %d, should be done before use).", 
-            key->node->ele.leafNode->lineNum, key->node->ele.leafNode->lexeme, ret->lineNum);
-            pushSemanticError(err);
-            while(tempStack->size  != 0)
+            symbolTableNode *tmp = (symbolTableNode *)malloc(sizeof(symbolTableNode));
+            *tmp = *ret;
+            
+            temp = sympop(tbStack);
+            sympush(tempStack, temp);
+            
+            while((strcmp(tbStack->top->ele->symLexeme, "Module Declarations"))
+            && (ret = sym_hash_find(key->node->ele.leafNode->lexeme, &(tbStack->top->ele->hashtb), 0, NULL)) == NULL)
             {
-                temp = sympop(tempStack);
-                sympush(tbStack, temp);
+                temp = sympop(tbStack);
+                sympush(tempStack, temp);
             }
-            free(tempStack);
-            return NULL;
+
+            if((!strcmp(tbStack->top->ele->symLexeme, "Module Declarations")))
+            {
+                //Not declared, ERROR
+                sprintf(err, "Line %d: %s variable not declared (Declaration at %d, should be done before use).", 
+                key->node->ele.leafNode->lineNum, key->node->ele.leafNode->lexeme, tmp->lineNum);
+                pushSemanticError(err);
+                while(tempStack->size  != 0)
+                {
+                    temp = sympop(tempStack);
+                    sympush(tbStack, temp);
+                }
+                free(tempStack);
+                return NULL;
+            }
         }
 
         //Push everything in tempStack into the tbStack
@@ -343,8 +362,8 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         //Call typeChecker on moduleDef
         typeChecker(currentNode->child->sibling->sibling->sibling, tbStack);
         
-        char * err = (char *)malloc(sizeof(char)*100);
-        memset(err, '\0', sizeof(char)*100);
+        char * err = (char *)malloc(sizeof(char)*200);
+        memset(err, '\0', sizeof(char)*200);
         for(int i=0; i<st->ele.data.mod.outputcount; i++)
         {
             tmp = sym_hash_find(st->ele.data.mod.outputList[i].data.id.lexeme, &(tbStack->top->ele->hashtb), 0, NULL);
@@ -355,9 +374,9 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                 sprintf(err,"Line %d: %s variable not assigned during module call.", 
                 tmp->lineNum, tmp->ele.data.id.lexeme);
                 pushSemanticError(err);
-                newTable = sympop(tbStack);
-                free(newTable);
-                return NULL;
+                // newTable = sympop(tbStack);
+                // free(newTable);
+                // return NULL;
             }
         }
         //Pop this module's symbol table (moduleDef's symbol table will be popped in its own scope)
@@ -448,7 +467,10 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
 
         //Search for ID_node in the symbol table tree
         symbolTableNode *ret = searchScope(tbStack, currentNode->child);
-        
+
+        //Find the rightExpression's type
+        type *rightType = typeChecker(currentNode->child->sibling, tbStack);
+
         //ID_node is not declared, stop right here
         //searchscope function has already caught the error
         if(ret == NULL) 
@@ -456,15 +478,16 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             return NULL;
         }    
         
-        char * err = (char *)malloc(sizeof(char)*100);
-        memset(err, '\0', sizeof(char)*100);
+        char * err = (char *)malloc(sizeof(char)*200);
+        memset(err, '\0', sizeof(char)*200);
         //ID_node var is of type array
         if(ret->ele.tag != Identifier)
         {
             //ID_node can't be an array var or module's name, ERROR
-            sprintf(err, "Line %d: %s variable can't be on LHS of an assignment because it isn't an ID.", 
+            sprintf(err, "Line %d: '%s' variable can't be on LHS of an assignment because it isn't an ID.", 
             ret->lineNum, ret->ele.data.arr.lexeme);
             pushSemanticError(err);
+            free(err);
             return NULL;
         }
 
@@ -472,16 +495,14 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         {
             //Error catch
             //It's an index and I am in the scope of the corresponding for loop
-            sprintf(err,"Line %d: %s variable can not be modified during FOR loop (index variable).", 
-            ret->lineNum, ret->ele.data.id.lexeme); 
+            sprintf(err,"Line %d: '%s' variable can not be modified during FOR loop (index variable).", 
+            currentNode->child->node->ele.leafNode->lineNum, ret->ele.data.id.lexeme); 
             pushSemanticError(err);
+            free(err);
             return NULL;
         }
 
         ret->ele.data.id.isAssigned = 1;    //ID_node has been assigned something
-
-        //Find the rightExpression's type
-        type *rightType = typeChecker(currentNode->child->sibling, tbStack);
 
         //Either there was an error in type calculation of rightExpression or the type is an arrayType or type doesn't match
         if(rightType == NULL)
@@ -492,19 +513,21 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         }
         if(rightType->tag == ArrayType)
         {
-            sprintf(err,"Line %d: %s variable's type (%s) does not match the expression type (Array).", 
+            sprintf(err,"Line %d: '%s' variable's type (%s) does not match the expression type (Array).", 
             ret->lineNum, ret->ele.data.id.lexeme, ret->ele.data.id.type);
             pushSemanticError(err);
             free(rightType);
+            free(err);
             return NULL;
         }
         if(strcmp(ret->ele.data.id.type, rightType->tp.type))
         {
             //Type mismatch, ERROR
-            sprintf(err,"Line %d: %s variable's type (%s) does not match the expression type (%s).", 
+            sprintf(err,"Line %d: '%s' variable's type (%s) does not match the expression type (%s).", 
             ret->lineNum, ret->ele.data.id.lexeme, ret->ele.data.id.type, rightType->tp.type);
             pushSemanticError(err);
             free(rightType);
+            free(err);
             return NULL;
         }
         free(err);
@@ -524,8 +547,8 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         if(ret == NULL)
             return NULL;
         
-        char * err = (char *)malloc(sizeof(char)*100);
-        memset(err, '\0', sizeof(char)*100);
+        char * err = (char *)malloc(sizeof(char)*200);
+        memset(err, '\0', sizeof(char)*200);
         //ID_node var is of Array type
         if(ret->ele.tag == Array)
         {
@@ -534,6 +557,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             currentNode->child->node->ele.leafNode->lineNum, 
             currentNode->child->node->ele.leafNode->lexeme);
             pushSemanticError(err);
+            free(err);
             return NULL;
         }
 
@@ -546,6 +570,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             currentNode->child->node->ele.leafNode->lineNum, 
             currentNode->child->node->ele.leafNode->lexeme); 
             pushSemanticError(err);
+            free(err);
             return NULL;
         }
         free(err);
@@ -572,12 +597,15 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
 
         //Search for ID_node in the symbol table tree
         symbolTableNode *leftType_id = searchScope(tbStack, currentNode->child);
+
+        // Right Expr type checking also done
+        type * rightType = typeChecker(currentNode->child->sibling->sibling,tbStack);
         
         if(leftType_id == NULL)
             return NULL;
         
-        char * err = (char *)malloc(sizeof(char)*100);
-        memset(err, '\0', sizeof(char)*100);
+        char * err = (char *)malloc(sizeof(char)*200);
+        memset(err, '\0', sizeof(char)*200);
         //The ID_node should be of Array type
         if(leftType_id->ele.tag != Array)
         {
@@ -587,6 +615,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             currentNode->child->node->ele.leafNode->lexeme, 
             leftType_id->ele.data.id.type);
             pushSemanticError(err);
+            free(err);
             return NULL;
         }
         
@@ -598,6 +627,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             currentNode->child->sibling->node->ele.leafNode->lineNum, 
             currentNode->child->sibling->node->ele.leafNode->lexeme);
             pushSemanticError(err);
+            free(err);
             return NULL;
         }
         else if(!strcmp(currentNode->child->sibling->node->ele.leafNode->type, "NUM"))
@@ -615,6 +645,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                     //out of bounds errors
                     sprintf(err,"Line %d: Index (%s) is out of bounds for this Array - %s (%d - %d).",num->node->ele.leafNode->lineNum, num->node->ele.leafNode->lexeme, leftType_id->ele.data.arr.lexeme, *(int*)(leftType_id->ele.data.arr.lowerIndex->value), *(int*)(leftType_id->ele.data.arr.upperIndex->value));
                     pushSemanticError(err);
+                    free(err);
                     return NULL;
                 }
             }
@@ -642,6 +673,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                 currentNode->child->sibling->node->ele.leafNode->lineNum, 
                 currentNode->child->sibling->node->ele.leafNode->lexeme);
                 pushSemanticError(err);
+                free(err);
                 return NULL;
             }
             
@@ -654,13 +686,11 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                 currentNode->child->sibling->node->ele.leafNode->lexeme, 
                 index->ele.data.id.type);
                 pushSemanticError(err);
+                free(err);
                 return NULL;
             }
             
         }
-        
-        //Everything on LHS is fine, now do type checking
-        type * rightType = typeChecker(currentNode->child->sibling->sibling,tbStack);
         
         //Error while calculating type of the right side expression
         if(rightType == NULL)
@@ -681,6 +711,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             leftType_id->ele.data.arr.type);
             pushSemanticError(err);
             free(rightType);
+            free(err);
             return NULL;
         }
 
@@ -695,6 +726,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             rightType->tp.type);
             pushSemanticError(err);
             free(rightType);
+            free(err);
             return NULL;
         }
         free(err);
@@ -711,9 +743,20 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         
         /*Check if the func is already defined in program scope (defined functions)*/
         symbolTableNode *ret = sym_hash_find(currentNode->child->sibling->node->ele.leafNode->lexeme, &(symbolTableRoot->hashtb), 0, NULL);
-        char * err = (char *)malloc(sizeof(char)*100);
-        memset(err, '\0', sizeof(char)*100);
+        char * err = (char *)malloc(sizeof(char)*200);
+        memset(err, '\0', sizeof(char)*200);
         
+         //Function is not defined
+        if(ret == NULL)
+        {
+            sprintf(err,"Line %d: %s module is not defined.", 
+            currentNode->child->sibling->node->ele.leafNode->lineNum,
+            currentNode->child->sibling->node->ele.leafNode->lexeme);
+            pushSemanticError(err);
+            free(err);   
+            return NULL;
+        }
+
         if(!strcmp(ret->ele.data.mod.lexeme , tbStack->top->ele->symLexeme))
         {
             // ERROR : Recursion not allowed
@@ -721,68 +764,60 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             currentNode->child->sibling->node->ele.leafNode->lineNum,
             currentNode->child->sibling->node->ele.leafNode->lexeme);
             pushSemanticError(err);
-            return NULL;
-        }
-        
-        //Function is not defined
-        if(ret == NULL)
-        {
-            sprintf(err,"Line %d: %s module is not defined.", 
-            currentNode->child->sibling->node->ele.leafNode->lineNum,
-            currentNode->child->sibling->node->ele.leafNode->lexeme);
-            pushSemanticError(err);   
+            free(err);
             return NULL;
         }
         //Function is defined
-        else
+        //Check if its definition has been traversed yet (in this pass or not)
+        if(!ret->aux)
         {
-            //Check if its definition has been traversed yet (in this pass or not)
-            if(!ret->aux)
+            //Declaration hasn't been used even once
+            //Search for it in the declaration table
+            ret = sym_hash_find(currentNode->child->sibling->node->ele.leafNode->lexeme, &(symbolTableRoot->child->hashtb), 0, NULL);     
+            
+            //Function not declared (but defined)
+            if(ret == NULL)
             {
-                //Declaration hasn't been used even once
-                //Search for it in the declaration table
-                ret = sym_hash_find(currentNode->child->sibling->node->ele.leafNode->lexeme, &(symbolTableRoot->child->hashtb), 0, NULL);     
-                
-                //Function not declared (but defined)
-                if(ret == NULL)
-                {
-                    // Function defined but not declared and occurs after it
-                    sprintf(err,"Line %d: %s module is not declared.", 
-                    currentNode->child->sibling->node->ele.leafNode->lineNum,
-                    currentNode->child->sibling->node->ele.leafNode->lexeme);
-                    pushSemanticError(err);
-                    return NULL;
-                }
-                //Function declared (but defined)
-                else
-                {
-                    // Setting the aux field which signifies that the declaration is used atleast once
-                    ret->aux = 1;
-                }
+                // Function defined but not declared and occurs after it
+                sprintf(err,"Line %d: %s module is not declared.", 
+                currentNode->child->sibling->node->ele.leafNode->lineNum,
+                currentNode->child->sibling->node->ele.leafNode->lexeme);
+                pushSemanticError(err);
+                // free(err);
+                // return NULL;
             }
+            //Function declared (but defined)
             else
             {
-                //Declaration has been used at least once
-                ret = sym_hash_find(currentNode->child->sibling->node->ele.leafNode->lexeme, &(symbolTableRoot->child->hashtb), 0, NULL);     
-                if(ret != NULL)
-                {
-                    if(!ret->aux)
-                    {
-                        // ERROR (Redundant Declaration) : Declaration not used for module
-                        sprintf(err,"Line %d: %s module has redundant declaration.", 
-                        ret->lineNum,currentNode->child->sibling->node->ele.leafNode->lexeme);
-                        pushSemanticError(err); 
-                        return NULL;
-                    }
-                }
-            }   
+                // Setting the aux field which signifies that the declaration is used atleast once
+                ret->aux = 1;
+            }
         }
+        else
+        {
+            //Declaration has been used at least once
+            ret = sym_hash_find(currentNode->child->sibling->node->ele.leafNode->lexeme, &(symbolTableRoot->child->hashtb), 0, NULL);     
+            if(ret != NULL)
+            {
+                if(!ret->aux)
+                {
+                    // ERROR (Redundant Declaration) : Declaration not used for module
+                    sprintf(err,"Line %d: %s module has redundant declaration.", 
+                    ret->lineNum,currentNode->child->sibling->node->ele.leafNode->lexeme);
+                    pushSemanticError(err);
+                    // free(err); 
+                    // return NULL;
+                }
+            }
+        }   
+    
         
         /***********************************************************************/
 
         /*Now compare the ID_list_node with input_list of the function*/
         ret = sym_hash_find(currentNode->child->sibling->node->ele.leafNode->lexeme, &(symbolTableRoot->hashtb), 0, NULL);
-        int inputsize = listCount(currentNode->child->sibling->sibling);
+        int inputsize = listCount(currentNode->child->sibling->sibling->child);
+        
         
         if(inputsize != ret->ele.data.mod.inputcount)
         {
@@ -791,21 +826,32 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             currentNode->child->sibling->sibling->node->ele.internalNode->lineNumStart,
             ret->ele.data.mod.lexeme);
             pushSemanticError(err);
+            free(err);
             return NULL;
         }
 
-        astNode * trav = currentNode->child->sibling->sibling;
+        
+
+        //trav is pointing to head of the input ID list
+        astNode * trav = currentNode->child->sibling->sibling->child;
         for(int i=0; i<inputsize; i++)
         {
+            // printf(" %s ",ret->ele.data.mod.inputList[i].data.id.lexeme);
+            // getchar(); getchar();
+
             //Search for trav in the symbol table tree
             symbolTableNode *id_arr = searchScope(tbStack, trav);
+
+            // printf(" %s ",id_arr->ele.data.id.lexeme);
+            // getchar(); getchar();
 
             //trav isn't declared
             if(id_arr == NULL)
             {
                 //Not declared, ERROR
-                //searchscope has already inserted not found errors! 
-                return NULL;
+                //searchscope has already inserted not found errors!
+                continue; 
+                // return NULL;
             }
             
             //tags match (either both are Identifier or Array)
@@ -825,7 +871,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                         ret->ele.data.mod.inputList[i].data.id.lexeme, 
                         ret->ele.data.mod.inputList[i].data.id.type);
                         pushSemanticError(err);
-                        return NULL;
+                        // return NULL;
                     }
                 }
 
@@ -877,7 +923,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                         id_arr->ele.data.arr.type, ret->ele.data.mod.inputList[i].data.id.lexeme,
                         ret->ele.data.mod.inputList[i].data.arr.type);
                         pushSemanticError(err);
-                        return NULL;
+                        // return NULL;
                     }
                     else if(isError==2)
                     {
@@ -887,7 +933,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                         trav->node->ele.leafNode->lexeme, 
                         ret->ele.data.mod.inputList[i].data.arr.lexeme);
                         pushSemanticError(err);
-                        return NULL;
+                        // return NULL;
                     }
                     
                 }
@@ -909,22 +955,24 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                 trav->node->ele.leafNode->lineNum, trav->node->ele.leafNode->lexeme, formal,
                 ret->ele.data.mod.inputList[i].data.id.lexeme, actual);
                 pushSemanticError(err);
-                return NULL;
+                // return NULL;
             }
+            trav = trav->sibling;
         }
 
         /*Now compare the ID_list_node (return) with the output_list of the function*/
-        int outputsize = listCount(currentNode->child);
+        int outputsize = listCount(currentNode->child->child);
         if(outputsize != ret->ele.data.mod.outputcount)
         {
             //No of input parameters mismatch, ERROR
             sprintf(err,"Line %d: %s module call has output parameters mismatch (Number of parameters are different).", 
             currentNode->child->sibling->sibling->node->ele.internalNode->lineNumStart, ret->ele.data.mod.lexeme);
             pushSemanticError(err);
+            free(err);
             return NULL;
         }
 
-        trav = currentNode->child;
+        trav = currentNode->child->child;
         for(int i=0; i<outputsize; i++)
         {
             //its an ID
@@ -934,7 +982,8 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             if(id_arr == NULL)
             {
                 //Not declared, ERROR
-                return NULL;
+                continue;
+                // return NULL;
             }
             //tags match
             if(ret->ele.data.mod.outputList[i].tag == id_arr->ele.tag)
@@ -945,15 +994,15 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                     if(strcmp(id_arr->ele.data.id.type, ret->ele.data.mod.outputList[i].data.id.type))
                     {
                         //Type mismatch, ERROR
-                        sprintf(err,"Line %d: Type of actual parameter %s (%s) does not match the type of formal parameter %s (%s).", 
+                        sprintf(err,"Line %d: Type of receiving parameter %s (%s) for module call does not match the return type of %s (%s).", 
                         trav->node->ele.leafNode->lineNum, 
                         trav->node->ele.leafNode->lexeme, 
                         id_arr->ele.data.id.type, 
-                        ret->ele.data.mod.inputList[i].data.id.lexeme, 
-                        ret->ele.data.mod.inputList[i].data.id.type);
+                        ret->ele.data.mod.outputList[i].data.id.lexeme, 
+                        ret->ele.data.mod.outputList[i].data.id.type);
                         pushSemanticError(err);
                         id_arr->ele.data.id.isAssigned = 1;
-                        return NULL;
+                        // return NULL;
                     }
 
                     // Checking for index variable being assigned
@@ -963,7 +1012,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                         sprintf(err,"Line %d: %s variable can not be modified during FOR loop (index variable).", 
                         trav->node->ele.leafNode->lineNum, trav->node->ele.leafNode->lexeme); 
                         pushSemanticError(err);
-                        return NULL;
+                        // return NULL;
                     }
                 }
 
@@ -974,7 +1023,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                     sprintf(err,"Line %d: %s variable (Array) can't be returned from a function.", 
                     trav->node->ele.leafNode->lineNum, trav->node->ele.leafNode->lexeme); 
                     pushSemanticError(err);
-                    return NULL;
+                    // return NULL;
                 }
             }
             else    //tags don't match, one is array and other is ID
@@ -1000,8 +1049,9 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                     ret->ele.data.mod.inputList[i].data.arr.type);
                     pushSemanticError(err);
                 }
-                return NULL;
+                // return NULL;
             }
+            trav = trav->sibling;
         }
         free(err);
         return NULL;
@@ -1018,40 +1068,42 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         symbolTableNode *id = searchScope(tbStack, currentNode->child);//sym_hash_find(currentNode->child->node->ele.leafNode->lexeme, &(tbStack->top->ele->hashtb),0,NULL);
         sympush(tbStack,temp);
         
-        char * err = (char *)malloc(sizeof(char)*100);
-        memset(err, '\0', sizeof(char)*100);
+        char * err = (char *)malloc(sizeof(char)*200);
+        memset(err, '\0', sizeof(char)*200);
         
+        int isNull = 0;
         if(id == NULL)
         {
+            isNull = 1;
            //Index variable not declared, ERROR
-           free(sympop(tbStack));
-           return NULL; 
+        //    free(sympop(tbStack));
+        //    return NULL; 
         }
         
-        if(id->ele.tag == Array)
+        if(isNull == 0 && id->ele.tag == Array)
         {
             //Can't be an array variable, ERROR
             sprintf(err,"Line %d: %s variable is of Array type (Index of FOR loop can't be of Array type).", 
             currentNode->child->node->ele.leafNode->lineNum, 
             currentNode->child->node->ele.leafNode->lexeme);
             pushSemanticError(err);
-            free(sympop(tbStack));
-            return NULL;
+            // free(sympop(tbStack));
+            // return NULL;
         }
-
-        if(!strcmp(id->ele.data.id.type,"REAL") || !strcmp(id->ele.data.id.type,"BOOLEAN"))
+        else if(isNull == 0  && (!strcmp(id->ele.data.id.type,"REAL") || !strcmp(id->ele.data.id.type,"BOOLEAN")))
         {
             //Type invalid, ERROR
             sprintf(err,"Line %d: %s variable is of invalid type (%s).", 
             currentNode->child->node->ele.leafNode->lineNum, 
             currentNode->child->node->ele.leafNode->lexeme,
-            currentNode->child->node->ele.leafNode->type);
+            id->ele.data.id.type);
             pushSemanticError(err);
-            free(sympop(tbStack));
-            return NULL;
+            // free(sympop(tbStack));
+            // return NULL;
         }
         
-        id->ele.data.id.isIndex = 1;    //Mark this variable as index variable
+        if(isNull == 0)
+            id->ele.data.id.isIndex = 1;    //Mark this variable as index variable
 
         symbolTable *currentSTNode = tbStack->top->ele->child;
         tableStackEle *newTable = (tableStackEle *)malloc(sizeof(tableStackEle));
@@ -1076,7 +1128,8 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         free(sympop(tbStack));
         free(newTable);
         free(err);
-        id->ele.data.id.isIndex = 0; //isIndex restored back. Now it can change!
+        if(isNull == 0)
+            id->ele.data.id.isIndex = 0; //isIndex restored back. Now it can change!
 
         return NULL;
     } 
@@ -1086,8 +1139,8 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                 1) Epxr_node
                 2) stmts_node
         */
-        //make a function to take a astNode and that marks all its leaves to be "while" variables 
-        
+       
+        //make a function to take a astNode and that marks all its leaves to be "while" variables
         symbolTable *currentSTNode = tbStack->top->ele->child;
         tableStackEle *newTable = (tableStackEle *)malloc(sizeof(tableStackEle));
 
@@ -1095,16 +1148,18 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         type *exprType = typeChecker(currentNode->child, tbStack);
         sympush(tbStack,temp);
 
-        char * err = (char *)malloc(sizeof(char)*100);
-        memset(err, '\0', sizeof(char)*100);
-
+        char * err = (char *)malloc(sizeof(char)*200);
+        memset(err, '\0', sizeof(char)*200);
+        int isNull = 0;
+        
         if(exprType == NULL)
         {
-            free(err);
-            free(sympop(tbStack));
-            return NULL;
+            // free(err);
+            // free(sympop(tbStack));
+            // return NULL;
+            isNull = 1;
         }
-        if(exprType->tag == ArrayType)
+        if(isNull == 0 && exprType->tag == ArrayType)
         {
             if(currentNode->child->node->tag == Leaf)
             {
@@ -1116,12 +1171,14 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                 sprintf(err,"Line %d: RHS type can't be Array.", 
                 currentNode->child->node->ele.internalNode->lineNumStart);
             }
+
             pushSemanticError(err);
-            free(exprType);
-            free(sympop(tbStack));
-            return NULL;
+            
+            // free(exprType);
+            // free(sympop(tbStack));
+            // return NULL;
         }
-        if(strcmp(exprType->tp.type,"BOOLEAN"))
+        if(isNull == 0 && strcmp(exprType->tp.type,"BOOLEAN"))
         {
             // ERROR - Expr in While is either has error or of wrong type.
             if(currentNode->child->node->tag == Leaf)
@@ -1134,10 +1191,10 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                 sprintf(err,"Line %d: Expression in while condition must be boolean (Here, it is %s).", 
                 currentNode->child->node->ele.internalNode->lineNumStart, exprType->tp.type);
             }
-            free(exprType);
+            // free(exprType);
             pushSemanticError(err);
-            free(sympop(tbStack));
-            return NULL;
+            // free(sympop(tbStack));
+            // return NULL;
         }
 
         //Mark all vars in the Expr_node as unassigned
@@ -1185,13 +1242,16 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                 sprintf(err,"Line %d: No variable in while's condition changes inside the loop.", 
                 currentNode->child->node->ele.internalNode->lineNumStart);
             }
-            free(exprType);
+            if(isNull == 0)
+                free(exprType);
             pushSemanticError(err);
+            free(err);
             free(sympop(tbStack));
             return NULL;
         }
         free(err);
-        free(exprType);
+        if(isNull == 0)
+            free(exprType);
         free(sympop(tbStack));
         free(newTable);
         return NULL;
@@ -1207,42 +1267,44 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         symbolTableNode *id = searchScope(tbStack, currentNode->child); //sym_hash_find(currentNode->child->node->ele.leafNode->lexeme, &(tbStack->top->ele->hashtb),0,NULL);
         sympush(tbStack,temp);
 
-        char * err = (char *)malloc(sizeof(char)*100);
-        memset(err, '\0', sizeof(char)*100);
+        char * err = (char *)malloc(sizeof(char)*200);
+        memset(err, '\0', sizeof(char)*200);
+        int isNull = 0;
         
         if(id == NULL)
         {
            //Index variable not declared, ERROR
            //searchscope has already inserted the error of "not found" variable
-           free(sympop(tbStack));
-           return NULL;
+        //    free(sympop(tbStack));
+        //    return NULL;
+            isNull = 1;
         }
         
-        if(id->ele.tag == Array)
+        if(isNull == 0 && id->ele.tag == Array)
         {
             //Can't be an array variable, ERROR
             sprintf(err,"Line %d: %s variable used in the switch construct (Switch varible can't be an array).", 
             id->lineNum,
             id->ele.data.arr.lexeme);
             pushSemanticError(err);
-            free(sympop(tbStack));
-            return NULL;
+            // free(sympop(tbStack));
+            // return NULL;
         }
-
-        if(!strcmp(id->ele.data.id.type,"REAL"))
+        else if(isNull == 0 && !strcmp(id->ele.data.id.type,"REAL"))
         {
             //Type invalid, ERROR
             sprintf(err,"Line %d: %s variable is of invalid type (REAL).", 
             currentNode->child->node->ele.leafNode->lineNum, 
             currentNode->child->node->ele.leafNode->lexeme);
             pushSemanticError(err);
-            free(sympop(tbStack));
-            return NULL;
+            // free(sympop(tbStack));
+            // return NULL;
         }
-
-                
+        
+        //trav is the head of the CASE statements        
         astNode * trav = currentNode->child->sibling;
-        if(!strcmp(id->ele.data.id.type,"INTEGER"))
+        
+        if(isNull == 0 && !strcmp(id->ele.data.id.type,"INTEGER"))
         {
             astNode* findDefault = currentNode->child;
             while(findDefault->sibling!=NULL)
@@ -1257,66 +1319,88 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                 currentNode->child->node->ele.leafNode->lexeme, 
                 id->ele.data.id.type);
                 pushSemanticError(err);
-                free(sympop(tbStack));
-                return NULL;
+                // free(sympop(tbStack));
+                // return NULL;
             }
-            while(!strcmp(trav->node->ele.internalNode->label, "DEFAULT"))
+            else
             {
-                if(!strcmp(trav->child->node->ele.leafNode->type, "RNUM") 
-                || !strcmp(trav->child->node->ele.leafNode->type, "TRUE") 
-                || !strcmp(trav->child->node->ele.leafNode->type, "FALSE"))
+                //trav is the firt case (head)
+                while(strcmp(trav->node->ele.internalNode->label, "DEFAULT"))
                 {
-                    //Value can't be a real constant, true or false, ERROR
-                    sprintf(err,"Line %d: %s variable in case canot be of %s type", 
-                    trav->child->node->ele.leafNode->lineNum, 
-                    trav->child->node->ele.leafNode->lexeme, 
-                    trav->child->node->ele.leafNode->type);
-                    free(sympop(tbStack));
-                    pushSemanticError(err);
-                    return NULL;
-                }
-                //Now value is either ID or NUM
-                if(!strcmp(trav->child->node->ele.leafNode->type, "ID"))
-                {
-                    type *valType = typeChecker(trav->child, tbStack);
+                
+                    if(!strcmp(trav->child->node->ele.leafNode->type, "RNUM") 
+                    || !strcmp(trav->child->node->ele.leafNode->type, "TRUE") 
+                    || !strcmp(trav->child->node->ele.leafNode->type, "FALSE"))
+                    {   
+                        if(!strcmp(trav->child->node->ele.leafNode->type, "TRUE") || !strcmp(trav->child->node->ele.leafNode->type, "FALSE"))
+                        {
+                            sprintf(err,"Line %d: Value variable (%s) in CASE cannot be of %s type, should be of NUM/ID(Integer) type.", 
+                            trav->child->node->ele.leafNode->lineNum, 
+                            trav->child->node->ele.leafNode->lexeme, 
+                            "Boolean");
+                        }
+                        else if(!strcmp(trav->child->node->ele.leafNode->type, "RNUM"))
+                        {
+                            sprintf(err,"Line %d: Value variable (%s) in CASE cannot be of %s type, should be of NUM/ID(Integer) type.", 
+                            trav->child->node->ele.leafNode->lineNum, 
+                            trav->child->node->ele.leafNode->lexeme, 
+                            "Real");
+                        }
+                        // free(sympop(tbStack));
+                        // pushSemanticError(err);
+                        // return NULL;
+                    }
+                    
+                    //Now value is either ID or NUM
+                    if(!strcmp(trav->child->node->ele.leafNode->type, "ID"))
+                    {
+                        type *valType = typeChecker(trav->child, tbStack);
 
-                    if(valType == NULL)
-                    {
-                        //ID isn't declared, ERROR
-                        //searchscope must have inserted the error
-                        free(sympop(tbStack));
-                        return NULL;
-                    }
-                    if(valType->tag == ArrayType)
-                    {
-                        //ID can't be a array var, ERROR
-                        sprintf(err, "Line %d: Value variable (%s) in CASE is of Array type.",
-                        trav->child->node->ele.leafNode->lineNum, 
-                        trav->child->node->ele.leafNode->lexeme);
-                        pushSemanticError(err);
-                        free(valType);
-                        free(sympop(tbStack));
-                        return NULL;
-                    }
-                    if(strcmp(valType->tp.type, "INTEGER"))
-                    {
-                        //ID can't be of any type except integer, ERROR
-                        sprintf(err, "Line %d: Value variable (%s) in CASE is of type %s (Expected Integer).",
-                        trav->child->node->ele.leafNode->lineNum, 
-                        trav->child->node->ele.leafNode->lexeme,
-                        valType->tp.type);
-                        pushSemanticError(err);
-                        free(valType);
-                        free(sympop(tbStack));
-                        return NULL;
-                    }
+                        if(valType == NULL)
+                        {
+                            //ID isn't declared, ERROR
+                            //searchscope must have inserted the error
+                            // free(sympop(tbStack));
+                            // return NULL;
+                        }
+                        else if(valType->tag == ArrayType)
+                        {
+                            //ID can't be a array var, ERROR
+                            sprintf(err, "Line %d: Value variable (%s) in CASE is of Array type.",
+                            trav->child->node->ele.leafNode->lineNum, 
+                            trav->child->node->ele.leafNode->lexeme);
+                            pushSemanticError(err);
+                            free(valType);
+                            // free(sympop(tbStack));
+                            // return NULL;
+                        }
+                        else if(strcmp(valType->tp.type, "INTEGER"))
+                        {
+                            //ID can't be of any type except integer, ERROR
+                            sprintf(err, "Line %d: Value variable (%s) in CASE is of type %s (Expected Integer).",
+                            trav->child->node->ele.leafNode->lineNum, 
+                            trav->child->node->ele.leafNode->lexeme,
+                            valType->tp.type);
+                            pushSemanticError(err);
+                            free(valType);
+                            // free(sympop(tbStack));
+                            // return NULL;
+                        }
+                        
+                    }  
+                      
+                    trav = trav->sibling;
                 }
-                trav = trav->sibling;
-            }
+            }    
         }
         trav = currentNode->child->sibling;
-        if(!strcmp(id->ele.data.id.type,"BOOLEAN"))
+
+        
+        if(isNull == 0 && !strcmp(id->ele.data.id.type,"BOOLEAN"))
         {
+            // printf("Reached Here");
+            // getchar();
+            
             astNode* findDefault = currentNode->child;
             while(findDefault->sibling!=NULL)
             {
@@ -1330,67 +1414,73 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                 currentNode->child->node->ele.leafNode->lexeme, 
                 id->ele.data.id.type);
                 pushSemanticError(err);
-                free(sympop(tbStack));
-                return NULL;
+                // free(sympop(tbStack));
+                // return NULL;
             }
-            while(trav != NULL)
+            else
             {
-                if(!strcmp(trav->child->node->ele.leafNode->type, "RNUM"))
+                //switch with a BOOL type does not require a Default (should not be there)
+                while(trav != NULL)
                 {
-                    sprintf(err, "Line %d: Value (%s) in CASE is of type %s (Expected Boolean).",
-                    trav->child->node->ele.leafNode->lineNum, 
-                    trav->child->node->ele.leafNode->lexeme, "REAL");
-                    pushSemanticError(err);
-                    free(sympop(tbStack));
-                    return NULL;
-                }
-                if(!strcmp(trav->child->node->ele.leafNode->type, "NUM"))
-                {
-                    //Value can't be a real constant, ERROR
-                    sprintf(err, "Line %d: Value (%s) in CASE is of type %s (Expected Boolean).",
-                    trav->child->node->ele.leafNode->lineNum, 
-                    trav->child->node->ele.leafNode->lexeme, "INTEGER");
-                    pushSemanticError(err);
-                    free(sympop(tbStack));
-                    return NULL;
-                }
-                if(!strcmp(trav->child->node->ele.leafNode->type, "ID"))
-                {
-                    type *valType = typeChecker(trav->child, tbStack);
-                    if(valType == NULL)
+                    if(!strcmp(trav->child->node->ele.leafNode->type, "RNUM"))
                     {
-                        //ID isn't declared, ERROR
-                        free(sympop(tbStack));
-                        return NULL;
-                    }
-                    if(valType->tag == ArrayType)
-                    {
-                        //ID can't be a array var, ERROR
-                        sprintf(err, "Line %d: Value variable (%s) in CASE is of Array type.",
+                        sprintf(err, "Line %d: Value (%s) in CASE is of type %s (Expected Boolean).",
                         trav->child->node->ele.leafNode->lineNum, 
-                        trav->child->node->ele.leafNode->lexeme);
+                        trav->child->node->ele.leafNode->lexeme, "REAL");
                         pushSemanticError(err);
-                        free(valType);
-                        free(sympop(tbStack));
-                        return NULL;
+                        // free(sympop(tbStack));
+                        // return NULL;
                     }
-                    if(strcmp(valType->tp.type, "BOOLEAN"))
+                    if(!strcmp(trav->child->node->ele.leafNode->type, "NUM"))
                     {
-                        //ID can't be of any type except integer, ERROR
-                        sprintf(err, "Line %d: Value variable (%s) in CASE is of type %s (Expected Boolean).",
+                        //Value can't be a real constant, ERROR
+                        sprintf(err, "Line %d: Value (%s) in CASE is of type %s (Expected Boolean).",
                         trav->child->node->ele.leafNode->lineNum, 
-                        trav->child->node->ele.leafNode->lexeme,
-                        valType->tp.type);
+                        trav->child->node->ele.leafNode->lexeme, "INTEGER");
                         pushSemanticError(err);
-                        free(valType);
-                        free(sympop(tbStack));
-                        return NULL;
+                        // free(sympop(tbStack));
+                        // return NULL;
                     }
+                    if(!strcmp(trav->child->node->ele.leafNode->type, "ID"))
+                    {
+                        type *valType = typeChecker(trav->child, tbStack);
+                        if(valType == NULL)
+                        {
+                            //ID isn't declared, ERROR
+                            // free(sympop(tbStack));
+                            // return NULL;
+                        }
+                        else if(valType->tag == ArrayType)
+                        {
+                            //ID can't be a array var, ERROR
+                            sprintf(err, "Line %d: Value variable (%s) in CASE is of Array type.",
+                            trav->child->node->ele.leafNode->lineNum, 
+                            trav->child->node->ele.leafNode->lexeme);
+                            pushSemanticError(err);
+                            free(valType);
+                            // free(sympop(tbStack));
+                            // return NULL;
+                        }
+                        else if(strcmp(valType->tp.type, "BOOLEAN"))
+                        {
+                            //ID can't be of any type except integer, ERROR
+                            sprintf(err, "Line %d: Value variable (%s) in CASE is of type %s (Expected Boolean).",
+                            trav->child->node->ele.leafNode->lineNum, 
+                            trav->child->node->ele.leafNode->lexeme,
+                            valType->tp.type);
+                            pushSemanticError(err);
+                            free(valType);
+                            // free(sympop(tbStack));
+                            // return NULL;
+                        }
+                    }
+                    trav = trav->sibling;
                 }
-                trav = trav->sibling;
-            }
-        }     
-        trav = currentNode->child;
+            }    
+        }   
+
+        //assigntrav as ID_node 
+        trav = currentNode->child->sibling;
         while(trav != NULL)
         {
             typeChecker(trav, tbStack);
@@ -1439,16 +1529,16 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         // 1) ID
         // 2) WhichID
 
-        char * err = (char *)malloc(sizeof(char)*100);
-        memset(err, '\0', sizeof(char)*100);
-        
-
+        char * err = (char *)malloc(sizeof(char)*200);
+        memset(err, '\0', sizeof(char)*200);
+    
         symbolTableNode * myNode = searchScope(tbStack, currentNode->child);
         
         if(myNode==NULL)
         {
             //ID not declared ERROR
             //searchscope  has inserted the error in the list
+            free(err);
             return NULL;
         }
 
@@ -1470,7 +1560,6 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             answer->tp.type = myNode->ele.data.id.type; 
         }
 
-
         // The index is mentioned for sure now
 
         //index is mentioned and ID is an Identifier
@@ -1483,6 +1572,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             currentNode->child->node->ele.leafNode->lexeme, 
             myNode->ele.data.id.type);
             pushSemanticError(err);
+            free(err);
             return NULL;
         }
 
@@ -1501,6 +1591,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                 {
                     //ID isn't declared, ERROR
                     //searchscope must have inserted the error
+                    free(err);
                     return NULL;
                 }
                 if(st->ele.tag != Identifier)
@@ -1511,6 +1602,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                     currentNode->child->sibling->node->ele.leafNode->lexeme, 
                     st->ele.data.id.type);
                     pushSemanticError(err);
+                    free(err);
                     return NULL;
                 }
                 
@@ -1522,6 +1614,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                     currentNode->child->sibling->node->ele.leafNode->lexeme, 
                     st->ele.data.id.type);
                     pushSemanticError(err);
+                    free(err);
                     return NULL;
                 }
 
@@ -1545,10 +1638,10 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                         *(int*)(myNode->ele.data.arr.lowerIndex->value), 
                         *(int*)(myNode->ele.data.arr.upperIndex->value));
                         pushSemanticError(err);
+                        free(err);
                         return NULL;
                     }
-                }   
-
+                }
             }                
         }
         free(err);
@@ -1567,9 +1660,8 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
     !strcmp(currentNode->node->ele.internalNode->label, "AND") || 
     !strcmp(currentNode->node->ele.internalNode->label, "OR"))
     {
-        char * err = (char *)malloc(sizeof(char)*100);
-        memset(err, '\0', sizeof(char)*100);
-        
+        char * err = (char *)malloc(sizeof(char)*200);
+        memset(err, '\0', sizeof(char)*200);
         
         //If its a binary expression
         if(currentNode->child->sibling != NULL)
@@ -1597,6 +1689,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                 }
                 free(leftType);
                 free(rightType);
+                free(err);
                 return NULL;
             }
             if(rightType->tag == ArrayType)
@@ -1618,6 +1711,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                 }
                 free(leftType);
                 free(rightType);
+                free(err);
                 return NULL;
             }
 
@@ -1684,11 +1778,13 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                         free(retType);
                         free(leftType);
                         free(rightType);
+                        free(err);
                         return  NULL;
                     } 
 
                     free(leftType);
-                    free(rightType);          
+                    free(rightType); 
+                    free(err);         
                     return retType;         
                 }
                 else
@@ -1705,6 +1801,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                     free(leftType);
                     free(rightType);
                     free(retType);
+                    free(err);
                     return NULL;
                 }
                 free(err);
@@ -1764,10 +1861,12 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                         free(retType);
                         free(leftType);
                         free(rightType);
-                        return  NULL;
+                        free(err);
+                        return NULL;
                     }
                     free(leftType);
                     free(rightType);          
+                    free(err);
                     return retType;         
                 }
                 else
@@ -1784,6 +1883,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                     free(leftType);
                     free(rightType);
                     free(retType);
+                    free(err);
                     return NULL;
                 }
             }
@@ -1846,10 +1946,12 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                         free(retType);
                         free(leftType);
                         free(rightType);
+                        free(err);
                         return  NULL;
                     }   
                     free(leftType);
                     free(rightType);        
+                    free(err);
                     return retType;         
                 }
                 else
@@ -1867,6 +1969,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                     free(retType);
                     free(leftType);
                     free(rightType);
+                    free(err);
                     return NULL;
                 }
             }
@@ -1894,6 +1997,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                 }
 
                 free(childType);
+                free(err);
                 return NULL;
             }
             type *retType = (type *)malloc(sizeof(type));
@@ -1928,9 +2032,11 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                 pushSemanticError(err);
                 free(retType);
                 free(childType);
+                free(err);
                 return NULL;
             }
             free(childType);
+            free(err);
             return retType;
         }
     }
@@ -1968,6 +2074,7 @@ void traverseAndMark(astNode * root, tableStack * tbStack, int * prevValues, int
             {
                 //Not declared, ERROR
                 //Push error and return
+                //searchscope will have inserted error
                 return;
             }
             if(st->ele.tag == Identifier)
@@ -1991,24 +2098,39 @@ void traverseAndMark(astNode * root, tableStack * tbStack, int * prevValues, int
 
 void checkAssignment(astNode *root, tableStack *tbStack, int *error, int *prevValues, int *index)
 {
+    //root is the expresssion node of while's condition
     if(root->node->tag == Leaf)
     {
         if(!strcmp(root->node->ele.leafNode->type, "ID"))
         {
             symbolTableNode *st = searchScope(tbStack, root);
+
+            // printf("Checking for %s: ", root->node->ele.leafNode->lexeme);
+            // getchar();
+
             if(st == NULL)
             {
-                /*****NOT NEEDED******/
+                /***** NOT NEEDED ******/
                 //Not declared, ERROR
                 //Push error and return
+                //searchscope will have inserted the error
+                
                 return;
             }
             if(st->ele.tag == Identifier)
             {
                 if(st->ele.data.id.isAssigned == 1)
-                    error = 0;
+                {
+                    *error = 0;
+                    // printf(" Changed \n");
+                    // getchar();
+                }    
                 else
+                {
                     st->ele.data.id.isAssigned = prevValues[*index];
+                    // printf(" Not Changed \n");
+                    // getchar();
+                }    
 
                 *index = *index + 1;
             }
