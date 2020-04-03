@@ -136,4 +136,5 @@ typedef struct semanticError
 }semanticError;
 
 semanticError* semErrorList;
+
 #endif

@@ -6,25 +6,20 @@ returns [sum:real];
 start
 	declare index:integer;
 	declare t:boolean;
-	declare sum:integer;
-	declare t:real;
+	t:=true;
 	sum:=0.0;
 	for(index in  1..15)
 	start
-		declare sum:integer;
 		t:= index<=n;
 		switch(t)
 		start
 			case true: print(list[index]);
 				   sum:=sum+list[index];
-				   declare y:real;
 				   break;
 			case false: print(sum);
 				    print(index);
-				    **prints the values of sum and index  15-n times**
 				    break;
 		end
-		** no need to increment the value of index as it will be taken care by the semantic rules associated with for construct, but an increment statement does not make its syntax incorrect**
 	end
 	print(sum);
 end
