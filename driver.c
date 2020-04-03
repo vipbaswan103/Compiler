@@ -12,7 +12,7 @@
 #include "ast.h"
 #include "symbolTable.h"
 #include <time.h>
-
+#include "semantics.h"
 void seeTokenization()
 {
     Token * tkn = NULL;
@@ -178,6 +178,11 @@ int main(int argc, char * argv[])
                     symbolTable *table = NULL;
                     formulation(ast, table);
                     printSymbolTable(symbolTableRoot);
+                    tableStack *tbStack= (tableStack*)malloc(sizeof(tableStack));
+                    tbStack->top = NULL;
+                    tbStack->size = 0;
+                    tbStack->bottom = NULL;
+                    typeChecker(ast, tbStack);
                     printSemanticErrors();
                     break;
 

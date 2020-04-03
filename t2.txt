@@ -5,10 +5,19 @@ start
 end
 <<module empty>>
 takes input[a:boolean, x:real];
+returns [y:integer];
 start
       declare a,b,c:integer;
       declare x:boolean;
-      declare x:real;
+      x:= a<b AND c<d;
+      y:=0;
+
+      switch(a)
+      start
+            case true:  break;
+            case false: break;
+            default:    break;
+      end
 end
 
 ** print the following message on the console

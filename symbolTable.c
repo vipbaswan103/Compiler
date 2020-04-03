@@ -18,11 +18,13 @@ void sympush(tableStack *stack, tableStackEle *newNode)
         stack->size = 1;
         stack->top = newNode;
         stack->bottom = newNode;
+        newNode->next = NULL;
+        return;
     }
 
     newNode->next = stack->top;
     stack->top = newNode;
-    stack->size ++;
+    stack->size++;
 }
 
 //pop from symbol table stack
@@ -87,11 +89,20 @@ symbolTableNode* sym_hash_find(char * str, hashSym * hash_tb, int replace, symbo
 		//return the appropriate node
         if(strcmp(lexeme,str) == 0)
         {
+            // if(replace == 0)
+            //     return trav;
+
             symbolTableNode *tmp = (symbolTableNode*)malloc(sizeof(symbolTableNode));
             *tmp = *trav;
             if(replace == 1)
                 *trav = *key;
-            return tmp;
+            if(replace == 1)
+                return tmp;         
+            else
+            {
+                free(tmp);
+                return trav;
+            }
         }
 		//keep searching
         trav = trav->next;
@@ -402,7 +413,6 @@ void formulation(astNode *astRoot, symbolTable *current)
                         }
                     }
                 }
-                free(ret);
             }
             idlist = idlist->sibling;
         }
