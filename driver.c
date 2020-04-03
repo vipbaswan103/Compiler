@@ -173,7 +173,7 @@ int main(int argc, char * argv[])
                     fclose(fp);
                     astNode * ast = createAST(parseTree, NULL, NULL);
                     fp = fopen(argv[3], "w");
-                    printAST(ast, fp);
+                    // printAST(ast, fp);
                     initializeErrorList();
                     symbolTable *table = NULL;
                     formulation(ast, table);
