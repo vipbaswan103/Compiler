@@ -41,5 +41,8 @@ TreeNode * pop(Stack * st);
 Stack * push(Stack * st, TreeNode * trNode);
 void printStack(Stack * st);
 TreeNode * parser(Grammar * grammar, int ** parsetable);
+void freeprasetree(TreeNode *root);
+void freerule(Node* trav);
+void freegrammar(Grammar* root);
 
 #endif

@@ -1095,3 +1095,43 @@ TreeNode * parser(Grammar * grammar, int ** parsetable)
     return parseTree;
 }
 
+void freeprasetree(TreeNode *root)
+{
+    //base case
+    if(root==NULL)
+        return;
+    
+    //call one the child
+    if(root->child!=NULL)
+        freeprasetree(root->child);
+    
+    //free all the siblings
+    if(root->sibling!=NULL)
+    {
+        TreeNode * trav = root->sibling;
+        while(trav!=NULL)
+        {
+            freeprasetree(trav);
+            trav=trav->sibling;
+        } 
+    }    
+
+    free(root);
+}
+
+void freerule(Node* trav)
+{
+    if(trav==NULL)
+    return;
+
+    freerule(trav->next);
+    free(trav);
+}
+
+void freegrammar(Grammar* root)
+{
+    for(int i=0;i<root->size;i++)
+    {
+        freerule(root->arr->head);
+    }
+}
