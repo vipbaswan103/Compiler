@@ -483,9 +483,70 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         trav = currentNode->child->sibling;
         if (!strcmp(trav->node->ele.internalNode->label,"ARRAY"))
         {
+            //Check whether the lower/upper bounds of the array are of ID type,
+            //If yes, then search for their declaration. If not found, give error
+            if(!strcmp(trav->child->child->node->ele.leafNode->type, "ID"))
+            {
+                st = searchScope(tbStack, trav->child->child);
+
+                if(st->ele.tag == Array)
+                {
+                    char * err=  (char*)malloc(sizeof(char)*200);
+                    memset(err, '\0', sizeof(char)*200);
+                    sprintf(err, "Line  %d: Lowerbound %s of dynamic array(s) can't be of Array type.",
+                    trav->child->child->node->ele.leafNode->lineNum,
+                    trav->child->child->node->ele.leafNode->lexeme);
+                    pushSemanticError(err);
+                    free(err);
+                }
+                else if(st->ele.tag == Identifier)
+                {
+                    if(strcmp(st->ele.data.id.type, "INTEGER"))
+                    {
+                        char * err=  (char*)malloc(sizeof(char)*200);
+                        memset(err, '\0', sizeof(char)*200);
+                        sprintf(err, "Line  %d: Lowerbound %s of dynamic array(s) is of type %s (Bounds can only be of Integer type).",
+                        trav->child->child->node->ele.leafNode->lineNum,
+                        trav->child->child->node->ele.leafNode->lexeme,
+                        st->ele.data.id.type);
+                        pushSemanticError(err);
+                        free(err);
+                    }
+                }
+            }
+
+            if(!strcmp(trav->child->child->sibling->node->ele.leafNode->type, "ID"))
+            {
+                st = searchScope(tbStack, trav->child->child->sibling);
+
+                if(st->ele.tag == Array)
+                {
+                    char * err=  (char*)malloc(sizeof(char)*200);
+                    memset(err, '\0', sizeof(char)*200);
+                    sprintf(err, "Line  %d: Upperbound %s of dynamic array(s) can't be of Array type.",
+                    trav->child->child->sibling->node->ele.leafNode->lineNum,
+                    trav->child->child->sibling->node->ele.leafNode->lexeme);
+                    pushSemanticError(err);
+                    free(err);
+                }
+                else if(st->ele.tag == Identifier)
+                {
+                    if(strcmp(st->ele.data.id.type, "INTEGER"))
+                    {
+                        char * err=  (char*)malloc(sizeof(char)*200);
+                        memset(err, '\0', sizeof(char)*200);
+                        sprintf(err, "Line  %d: Upperbound %s of dynamic array(s) is of type %s (Bounds can only be of Integer type).",
+                        trav->child->child->sibling->node->ele.leafNode->lineNum,
+                        trav->child->child->sibling->node->ele.leafNode->lexeme,
+                        st->ele.data.id.type);
+                        pushSemanticError(err);
+                        free(err);
+                    }
+                }
+            }
             if((!strcmp(trav->child->child->node->ele.leafNode->type,"NUM")) 
             && (!strcmp(trav->child->child->sibling->node->ele.leafNode->type,"NUM"))
-            && (*(int*)trav->child->child->node->ele.leafNode->value >= *(int*)trav->child->child->sibling->node->ele.leafNode->value))
+            && (*(int*)trav->child->child->node->ele.leafNode->value > *(int*)trav->child->child->sibling->node->ele.leafNode->value))
             {
                 char * err=  (char*)malloc(sizeof(char)*200);
                 memset(err, '\0', sizeof(char)*200);
@@ -745,9 +806,8 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         if(rightType->tag == ArrayType)
         {
             //RHS_expression can't be of an array type, ERROR
-            sprintf(err,"Line %d: %s variable's type (%s) does not match the expression type (Array).", 
+            sprintf(err,"Line %d: Type of LHS (%s) does not match the expression type (Array).", 
             currentNode->child->node->ele.leafNode->lineNum, 
-            currentNode->child->node->ele.leafNode->lexeme, 
             leftType_id->ele.data.arr.type);
             pushSemanticError(err);
             if(rightType!=NULL )free(rightType);
@@ -926,8 +986,13 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                         isError = 1;
                         //Type mismatch, ERROR
                         //arrays are of different type
-                        sprintf(err,"Line %d: %s Type mistmatch error", currentNode->child->sibling->sibling->node->ele.internalNode->lineNumStart,ret->ele.data.mod.lexeme);
-                        pushSemanticError(err);
+                        // sprintf(err,"Line %d: Type mismatch: Type of %s (%s, Array) and %s (%s, Array) doesn't match", 
+                        // currentNode->child->sibling->sibling->node->ele.internalNode->lineNumStart,
+                        // id_arr->ele.data.arr.lexeme,
+                        // id_arr->ele.data.arr.type,
+                        // ret->ele.data.mod.inputList[i].data.arr.lexeme,
+                        // ret->ele.data.mod.inputList[i].data.arr.type);
+                        // pushSemanticError(err);
 
                     }
                     //Check bounds (check only if types match)
@@ -992,9 +1057,19 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                     formal = id_arr->ele.data.id.type;
                 else
                     formal = id_arr->ele.data.arr.type;    
-                sprintf(err,"Line %d: Type of actual parameter %s (%s) does not match the type of formal parameter %s (%s).",
-                trav->node->ele.leafNode->lineNum, trav->node->ele.leafNode->lexeme, formal,
-                ret->ele.data.mod.inputList[i].data.id.lexeme, actual);
+                
+                if(ret->ele.data.mod.inputList[i].tag == Array)
+                {
+                    sprintf(err,"Line %d: Type of actual parameter %s (%s) does not match the type of formal parameter %s (Array, %s).",
+                    trav->node->ele.leafNode->lineNum, trav->node->ele.leafNode->lexeme, formal,
+                    ret->ele.data.mod.inputList[i].data.id.lexeme, actual);
+                }
+                else
+                {
+                    sprintf(err,"Line %d: Type of actual parameter %s (Array, %s) does not match the type of formal parameter %s (%s).",
+                    trav->node->ele.leafNode->lineNum, trav->node->ele.leafNode->lexeme, formal,
+                    ret->ele.data.mod.inputList[i].data.id.lexeme, actual);   
+                }  
                 pushSemanticError(err);
                 // return NULL;
             }
@@ -1072,22 +1147,22 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                 //Type mismatch, ERROR
                 if(id_arr->ele.tag == Identifier && ret->ele.data.mod.outputList[i].tag == Array)
                 {
-                    sprintf(err,"Line %d: Type of actual parameter %s (%s) does not match the type of formal parameter %s (%s).", 
+                    sprintf(err,"Line %d: Type of receiving parameter %s (%s) does not match the return type of %s (%s, Array).", 
                     trav->node->ele.leafNode->lineNum, 
                     trav->node->ele.leafNode->lexeme, 
-                    id_arr->ele.data.id.type, 
-                    ret->ele.data.mod.inputList[i].data.arr.lexeme, 
-                    ret->ele.data.mod.inputList[i].data.arr.type);
+                    id_arr->ele.data.id.type,
+                    ret->ele.data.mod.outputList[i].data.arr.lexeme, 
+                    ret->ele.data.mod.outputList[i].data.arr.type);
                     pushSemanticError(err);
                 }
                 else if(id_arr->ele.tag == Array && ret->ele.data.mod.outputList[i].tag == Identifier)
                 {
-                    sprintf(err,"Line %d: Type of actual parameter %s (%s) does not match the type of formal parameter %s (%s).", 
+                    sprintf(err,"Line %d: Type of receiving parameter %s (%s, Array) does not match the return type of %s (%s).", 
                     trav->node->ele.leafNode->lineNum, 
                     trav->node->ele.leafNode->lexeme, 
                     id_arr->ele.data.arr.type, 
-                    ret->ele.data.mod.inputList[i].data.id.lexeme,
-                    ret->ele.data.mod.inputList[i].data.arr.type);
+                    ret->ele.data.mod.outputList[i].data.id.lexeme,
+                    ret->ele.data.mod.outputList[i].data.arr.type);
                     pushSemanticError(err);
                 }
                 // return NULL;
@@ -1203,24 +1278,24 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         }
         if(isNull == 0 && exprType->tag == ArrayType)
         {
-            if(currentNode->child->node->tag == Leaf)
+            if(!strcmp(currentNode->child->node->ele.internalNode->label, "ID_ARR"))
             {
-                sprintf(err,"Line %d: RHS type can't be Array.", 
-                currentNode->child->node->ele.leafNode->lineNum);
+                sprintf(err,"Line %d: Variable %s in while condition is of Array type (It should be Boolean).", 
+                currentNode->child->child->node->ele.leafNode->lineNum,
+                currentNode->child->child->node->ele.leafNode->lexeme);
             }
-            else
-            {
-                sprintf(err,"Line %d: RHS type can't be Array.", 
-                currentNode->child->node->ele.internalNode->lineNumStart);
-            }
-
+            // else
+            // {
+            //     sprintf(err,"Line %d: RHS type can't be Array.", 
+            //     currentNode->child->node->ele.internalNode->lineNumStart);
+            // }
             pushSemanticError(err);
             
             // free(exprType);
             // free(sympop(tbStack));
             // return NULL;
         }
-        if(isNull == 0 && strcmp(exprType->tp.type,"BOOLEAN"))
+        else if(isNull == 0 && strcmp(exprType->tp.type,"BOOLEAN"))
         {
             // ERROR - Expr in While is either has error or of wrong type.
             if(currentNode->child->node->tag == Leaf)
@@ -1238,7 +1313,6 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             // free(sympop(tbStack));
             // return NULL;
         }
-
         //Mark all vars in the Expr_node as unassigned
         int size = 100, index = 0;
         int *prevValues = (int *)malloc(sizeof(int)*size);
@@ -1362,81 +1436,79 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                 currentNode->child->node->ele.leafNode->lexeme, 
                 id->ele.data.id.type);
                 pushSemanticError(err);
+                findDefault = findDefault->sibling;
                 // free(sympop(tbStack));
                 // return NULL;
             }
-            else
+            
+            //trav is the firt case (head)
+            while(trav != findDefault)
             {
-                //trav is the firt case (head)
-                while(strcmp(trav->node->ele.internalNode->label, "DEFAULT"))
-                {
+            
+                if(!strcmp(trav->child->node->ele.leafNode->type, "RNUM") 
+                || !strcmp(trav->child->node->ele.leafNode->type, "TRUE") 
+                || !strcmp(trav->child->node->ele.leafNode->type, "FALSE"))
+                {   
+                    if(!strcmp(trav->child->node->ele.leafNode->type, "TRUE") || !strcmp(trav->child->node->ele.leafNode->type, "FALSE"))
+                    {
+                        sprintf(err,"Line %d: Value variable (%s) in CASE cannot be of %s type, should be of NUM/ID(Integer) type.", 
+                        trav->child->node->ele.leafNode->lineNum, 
+                        trav->child->node->ele.leafNode->lexeme, 
+                        "Boolean");
+                        pushSemanticError(err);
+                    }
+                    else if(!strcmp(trav->child->node->ele.leafNode->type, "RNUM"))
+                    {
+                        sprintf(err,"Line %d: Value variable (%s) in CASE cannot be of %s type, should be of NUM/ID(Integer) type.", 
+                        trav->child->node->ele.leafNode->lineNum, 
+                        trav->child->node->ele.leafNode->lexeme, 
+                        "Real");
+                        pushSemanticError(err);
+                    }
+                    // free(sympop(tbStack));
+                    // pushSemanticError(err);
+                    // return NULL;
+                }
                 
-                    if(!strcmp(trav->child->node->ele.leafNode->type, "RNUM") 
-                    || !strcmp(trav->child->node->ele.leafNode->type, "TRUE") 
-                    || !strcmp(trav->child->node->ele.leafNode->type, "FALSE"))
-                    {   
-                        if(!strcmp(trav->child->node->ele.leafNode->type, "TRUE") || !strcmp(trav->child->node->ele.leafNode->type, "FALSE"))
-                        {
-                            sprintf(err,"Line %d: Value variable (%s) in CASE cannot be of %s type, should be of NUM/ID(Integer) type.", 
-                            trav->child->node->ele.leafNode->lineNum, 
-                            trav->child->node->ele.leafNode->lexeme, 
-                            "Boolean");
-                            pushSemanticError(err);
-                        }
-                        else if(!strcmp(trav->child->node->ele.leafNode->type, "RNUM"))
-                        {
-                            sprintf(err,"Line %d: Value variable (%s) in CASE cannot be of %s type, should be of NUM/ID(Integer) type.", 
-                            trav->child->node->ele.leafNode->lineNum, 
-                            trav->child->node->ele.leafNode->lexeme, 
-                            "Real");
-                            pushSemanticError(err);
-                        }
+                //Now value is either ID or NUM
+                if(!strcmp(trav->child->node->ele.leafNode->type, "ID"))
+                {
+                    type *valType = typeChecker(trav->child, tbStack);
+
+                    if(valType == NULL)
+                    {
+                        //ID isn't declared, ERROR
+                        //searchscope must have inserted the error
                         // free(sympop(tbStack));
-                        // pushSemanticError(err);
+                        // return NULL;
+                    }
+                    else if(valType->tag == ArrayType)
+                    {
+                        //ID can't be a array var, ERROR
+                        sprintf(err, "Line %d: Value variable (%s) in CASE is of Array type.",
+                        trav->child->node->ele.leafNode->lineNum, 
+                        trav->child->node->ele.leafNode->lexeme);
+                        pushSemanticError(err);
+                        free(valType);
+                        // free(sympop(tbStack));
+                        // return NULL;
+                    }
+                    else if(strcmp(valType->tp.type, "INTEGER"))
+                    {
+                        //ID can't be of any type except integer, ERROR
+                        sprintf(err, "Line %d: Value variable (%s) in CASE is of type %s (Expected Integer).",
+                        trav->child->node->ele.leafNode->lineNum, 
+                        trav->child->node->ele.leafNode->lexeme,
+                        valType->tp.type);
+                        pushSemanticError(err);
+                        free(valType);
+                        // free(sympop(tbStack));
                         // return NULL;
                     }
                     
-                    //Now value is either ID or NUM
-                    if(!strcmp(trav->child->node->ele.leafNode->type, "ID"))
-                    {
-                        type *valType = typeChecker(trav->child, tbStack);
-
-                        if(valType == NULL)
-                        {
-                            //ID isn't declared, ERROR
-                            //searchscope must have inserted the error
-                            // free(sympop(tbStack));
-                            // return NULL;
-                        }
-                        else if(valType->tag == ArrayType)
-                        {
-                            //ID can't be a array var, ERROR
-                            sprintf(err, "Line %d: Value variable (%s) in CASE is of Array type.",
-                            trav->child->node->ele.leafNode->lineNum, 
-                            trav->child->node->ele.leafNode->lexeme);
-                            pushSemanticError(err);
-                            free(valType);
-                            // free(sympop(tbStack));
-                            // return NULL;
-                        }
-                        else if(strcmp(valType->tp.type, "INTEGER"))
-                        {
-                            //ID can't be of any type except integer, ERROR
-                            sprintf(err, "Line %d: Value variable (%s) in CASE is of type %s (Expected Integer).",
-                            trav->child->node->ele.leafNode->lineNum, 
-                            trav->child->node->ele.leafNode->lexeme,
-                            valType->tp.type);
-                            pushSemanticError(err);
-                            free(valType);
-                            // free(sympop(tbStack));
-                            // return NULL;
-                        }
-                        
-                    }  
-                      
-                    trav = trav->sibling;
-                }
-            }    
+                }  
+                trav = trav->sibling;
+            }
         }
         trav = currentNode->child->sibling;
 
@@ -1464,64 +1536,71 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             }
             else
             {
-                //switch with a BOOL type does not require a Default (should not be there)
-                while(trav != NULL)
+                findDefault = findDefault->sibling;
+            }
+            //switch with a BOOL type does not require a Default (should not be there)
+            while(trav != NULL)
+            {
+                //If default exists, skip it. No need to perform semantic checks inside default
+                if(findDefault != NULL && trav == findDefault)
                 {
-                    if(!strcmp(trav->child->node->ele.leafNode->type, "RNUM"))
-                    {
-                        sprintf(err, "Line %d: Value (%s) in CASE is of type %s (Expected Boolean).",
-                        trav->child->node->ele.leafNode->lineNum, 
-                        trav->child->node->ele.leafNode->lexeme, "REAL");
-                        pushSemanticError(err);
-                        // free(sympop(tbStack));
-                        // return NULL;
-                    }
-                    if(!strcmp(trav->child->node->ele.leafNode->type, "NUM"))
-                    {
-                        //Value can't be a real constant, ERROR
-                        sprintf(err, "Line %d: Value (%s) in CASE is of type %s (Expected Boolean).",
-                        trav->child->node->ele.leafNode->lineNum, 
-                        trav->child->node->ele.leafNode->lexeme, "INTEGER");
-                        pushSemanticError(err);
-                        // free(sympop(tbStack));
-                        // return NULL;
-                    }
-                    if(!strcmp(trav->child->node->ele.leafNode->type, "ID"))
-                    {
-                        type *valType = typeChecker(trav->child, tbStack);
-                        if(valType == NULL)
-                        {
-                            //ID isn't declared, ERROR
-                            // free(sympop(tbStack));
-                            // return NULL;
-                        }
-                        else if(valType->tag == ArrayType)
-                        {
-                            //ID can't be a array var, ERROR
-                            sprintf(err, "Line %d: Value variable (%s) in CASE is of Array type.",
-                            trav->child->node->ele.leafNode->lineNum, 
-                            trav->child->node->ele.leafNode->lexeme);
-                            pushSemanticError(err);
-                            free(valType);
-                            // free(sympop(tbStack));
-                            // return NULL;
-                        }
-                        else if(strcmp(valType->tp.type, "BOOLEAN"))
-                        {
-                            //ID can't be of any type except integer, ERROR
-                            sprintf(err, "Line %d: Value variable (%s) in CASE is of type %s (Expected Boolean).",
-                            trav->child->node->ele.leafNode->lineNum, 
-                            trav->child->node->ele.leafNode->lexeme,
-                            valType->tp.type);
-                            pushSemanticError(err);
-                            free(valType);
-                            // free(sympop(tbStack));
-                            // return NULL;
-                        }
-                    }
                     trav = trav->sibling;
+                    continue;
                 }
-            }    
+                if(!strcmp(trav->child->node->ele.leafNode->type, "RNUM"))
+                {
+                    sprintf(err, "Line %d: Value (%s) in CASE is of type %s (Expected Boolean).",
+                    trav->child->node->ele.leafNode->lineNum, 
+                    trav->child->node->ele.leafNode->lexeme, "REAL");
+                    pushSemanticError(err);
+                    // free(sympop(tbStack));
+                    // return NULL;
+                }
+                if(!strcmp(trav->child->node->ele.leafNode->type, "NUM"))
+                {
+                    //Value can't be a real constant, ERROR
+                    sprintf(err, "Line %d: Value (%s) in CASE is of type %s (Expected Boolean).",
+                    trav->child->node->ele.leafNode->lineNum, 
+                    trav->child->node->ele.leafNode->lexeme, "INTEGER");
+                    pushSemanticError(err);
+                    // free(sympop(tbStack));
+                    // return NULL;
+                }
+                if(!strcmp(trav->child->node->ele.leafNode->type, "ID"))
+                {
+                    type *valType = typeChecker(trav->child, tbStack);
+                    if(valType == NULL)
+                    {
+                        //ID isn't declared, ERROR
+                        // free(sympop(tbStack));
+                        // return NULL;
+                    }
+                    else if(valType->tag == ArrayType)
+                    {
+                        //ID can't be a array var, ERROR
+                        sprintf(err, "Line %d: Value variable (%s) in CASE is of Array type.",
+                        trav->child->node->ele.leafNode->lineNum, 
+                        trav->child->node->ele.leafNode->lexeme);
+                        pushSemanticError(err);
+                        free(valType);
+                        // free(sympop(tbStack));
+                        // return NULL;
+                    }
+                    else if(strcmp(valType->tp.type, "BOOLEAN"))
+                    {
+                        //ID can't be of any type except integer, ERROR
+                        sprintf(err, "Line %d: Value variable (%s) in CASE is of type %s (Expected Boolean).",
+                        trav->child->node->ele.leafNode->lineNum, 
+                        trav->child->node->ele.leafNode->lexeme,
+                        valType->tp.type);
+                        pushSemanticError(err);
+                        free(valType);
+                        // free(sympop(tbStack));
+                        // return NULL;
+                    }
+                }
+                trav = trav->sibling;
+            }
         }   
 
         //assigntrav as ID_node 
@@ -1572,8 +1651,8 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
     else if(!strcmp(currentNode->node->ele.internalNode->label,"ID_ARR"))
     {
         // 2 Children
-        // 1) ID
-        // 2) WhichID
+        //      1) ID
+        //      2) WhichID
 
         char * err = (char *)malloc(sizeof(char)*200);
         memset(err, '\0', sizeof(char)*200);
@@ -1626,7 +1705,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         else if(currentNode->child->sibling !=NULL && myNode->ele.tag==Array)
         {
             answer->tag = IdentifierType;
-
+            answer->tp.type = myNode->ele.data.arr.type;
             //check boundaries and types of the whichid construct
             if(!strcmp(currentNode->child->sibling->node->ele.leafNode->type,"ID"))
             {
@@ -1665,7 +1744,6 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                 }
 
                 //Index node is an identifier of type Integer
-                answer->tp.type = myNode->ele.data.arr.type;
             }
 
             else if (!strcmp(currentNode->child->sibling->node->ele.leafNode->type,"NUM"))
@@ -1714,53 +1792,63 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         {
             type *leftType = typeChecker(currentNode->child, tbStack);
             type *rightType = typeChecker(currentNode->child->sibling, tbStack);
-			//could be NULL
+			//There was some problem in type checking of the operands
             if(leftType == NULL || rightType == NULL)
                 return NULL;
+        
+            int isArr = 0;
+            //Note: This case will arise only at the second-last level of the expression
             if(leftType->tag == ArrayType)
             {
-                if(currentNode->child->node->tag == Leaf)
+                isArr = 1;
+                if(!strcmp(currentNode->child->node->ele.internalNode->label, "ID_ARR"))
                 {
                     sprintf(err, "Line %d: Left operand (%s) of operator (%s) is of Array type.",
                     currentNode->node->ele.internalNode->lineNumStart,
-                    currentNode->child->node->ele.leafNode->lexeme,
+                    currentNode->child->child->node->ele.leafNode->lexeme,
                     currentNode->node->ele.internalNode->label);
+                    pushSemanticError(err);
                 }
-                else
-                {
-                    sprintf(err, "Line %d: Left operand (%s) of operator (%s) is of Array type.",
-                    currentNode->node->ele.internalNode->lineNumStart,
-                    currentNode->child->node->ele.internalNode->label,
-                    currentNode->node->ele.internalNode->label);
-                }
-                if(leftType!=NULL)free(leftType);
-                if(rightType!=NULL)free(rightType);
-                if(err!=NULL) free(err);
-                return NULL;
+                // else
+                // {
+                //     sprintf(err, "Line %d: Left operand (%s) of operator (%s) is of Array type.",
+                //     currentNode->node->ele.internalNode->lineNumStart,
+                //     currentNode->child->node->ele.internalNode->label,
+                //     currentNode->node->ele.internalNode->label);
+                // }
             }
             if(rightType->tag == ArrayType)
             {
-                
-                if(currentNode->child->sibling->node->tag == Leaf)
+                isArr = 1;
+                if(!strcmp(currentNode->child->sibling->node->ele.internalNode->label, "ID_ARR"))
                 {
                     sprintf(err, "Line %d: Right operand (%s) of operator (%s) is of Array type.",
                     currentNode->node->ele.internalNode->lineNumStart,
-                    currentNode->child->sibling->node->ele.leafNode->lexeme,
+                    currentNode->child->sibling->child->node->ele.leafNode->lexeme,
                     currentNode->node->ele.internalNode->label);
+                    pushSemanticError(err);
                 }
-                else
-                {
-                    sprintf(err, "Line %d: Right operand (%s) of operator (%s) is of Array type.",
-                    currentNode->node->ele.internalNode->lineNumStart,
-                    currentNode->child->sibling->node->ele.internalNode->label,
-                    currentNode->node->ele.internalNode->label);
-                }
+                // else
+                // {
+                //     sprintf(err, "Line %d: Right operand (%s) of operator (%s) is of Array type.",
+                //     currentNode->node->ele.internalNode->lineNumStart,
+                //     currentNode->child->sibling->node->ele.internalNode->label,
+                //     currentNode->node->ele.internalNode->label);
+                // }
+                // if(leftType!=NULL)free(leftType);
+                // if(rightType!=NULL)free(rightType);
+                // if(err!=NULL) free(err);
+                // return NULL;
+            }
+            
+            if(isArr == 1)
+            {
                 if(leftType!=NULL)free(leftType);
                 if(rightType!=NULL)free(rightType);
                 if(err!=NULL) free(err);
                 return NULL;
             }
-
+            
             type *retType = (type *)malloc(sizeof(type));
             if(!strcmp(currentNode->node->ele.internalNode->label, "PLUS") || 
             !strcmp(currentNode->node->ele.internalNode->label, "MINUS") || 
@@ -1782,43 +1870,43 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                     else if(!strcmp(leftType->tp.type, "BOOLEAN"))
                     {
                         //Type can't be boolean, ERROR
-                        if(currentNode->child->node->tag == Leaf)
+                        if(!strcmp(currentNode->child->node->ele.internalNode->label, "ID_ARR"))
                         {
-                            if(currentNode->child->sibling->node->tag == Leaf)
+                            if(!strcmp(currentNode->child->sibling->node->ele.internalNode->label, "ID_ARR"))
                             {
                                 sprintf(err, "Line %d: Operands (%s, %s) of operator (%s) are of Boolean type.",
                                 currentNode->node->ele.internalNode->lineNumStart,
-                                currentNode->child->node->ele.leafNode->lexeme,
-                                currentNode->child->sibling->node->ele.leafNode->lexeme,
+                                currentNode->child->child->node->ele.leafNode->lexeme,
+                                currentNode->child->sibling->child->node->ele.leafNode->lexeme,
                                 currentNode->node->ele.internalNode->label);
                             }
                             else
                             {
                                 sprintf(err, "Line %d: Operands (%s, %s) of operator (%s) are of Boolean type.",
                                 currentNode->node->ele.internalNode->lineNumStart,
-                                currentNode->child->node->ele.leafNode->lexeme,
+                                currentNode->child->child->node->ele.leafNode->lexeme,
                                 currentNode->child->sibling->node->ele.internalNode->label,
                                 currentNode->node->ele.internalNode->label);
                             } 
                         }
                         else
                         {
-                            if(currentNode->child->node->tag == Leaf)
+                            if(!strcmp(currentNode->child->sibling->node->ele.internalNode->label, "ID_ARR"))
                             {
                                 sprintf(err, "Line %d: Operands (%s, %s) of operator (%s) are of Boolean type.",
                                 currentNode->node->ele.internalNode->lineNumStart,
                                 currentNode->child->node->ele.internalNode->label,
-                                currentNode->child->sibling->node->ele.leafNode->lexeme,
+                                currentNode->child->sibling->child->node->ele.leafNode->lexeme,
                                 currentNode->node->ele.internalNode->label);
                             }
-                            else
-                            {
-                                sprintf(err, "Line %d: Operands (%s, %s) of operator (%s) are of Boolean type.",
-                                currentNode->node->ele.internalNode->lineNumStart,
-                                currentNode->child->node->ele.internalNode->label,
-                                currentNode->child->sibling->node->ele.internalNode->label,
-                                currentNode->node->ele.internalNode->label);
-                            }
+                            // else
+                            // {
+                            //     sprintf(err, "Line %d: Operands (%s, %s) of operator (%s) are of Boolean type.",
+                            //     currentNode->node->ele.internalNode->lineNumStart,
+                            //     currentNode->child->node->ele.internalNode->label,
+                            //     currentNode->child->sibling->node->ele.internalNode->label,
+                            //     currentNode->node->ele.internalNode->label);
+                            // }
                         }
                         pushSemanticError(err);
                         if(retType!=NULL)free(retType);
@@ -1870,38 +1958,41 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                     else if(!strcmp(leftType->tp.type, "BOOLEAN"))
                     {
                         //Type can't be boolean, ERROR
-                        if(currentNode->child->node->tag == Leaf && currentNode->child->node->tag == Leaf)
+                        if(!strcmp(currentNode->child->node->ele.internalNode->label, "ID_ARR") 
+                        && !strcmp(currentNode->child->sibling->node->ele.internalNode->label, "ID_ARR"))
                         {
                             sprintf(err, "Line %d: Operands (%s, %s) of operator (%s) are of Boolean type.",
                             currentNode->node->ele.internalNode->lineNumStart,
-                            currentNode->child->node->ele.leafNode->lexeme,
-                            currentNode->child->sibling->node->ele.leafNode->lexeme,
+                            currentNode->child->child->node->ele.leafNode->lexeme,
+                            currentNode->child->sibling->child->node->ele.leafNode->lexeme,
                             currentNode->node->ele.internalNode->label);
                         }
-                        else if(currentNode->child->node->tag == Internal && currentNode->child->node->tag == Internal)
-                        {
-                            sprintf(err, "Line %d: Operands (%s, %s) of operator (%s) are of Boolean type.",
-                            currentNode->node->ele.internalNode->lineNumStart,
-                            currentNode->child->node->ele.internalNode->label,
-                            currentNode->child->sibling->node->ele.internalNode->label,
-                            currentNode->node->ele.internalNode->label);
-                        }
-						else if(currentNode->child->node->tag == Leaf && currentNode->child->node->tag == Internal)
-                        {
-                            sprintf(err, "Line %d: Operands (%s, %s) of operator (%s) are of Boolean type.",
-                            currentNode->node->ele.internalNode->lineNumStart,
-                            currentNode->child->node->ele.leafNode->lexeme,
-                            currentNode->child->sibling->node->ele.internalNode->label,
-                            currentNode->node->ele.internalNode->label);
-                        }
-						else
+                        else if(strcmp(currentNode->child->node->ele.internalNode->label, "ID_ARR") 
+                        && !strcmp(currentNode->child->sibling->node->ele.internalNode->label, "ID_ARR"))
                         {
                             sprintf(err, "Line %d: Operands (%s, %s) of operator (%s) are of Boolean type.",
                             currentNode->node->ele.internalNode->lineNumStart,
                             currentNode->child->node->ele.internalNode->label,
-                            currentNode->child->sibling->node->ele.leafNode->lexeme,
+                            currentNode->child->sibling->child->node->ele.leafNode->lexeme,
                             currentNode->node->ele.internalNode->label);
                         }
+						else if(!strcmp(currentNode->child->node->ele.internalNode->label, "ID_ARR") 
+                        && strcmp(currentNode->child->sibling->node->ele.internalNode->label, "ID_ARR"))
+                        {
+                            sprintf(err, "Line %d: Operands (%s, %s) of operator (%s) are of Boolean type.",
+                            currentNode->node->ele.internalNode->lineNumStart,
+                            currentNode->child->child->node->ele.leafNode->lexeme,
+                            currentNode->child->sibling->node->ele.internalNode->label,
+                            currentNode->node->ele.internalNode->label);
+                        }
+						// else
+                        // {
+                        //     sprintf(err, "Line %d: Operands (%s, %s) of operator (%s) are of Boolean type.",
+                        //     currentNode->node->ele.internalNode->lineNumStart,
+                        //     currentNode->child->node->ele.internalNode->label,
+                        //     currentNode->child->sibling->node->ele.internalNode->label,
+                        //     currentNode->node->ele.internalNode->label);
+                        // }
                         pushSemanticError(err);
                         if(retType!=NULL)free(retType);
                         if(leftType!=NULL)free(leftType);
@@ -1946,14 +2037,14 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                     else
                     {
                         //Type can't be anything except boolean, ERROR
-                        if(currentNode->child->node->tag == Leaf)
+                        if(!strcmp(currentNode->child->node->ele.internalNode->label, "ID_ARR"))
                         {
-                            if(currentNode->child->sibling->node->tag == Leaf)
+                            if(!strcmp(currentNode->child->sibling->node->ele.internalNode->label, "ID_ARR"))
                             {
                                 sprintf(err, "Line %d: Operands (%s, %s) of operator (%s) are of %s type (Expected Boolean).",
                                 currentNode->node->ele.internalNode->lineNumStart,
-                                currentNode->child->node->ele.leafNode->lexeme,
-                                currentNode->child->sibling->node->ele.leafNode->lexeme,
+                                currentNode->child->child->node->ele.leafNode->lexeme,
+                                currentNode->child->sibling->child->node->ele.leafNode->lexeme,
                                 currentNode->node->ele.internalNode->label,
                                 leftType->tp.type);
                             }
@@ -1961,7 +2052,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                             {
                                 sprintf(err, "Line %d: Operands (%s, %s) of operator (%s) are of %s type (Expected Boolean).",
                                 currentNode->node->ele.internalNode->lineNumStart,
-                                currentNode->child->node->ele.leafNode->lexeme,
+                                currentNode->child->child->node->ele.leafNode->lexeme,
                                 currentNode->child->sibling->node->ele.internalNode->label,
                                 currentNode->node->ele.internalNode->label,
                                 leftType->tp.type);
@@ -1969,24 +2060,24 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                         }
                         else
                         {
-                            if(currentNode->child->sibling->node->tag == Leaf)
+                            if(!strcmp(currentNode->child->sibling->node->ele.internalNode->label, "ID_ARR"))
                             {
                                 sprintf(err, "Line %d: Operands (%s, %s) of operator (%s) are of %s type (Expected Boolean).",
                                 currentNode->node->ele.internalNode->lineNumStart,
                                 currentNode->child->node->ele.internalNode->label,
-                                currentNode->child->sibling->node->ele.leafNode->lexeme,
+                                currentNode->child->sibling->child->node->ele.leafNode->lexeme,
                                 currentNode->node->ele.internalNode->label,
                                 leftType->tp.type);
                             }
-                            else
-                            {
-                                sprintf(err, "Line %d: Operands (%s, %s) of operator (%s) are of %s type (Expected Boolean).",
-                                currentNode->node->ele.internalNode->lineNumStart,
-                                currentNode->child->node->ele.internalNode->label,
-                                currentNode->child->sibling->node->ele.internalNode->label,
-                                currentNode->node->ele.internalNode->label,
-                                leftType->tp.type);
-                            }
+                            // else
+                            // {
+                            //     sprintf(err, "Line %d: Operands (%s, %s) of operator (%s) are of %s type (Expected Boolean).",
+                            //     currentNode->node->ele.internalNode->lineNumStart,
+                            //     currentNode->child->node->ele.internalNode->label,
+                            //     currentNode->child->sibling->node->ele.internalNode->label,
+                            //     currentNode->node->ele.internalNode->label,
+                            //     leftType->tp.type);
+                            // }
                         }
                         pushSemanticError(err);
                         if(retType!=NULL)free(retType);
@@ -2027,33 +2118,30 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             if(childType->tag == ArrayType)
             {
                 //Operand can't be of an array type, ERROR
-                if(currentNode->child->node->tag == Leaf)
+                if(!strcmp(currentNode->child->node->ele.internalNode->label, "ID_ARR"))
                 {
                     sprintf(err, "Line %d: Operand (%s) of unary operator (%s) is of Array type.",
                     currentNode->node->ele.internalNode->lineNumStart,
-                    currentNode->child->node->ele.leafNode->lexeme,
+                    currentNode->child->child->node->ele.leafNode->lexeme,
                     currentNode->node->ele.internalNode->label);
                 }
-                else
-                {
-                    sprintf(err, "Line %d: Operand (%s) of unary operator (%s) is of Array type.",
-                    currentNode->node->ele.internalNode->lineNumStart,
-                    currentNode->child->node->ele.internalNode->label,
-                    currentNode->node->ele.internalNode->label);
-                }
-
+                // else
+                // {
+                //     sprintf(err, "Line %d: Operand (%s) of unary operator (%s) is of Array type.",
+                //     currentNode->node->ele.internalNode->lineNumStart,
+                //     currentNode->child->node->ele.internalNode->label,
+                //     currentNode->node->ele.internalNode->label);
+                // }
+                pushSemanticError(err);
                 if(childType!=NULL) free(childType);
                 if(err!=NULL) free(err);
                 return NULL;
             }
             type *retType = (type *)malloc(sizeof(type));
-            if(retType == NULL)
-                return NULL;
             if(!strcmp(childType->tp.type, "INTEGER"))
             {
                 retType->tag = IdentifierType;
                 retType->tp.type = "INTEGER";
-                
             }
             else if(!strcmp(childType->tp.type, "REAL"))
             {
@@ -2063,20 +2151,20 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             else
             {
                 //Type of operand is wrong, ERROR
-                if(currentNode->child->node->tag == Leaf)
+                if(!strcmp(currentNode->child->node->ele.internalNode->label, "ID_ARR"))
                 {
                     sprintf(err, "Line %d: Operand (%s) of unary operator (%s) are of Boolean type.",
                     currentNode->node->ele.internalNode->lineNumStart,
-                    currentNode->child->node->ele.leafNode->lexeme,
+                    currentNode->child->child->node->ele.leafNode->lexeme,
                     currentNode->node->ele.leafNode->lexeme);
                 }
-                else
-                {
-                    sprintf(err, "Line %d: Operands (%s) of unary operator (%s) are of Boolean type.",
-                    currentNode->node->ele.internalNode->lineNumStart,
-                    currentNode->child->node->ele.internalNode->label,
-                    currentNode->node->ele.internalNode->label);
-                }
+                // else
+                // {
+                //     sprintf(err, "Line %d: Operands (%s) of unary operator (%s) are of Boolean type.",
+                //     currentNode->node->ele.internalNode->lineNumStart,
+                //     currentNode->child->node->ele.internalNode->label,
+                //     currentNode->node->ele.internalNode->label);
+                // }
                 pushSemanticError(err);
                 if(retType!=NULL) free(retType);
                 if(childType!=NULL) free(childType);
