@@ -1,12 +1,76 @@
+**declare module arraySum;**
+
 <<module arraySum>>
-takes input[x:real, n:integer];
+takes input[x:array[1..5] of real, n: boolean];
 returns  [sum:real];
 start
 	declare index:integer;
 	declare t:boolean;
+	declare x:array[10..20] of integer;
+	
+	**declare out:integer;
+	declare op1:array[1..2] of boolean;
+	declare op2:boolean;
+	out := op2 + op1;**
+	index := 15;
+	sum := 4.5;
+
+	for(index in 10..20)
+	start
+		t := true;
+		declare t:integer;
+		t := 15;
+		declare index:integer;
+		index := 18;
+	end
+
+	index := 10;
+	while(x[12])
+	start
+		print(x[index]);
+		index := index + 1;
+	end
+
+	**x[15] := x;**
+	switch(t)
+	start
+		case true: 	print(index);
+					**print(y);**
+					break;
+		case false: get_value(t);
+					declare y:integer;
+					print(t);
+					break;
+	end
+
+	**switch(index)
+	start
+		case 10: 	x[15] := x;
+					break;
+	end**
+
+	declare s:integer;
+	get_value(s);
+	switch(s)
+	start
+		case 10: 	declare index: integer;
+					for(index in 10..10)
+					start
+						**index := index + 1;**
+					end
+					break;
+		default : break;
+	end
+
+	**declare x:integer;**
 end
 
 <<<driver program>>>
 start
-	declare a:array[1..5] of integer;
+	declare a:array[1..5] of real;
+	declare x:integer;
+	declare y:real;
+	declare n:boolean;
+
+	[y] := use module arraySum with parameters a, n;
 end

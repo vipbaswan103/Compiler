@@ -321,7 +321,7 @@ void formulation(astNode *astRoot, symbolTable *current)
                 else 
                     newNode->ele.data.arr.isDynamic = 0;
 
-
+                
                 newNode->next = NULL;
             }
             //Its an ID
