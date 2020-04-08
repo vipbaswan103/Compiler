@@ -7,17 +7,23 @@
     ASSIGNOP
         - if left side is some var from output_list, update isassigned
         - especifically handle if both operands are arrays
+
     GET_VAL 
         - if the var is some var from output_list, update isassigned
+
     ASSIGNOPARR 
         - type, lower, uppper
+
     MODULEASSIGNOP and MODULECALL
         - left side matches with the output_list (type, number)
         - is the function declared/defined above the use
+
     FOR 
         - flag with the index variable
+
     WHILE
         - expression must be boolean type
+
     PLUS, MINUS, MUL, DIV, AND, OR, LT, LE, GT, GE, EQ, NE
         - Type checking (Both operands must be same)
         - No operand can be array
@@ -25,6 +31,7 @@
     SWITCH 
         - the switch var can't be real
         - check the default clause (shouldn't exist for boolean switch var, must exist for integer switch var)
+
     Stack updates in scope !
         PROGRAM
         MODULE

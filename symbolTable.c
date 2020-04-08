@@ -584,8 +584,8 @@ void formulation(astNode *astRoot, symbolTable *current)
                 else if(!strcmp(traveller->sibling->child->sibling->node->ele.leafNode->type,"BOOLEAN"))
                     tmp = BOOLEAN_SIZE;
 
-               if( (!strcmp(newNode->ele.data.arr.lowerIndex->type,"ID")) 
-               || (!strcmp(newNode->ele.data.arr.upperIndex->type,"ID")) )
+               if( (!strcmp(node->ele.data.arr.lowerIndex->type,"ID")) 
+               || (!strcmp(node->ele.data.arr.upperIndex->type,"ID")) )
                 {
                     //dynamic array
                     node->width = POINTER_SIZE;
@@ -697,8 +697,8 @@ void formulation(astNode *astRoot, symbolTable *current)
                 else if(!strcmp(traveller->sibling->child->sibling->node->ele.leafNode->type,"BOOLEAN"))
                     tmp = BOOLEAN_SIZE;
 
-               if( (!strcmp(newNode->ele.data.arr.lowerIndex->type,"ID")) 
-               || (!strcmp(newNode->ele.data.arr.upperIndex->type,"ID")) )
+               if( (!strcmp(node->ele.data.arr.lowerIndex->type,"ID")) 
+               || (!strcmp(node->ele.data.arr.upperIndex->type,"ID")) )
                 {
                     //dynamic array
                     node->width = POINTER_SIZE;
