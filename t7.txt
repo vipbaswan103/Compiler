@@ -6,7 +6,7 @@ returns  [sum:real];
 start
 	declare index:integer;
 	declare t:boolean;
-	declare x:array[10..20] of integer;
+	declare x:array[10..20] of boolean;
 	
 	**declare out:integer;
 	declare op1:array[1..2] of boolean;
@@ -25,10 +25,11 @@ start
 	end
 
 	index := 10;
-	while(x[12])
+	while(true AND false OR true AND t)
 	start
 		print(x[index]);
 		index := index + 1;
+		t := true;
 	end
 
 	**x[15] := x;**

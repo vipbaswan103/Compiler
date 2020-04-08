@@ -8,6 +8,6 @@
 int listCount(astNode* head);
 symbolTableNode *searchScope(tableStack *tbStack, astNode *key);
 type * typeChecker(astNode * currentNode, tableStack * tbStack);
-void traverseAndMark(astNode * root, tableStack * tbStack, int * prevValues, int *size, int *index);
+void traverseAndMark(astNode * root, tableStack * tbStack, int * prevValues, int *size, int *index, int *isConst);
 void checkAssignment(astNode *root, tableStack *tbStack, int *error, int *prevValues, int *index);
 #endif
