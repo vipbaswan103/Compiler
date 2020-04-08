@@ -496,6 +496,12 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             {
                 st = searchScope(tbStack, trav->child->child);
 
+                if(st==NULL)
+                {
+                    //DO NOTHING 
+                    //searchscope has caught the error
+                }
+                else
                 if(st->ele.tag == Array)
                 {
                     char * err=  (char*)malloc(sizeof(char)*200);
@@ -526,6 +532,12 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             {
                 st = searchScope(tbStack, trav->child->child->sibling);
 
+                if(st==NULL)
+                {
+                    //DO NOTHING
+                    //searchscope has caught the error
+                }
+                else
                 if(st->ele.tag == Array)
                 {
                     char * err=  (char*)malloc(sizeof(char)*200);
@@ -642,7 +654,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         if(rightType!=NULL) free(rightType);
         return NULL;
     }
-    else if(!strcmp(currentNode->node->ele.internalNode->label, "GET_VALUE"))
+    else if(!strcmp(currentNode->node->ele.internalNode->label, "GET_VAL"))
     {
         /*  1 Child:
                 1) ID_node
@@ -651,13 +663,16 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         //Search for ID_node in the symbol table tree
         symbolTableNode *ret= searchScope(tbStack, currentNode->child);
 
-        //ID_node isn't declared, stop right here
+        //ID_node isn't declared, stop right here, searchscope must have inserted error
         if(ret == NULL)
             return NULL;
         
         char * err = (char *)malloc(sizeof(char)*200);
         memset(err, '\0', sizeof(char)*200);
         //ID_node var is of Array type
+
+        
+
         if(ret->ele.tag == Array)
         {
             //Can't be array varible, ERROR
@@ -685,16 +700,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         ret->ele.data.id.isAssigned = 1;
         return NULL;
     } 
-    // else if(!strcmp(currentNode->node->ele.internalNode->label, "PRINT"))
-    // {
-    //     type *t = typeChecker(currentNode->child, tbStack);
-
-    //     //Some problem in the type of ID_node
-    //     if(t == NULL)
-    //         return NULL;
-        
-    //     return NULL;
-    // }
+    
     else if(!strcmp(currentNode->node->ele.internalNode->label, "ASSIGNOPARR"))
     {
         /*  2 Children
