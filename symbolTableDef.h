@@ -9,6 +9,11 @@
 #ifndef SYMBOLTABLEDEF_H_
 #define SYMBOLTABLEDEF_H_
 
+#define INTEGER_SIZE 2
+#define REAL_SIZE 4
+#define BOOLEAN_SIZE 1
+#define POINTER_SIZE 8
+
 #include<stdio.h>
 #include<stdlib.h>
 
@@ -101,6 +106,7 @@ typedef struct symbolTable{
     int lineNumStart;
     int lineNumEnd;
     hashSym hashtb;
+    int currentOffset;
     struct symbolTable *child;
     struct symbolTable *sibling;
 }symbolTable;

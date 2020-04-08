@@ -177,7 +177,7 @@ int main(int argc, char * argv[])
                     initializeErrorList();
                     symbolTable *table = NULL;
                     formulation(ast, table);
-                    // printSymbolTable(symbolTableRoot);
+                    printSymbolTable(symbolTableRoot);
                     tableStack *tbStack= (tableStack*)malloc(sizeof(tableStack));
                     tbStack->top = NULL;
                     tbStack->size = 0;

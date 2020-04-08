@@ -220,6 +220,7 @@ symbolTable* initializeSymbolTable(char *str, int lineNumStart, int lineNumEnd)
     hashSym *hashtb = (hashSym*)malloc(sizeof(hashSym));
     initializeHashSym(hashtb);
     ST->hashtb = *hashtb;
+    ST->currentOffset = 0;
     return ST;    
 }
 
@@ -309,19 +310,31 @@ void formulation(astNode *astRoot, symbolTable *current)
                 
                 newNode->lineNum = idlist->node->ele.leafNode->lineNum;
 
+                int tmp = 0;
                 if(!strcmp(type->child->sibling->node->ele.leafNode->type,"INTEGER"))
-                    newNode->width = 2;
+                    tmp = INTEGER_SIZE;
                 else if(!strcmp(type->child->sibling->node->ele.leafNode->type,"REAL"))
-                    newNode->width = 4;
+                    tmp = REAL_SIZE;
                 else if(!strcmp(type->child->sibling->node->ele.leafNode->type,"BOOLEAN"))
-                    newNode->width = 1;
+                    tmp = BOOLEAN_SIZE;
                 
                 if( (!strcmp(newNode->ele.data.arr.lowerIndex->type,"ID")) || (!strcmp(newNode->ele.data.arr.upperIndex->type,"ID")) )
-                    newNode->ele.data.arr.isDynamic = 1;
-                else 
+                {
+                    //dynamic array
+                    newNode->width = POINTER_SIZE;
+                    newNode->offset = current->currentOffset;
+                    current->currentOffset += POINTER_SIZE;
+                    newNode->ele.data.arr.isDynamic = 1;   
+                }
+                else    
+                {
+                    //static array
                     newNode->ele.data.arr.isDynamic = 0;
-
-                
+                    int size = *(int *)newNode->ele.data.arr.upperIndex->value - *(int*)newNode->ele.data.arr.lowerIndex->value + 1;
+                    newNode->offset = current->currentOffset;
+                    newNode->width = tmp * size + POINTER_SIZE;
+                    current->currentOffset += newNode->width;
+                }
                 newNode->next = NULL;
             }
             //Its an ID
@@ -335,13 +348,15 @@ void formulation(astNode *astRoot, symbolTable *current)
                 newNode->lineNum = idlist->node->ele.leafNode->lineNum;
                 
                 if(!strcmp(type->node->ele.leafNode->type,"INTEGER"))
-                    newNode->width = 2;
+                    newNode->width = INTEGER_SIZE;
                 else if(!strcmp(type->node->ele.leafNode->type,"REAL"))
-                    newNode->width = 4;
+                    newNode->width = REAL_SIZE;
                 else if(!strcmp(type->node->ele.leafNode->type,"BOOLEAN"))
-                    newNode->width = 1;
+                    newNode->width = BOOLEAN_SIZE;
                     
                 newNode->next = NULL;
+                newNode->offset = current->currentOffset;
+                current->currentOffset += newNode->width;
             }
             symbolTableNode *ret = sym_hash_insert(newNode, &(current->hashtb));
             if(ret != NULL) //redeclaration of an ID within the same scope
@@ -558,19 +573,35 @@ void formulation(astNode *astRoot, symbolTable *current)
                 node->ele.data.arr.upperIndex->value = traveller->sibling->child->child->sibling->node->ele.leafNode->value;
 
                 node->lineNum = traveller->node->ele.leafNode->lineNum;
-
+                
+                
+                node->offset = current->currentOffset;
+                int tmp=0;
                 if(!strcmp(traveller->sibling->child->sibling->node->ele.leafNode->type,"INTEGER"))
-                    node->width = 2;
+                    tmp = INTEGER_SIZE;
                 else if(!strcmp(traveller->sibling->child->sibling->node->ele.leafNode->type,"REAL"))
-                    node->width = 4;
+                    tmp = REAL_SIZE;
                 else if(!strcmp(traveller->sibling->child->sibling->node->ele.leafNode->type,"BOOLEAN"))
-                    node->width = 1;
+                    tmp = BOOLEAN_SIZE;
 
-                //deciding whether the array is dynamic or not
-                if( (!strcmp(node->ele.data.arr.lowerIndex->type,"ID")) || (!strcmp(node->ele.data.arr.upperIndex->type,"ID")) )
-                    node->ele.data.arr.isDynamic = 1;
-                else 
+               if( (!strcmp(newNode->ele.data.arr.lowerIndex->type,"ID")) 
+               || (!strcmp(newNode->ele.data.arr.upperIndex->type,"ID")) )
+                {
+                    //dynamic array
+                    node->width = POINTER_SIZE;
+                    node->offset = current->currentOffset;
+                    current->currentOffset += POINTER_SIZE;
+                    node->ele.data.arr.isDynamic = 1;   
+                }
+                else    
+                {
+                    //static array
                     node->ele.data.arr.isDynamic = 0;
+                    int size = *(int *)node->ele.data.arr.upperIndex->value - *(int*)node->ele.data.arr.lowerIndex->value + 1;
+                    node->offset = current->currentOffset;
+                    node->width = tmp * size + POINTER_SIZE;
+                    current->currentOffset += node->width;
+                }
 
                 node->next = NULL;
             }
@@ -591,6 +622,8 @@ void formulation(astNode *astRoot, symbolTable *current)
                     node->width = 1;
                     
                 node->next = NULL;
+                node->offset = current->currentOffset;
+                current->currentOffset += node->width;
             }
             newNode->ele.data.mod.inputList[i] = node->ele;
             symbolTableNode *ret = sym_hash_insert(node, &(moduleST->hashtb));
@@ -633,7 +666,7 @@ void formulation(astNode *astRoot, symbolTable *current)
         }
         traveller = astRoot->child->sibling->sibling->child;
         i = 0;
-        //Put the variables in input list inside its hashTable
+        //Put the variables in output list inside its hashTable
         while(traveller!=NULL)
         {
             symbolTableNode *node = (symbolTableNode*)malloc(sizeof(symbolTableNode));
@@ -656,17 +689,32 @@ void formulation(astNode *astRoot, symbolTable *current)
 
                 node->lineNum = traveller->node->ele.leafNode->lineNum;
 
+                int tmp=0;
                 if(!strcmp(traveller->sibling->child->sibling->node->ele.leafNode->type,"INTEGER"))
-                    node->width = 2;
+                    tmp = INTEGER_SIZE;
                 else if(!strcmp(traveller->sibling->child->sibling->node->ele.leafNode->type,"REAL"))
-                    node->width = 4;
+                    tmp = REAL_SIZE;
                 else if(!strcmp(traveller->sibling->child->sibling->node->ele.leafNode->type,"BOOLEAN"))
-                    node->width = 1;
+                    tmp = BOOLEAN_SIZE;
 
-                if( (!strcmp(node->ele.data.arr.lowerIndex->type,"ID")) || (!strcmp(node->ele.data.arr.upperIndex->type,"ID")) )
-                    node->ele.data.arr.isDynamic = 1;
-                else 
+               if( (!strcmp(newNode->ele.data.arr.lowerIndex->type,"ID")) 
+               || (!strcmp(newNode->ele.data.arr.upperIndex->type,"ID")) )
+                {
+                    //dynamic array
+                    node->width = POINTER_SIZE;
+                    node->offset = current->currentOffset;
+                    current->currentOffset += POINTER_SIZE;
+                    node->ele.data.arr.isDynamic = 1;   
+                }
+                else    
+                {
+                    //static array
                     node->ele.data.arr.isDynamic = 0;
+                    int size = *(int *)node->ele.data.arr.upperIndex->value - *(int*)node->ele.data.arr.lowerIndex->value + 1;
+                    node->offset = current->currentOffset;
+                    node->width = tmp * size + POINTER_SIZE;
+                    current->currentOffset += node->width;
+                }
 
                 node->next = NULL;    
             }
@@ -680,13 +728,15 @@ void formulation(astNode *astRoot, symbolTable *current)
                 node->lineNum = traveller->node->ele.leafNode->lineNum;
                 
                 if(!strcmp(traveller->sibling->node->ele.leafNode->type,"INTEGER"))
-                    node->width = 2;
+                    node->width = INTEGER_SIZE;
                 else if(!strcmp(traveller->sibling->node->ele.leafNode->type,"REAL"))
-                    node->width = 4;
+                    node->width = REAL_SIZE;
                 else if(!strcmp(traveller->sibling->node->ele.leafNode->type,"BOOLEAN"))
-                    node->width = 1;
+                    node->width = BOOLEAN_SIZE;
                     
                 node->next = NULL;
+                node->offset = current->currentOffset;
+                current->currentOffset += node->offset;
             }
             newNode->ele.data.mod.outputList[i] = node->ele;
             symbolTableNode *ret = sym_hash_insert(node, &(moduleST->hashtb));

@@ -1,16 +1,21 @@
 ** This testcase demonstrates correctness of module structure with declaration and simple statements**
+declare module square;
+
 <<<driver program>>>
 start
 	declare v_1_2_3:integer;
 	get_value(v_1_2_3);
-	declare result_:integer;
+	declare x: array[5..10] of integer;
+	declare m,n:integer;
+	declare y: array[m..n] of integer;
+	declare result_:real;
 	[result_]:=use module square with parameters v_1_2_3;
-	print(result);
+	print(result_);
 end
 
 <<module square>>
-takes input [x:integer];
-returns [value:integer];
+takes input [x:integer, y:array[5..10] of boolean];
+returns [value:real];
 start
 	value:= x*x;
 end
