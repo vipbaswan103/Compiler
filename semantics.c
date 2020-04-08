@@ -1314,9 +1314,26 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             // return NULL;
         }
         //Mark all vars in the Expr_node as unassigned
-        int size = 100, index = 0;
+        int size = 100, index = 0, isConst = 1;
+        // checkConstant(currentNode->child, isConst);
         int *prevValues = (int *)malloc(sizeof(int)*size);
-        traverseAndMark(currentNode->child, tbStack, prevValues, &size, &index);
+        traverseAndMark(currentNode->child, tbStack, prevValues, &size, &index, &isConst);
+
+        if(isConst == 1)
+        {
+            if(currentNode->child->node->tag == Leaf)
+            {
+                sprintf(err, "Line %d: The while condition has no varible. Possibly infinite loop.",
+                currentNode->child->node->ele.leafNode->lineNum);
+            }
+            else
+            {
+                sprintf(err, "Line %d: The while condition has no varible. Possibly infinite loop.",
+                currentNode->child->node->ele.internalNode->lineNumStart);
+            } 
+            pushSemanticError(err);
+            if(free != NULL)    free(err);
+        }
 
         astNode *trav = currentNode->child->sibling;
         while(trav != NULL)
@@ -1342,8 +1359,16 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
 
         //If some var in Expr_node is assigned, error = 0
         index = 0;
-        checkAssignment(currentNode->child, tbStack, &error, prevValues, &index);
-        if(prevValues!=NULL) free(prevValues);
+
+        if(isConst == 1)
+        {
+            error = 0;
+        }
+        else
+        {
+            checkAssignment(currentNode->child, tbStack, &error, prevValues, &index);
+            if(prevValues!=NULL) free(prevValues);
+        }
 
         //No variable in Expr_node has been assigned in the body of while
         if(error == 1)
@@ -1366,6 +1391,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             free(sympop(tbStack));
             return NULL;
         }
+
         if(err!=NULL) free(err);
         if(isNull == 0)
             free(exprType);
@@ -2187,7 +2213,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
     }     
 }
 
-void traverseAndMark(astNode * root, tableStack * tbStack, int * prevValues, int *size, int *index)
+void traverseAndMark(astNode * root, tableStack * tbStack, int * prevValues, int *size, int *index, int *isConst)
 {
     // if(root == NULL)
     // {
@@ -2202,6 +2228,10 @@ void traverseAndMark(astNode * root, tableStack * tbStack, int * prevValues, int
 
     if(root->node->tag == Leaf)
     {
+        if(strcmp(root->node->ele.leafNode->type, "TRUE") && strcmp(root->node->ele.leafNode->type, "FALSE"))
+        {
+            *isConst = 0;
+        }
         if(!strcmp(root->node->ele.leafNode->type, "ID"))
         {
             symbolTableNode *st = searchScope(tbStack, root);
@@ -2226,7 +2256,7 @@ void traverseAndMark(astNode * root, tableStack * tbStack, int * prevValues, int
 
     while(trav != NULL)
     {
-        traverseAndMark(trav, tbStack, prevValues, size, index);
+        traverseAndMark(trav, tbStack, prevValues, size, index, isConst);
         trav = trav->sibling;
     }
 }
@@ -2281,3 +2311,25 @@ void checkAssignment(astNode *root, tableStack *tbStack, int *error, int *prevVa
         trav = trav->sibling;
     }
 }
+
+// void checkConstant(astNode * root, int *isConstant)
+// {
+//     if(root == NULL)
+//         return;
+
+//     if(root->node->tag == Leaf)
+//     {
+//             if(strcmp(root->node->ele.leafNode->type, "TRUE") && strcmp(root->node->ele.leafNode->type, "FALSE"))
+//             {
+//                 *isConstant = 0;
+//             }
+//     }
+
+//     astNode * trav = root->child;
+
+//     while(trav != NULL)
+//     {
+//         checkConstant(trav, isConstant);
+//         trav = trav->sibling;
+//     }
+// }
