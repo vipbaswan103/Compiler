@@ -1,20 +1,23 @@
 #ifndef CODEGENDEF_H_
 #define CODEGENDEF_H_
 
+#define STR_SIZE 51
+int tmpNum = 0;
+
 typedef struct temporary
 {
-    int num;
-    char* type;
+    char name[STR_SIZE];
+    char type[STR_SIZE];
     int offset;
     int width;
 }temporary;
 
 typedef struct quad
 {
-    char op[51];
-    char arg1[51];
-    char arg2[51];
-    char result[51];
+    char op[STR_SIZE];
+    char arg1[STR_SIZE];
+    char arg2[STR_SIZE];
+    char result[STR_SIZE];
 }quad;
 
 typedef struct IRcode
@@ -25,7 +28,7 @@ typedef struct IRcode
 
 typedef struct intermed
 {
-    IRcode code;
+    IRcode * code;
     struct temporary t;
 }intermed;
 
