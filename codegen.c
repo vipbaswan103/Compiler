@@ -377,10 +377,10 @@ intermed * generateIRCode(astNode * currentNode, quad * labels)
     //get_value
     //for   -Done
     //while -Done
-    //switch    
+    //switch    -Done
     //assign    -Done
     //assignoparr   -Done
-    //modulcall 
+    //modulcall     -Done
     //Case  -Done
     //Default -Done
     else if(!strcmp(currentNode->node->ele.internalNode->label, "FOR"))
@@ -646,13 +646,13 @@ intermed * generateIRCode(astNode * currentNode, quad * labels)
             len++;
             trav = trav->sibling;
         }
-        len = 0;
         intermed* cummulator = (intermed*)malloc(sizeof(intermed));
         cummulator->code = NULL;
         
         intermed** caseStmts = (intermed**) malloc(sizeof(intermed*)*len);
         intermed* switchcode;
         trav = currentNode->child->sibling;
+        len = 0;
         while(trav!=NULL)
         {
             if(!strcmp(trav->node->ele.internalNode->label,"DEFAULT"))
@@ -669,6 +669,7 @@ intermed * generateIRCode(astNode * currentNode, quad * labels)
                 initQuad(gotoDefault->ele, defaultLabel->arg2, "\0", "\0");
 
                 mergeCode(cummulator->code, gotoDefault);
+
                 caseStmts[len] = generateIRCode(trav, defaultLabel);                       
             }
             else
@@ -689,12 +690,22 @@ intermed * generateIRCode(astNode * currentNode, quad * labels)
                 gotoCase->next = NULL;
                 strcpy(gotoCase->ele->op, "goto\0");
                 initQuad(gotoCase->ele, caseLabel->arg2, "\0", "\0");
-                       
+
+                mergeCode(cummulator->code, ifcode);
+                mergeCode(cummulator->code, gotoCase);
+
+                caseStmts[len] = generateIRCode(trav, caseLabel);       
             }   
+            trav = trav->sibling;
             len++;     
         }
     
-    
+        for(int i = 0 ; i < len ; i++)
+        {
+            mergeCode(cummulator->code, caseStmts[i]);
+        }
+        free(caseStmts);
+        return cummulator;
     }
 
     else if(!strcmp(currentNode->node->ele.internalNode->label, "CASE") ||
@@ -845,7 +856,7 @@ intermed * generateIRCode(astNode * currentNode, quad * labels)
             trav = trav->sibling;
         }
 
-        intermed * final;
+        intermed * final = (intermed *)malloc(sizeof(intermed));
         final->code = stmtsCode->code;
         return final;
     }
@@ -861,5 +872,35 @@ intermed * generateIRCode(astNode * currentNode, quad * labels)
     {
         
     }
-    else if()
+    else if(!strcmp(currentNode->node->ele.internalNode->label, "MODULECALL"))
+    {
+        astNode * trav = currentNode->child->sibling->sibling->child;
+
+        intermed * final = (intermed *)malloc(sizeof(intermed));
+        final->code = NULL;
+
+        int paramCount = 0;
+        while(trav != NULL)
+        {
+            IRcode * param = (IRcode *)malloc(sizeof(IRcode));
+            param->ele = (quad *)malloc(sizeof(quad));
+            param->next = NULL;
+            strcpy(param->ele->op, "param\0");
+            initQuad(param->ele, trav->node->ele.leafNode->lexeme, "\0", "\0");
+
+            mergeCode(final->code, param);
+            paramCount++;
+            trav = trav->sibling;
+        }
+        
+        IRcode * call = (IRcode *)malloc(sizeof(IRcode));
+        call->ele = (quad *)malloc(sizeof(quad));
+        call->next = NULL;
+        strcpy(call->ele->op, "\0");
+        initQuad(call->ele, currentNode->child->sibling->node->ele.leafNode->lexeme, "\0", "call\0");
+        sprintf(call->ele->arg2, "%d", paramCount);
+
+        mergeCode(final->code, call);
+        return final;
+    }
 }
