@@ -478,16 +478,84 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         // 1) Id List
         // 2) datatype
         astNode *trav = currentNode->child->child;
-        symbolTableNode *st = NULL;
+        astNode *type = currentNode->child->sibling;
+        symbolTableNode *newNode = NULL;
         while(trav != NULL)
         {
-            st = sym_hash_find(trav->node->ele.leafNode->lexeme, &(tbStack->top->ele->hashtb), 0, NULL);
-            st->aux = 1;
+            newNode = sym_hash_find(trav->node->ele.leafNode->lexeme, &(tbStack->top->ele->hashtb), 0, NULL);
+            if(type->node->tag == Internal)
+            {
+                newNode->ele.tag = Array;
+                newNode->ele.data.arr.lexeme = trav->node->ele.leafNode->lexeme;
+                newNode->ele.data.arr.type = type->child->sibling->node->ele.leafNode->type;
+
+                newNode->ele.data.arr.lowerIndex = (identifier*)malloc(sizeof(identifier));
+                newNode->ele.data.arr.lowerIndex->lexeme = type->child->child->node->ele.leafNode->lexeme;
+                newNode->ele.data.arr.lowerIndex->type = type->child->child->node->ele.leafNode->type;
+                newNode->ele.data.arr.lowerIndex->value = type->child->child->node->ele.leafNode->value;
+
+                newNode->ele.data.arr.upperIndex = (identifier*)malloc(sizeof(identifier));
+                newNode->ele.data.arr.upperIndex->lexeme = type->child->child->sibling->node->ele.leafNode->lexeme;
+                newNode->ele.data.arr.upperIndex->type = type->child->child->sibling->node->ele.leafNode->type;
+                newNode->ele.data.arr.upperIndex->value = type->child->child->sibling->node->ele.leafNode->value;
+                
+                newNode->lineNum = trav->node->ele.leafNode->lineNum;
+
+                int tmp = 0;
+                if(!strcmp(type->child->sibling->node->ele.leafNode->type,"INTEGER"))
+                    tmp = INTEGER_SIZE;
+                else if(!strcmp(type->child->sibling->node->ele.leafNode->type,"REAL"))
+                    tmp = REAL_SIZE;
+                else if(!strcmp(type->child->sibling->node->ele.leafNode->type,"BOOLEAN"))
+                    tmp = BOOLEAN_SIZE;
+                
+                if( (!strcmp(newNode->ele.data.arr.lowerIndex->type,"ID")) || (!strcmp(newNode->ele.data.arr.upperIndex->type,"ID")) )
+                {
+                    //dynamic array
+                    // newNode->width = POINTER_SIZE;
+                    // newNode->offset = current->currentOffset;
+                    // current->currentOffset += POINTER_SIZE;
+                    newNode->ele.data.arr.isDynamic = 1;   
+                }
+                else    
+                {
+                    //static array
+                    newNode->ele.data.arr.isDynamic = 0;
+                    // int size = *(int *)newNode->ele.data.arr.upperIndex->value - *(int*)newNode->ele.data.arr.lowerIndex->value + 1;
+                    // newNode->offset = current->currentOffset;
+                    // newNode->width = tmp * size + POINTER_SIZE;
+                    // current->currentOffset += newNode->width;
+                }
+                // newNode->next = NULL;
+            }
+            //Its an ID
+            else
+            {
+                newNode->ele.tag = Identifier;
+
+                newNode->ele.data.id.lexeme = trav->node->ele.leafNode->lexeme;
+                newNode->ele.data.id.type = type->node->ele.leafNode->type;
+                newNode->ele.data.id.value = trav->node->ele.leafNode->value;
+                newNode->lineNum = trav->node->ele.leafNode->lineNum;
+                
+                // if(!strcmp(type->node->ele.leafNode->type,"INTEGER"))
+                //     newNode->width = INTEGER_SIZE;
+                // else if(!strcmp(type->node->ele.leafNode->type,"REAL"))
+                //     newNode->width = REAL_SIZE;
+                // else if(!strcmp(type->node->ele.leafNode->type,"BOOLEAN"))
+                //     newNode->width = BOOLEAN_SIZE;
+                    
+                // newNode->next = NULL;
+                // newNode->offset = current->currentOffset;
+                // current->currentOffset += newNode->width;
+            }
+            newNode->aux = 1;
             trav = trav->sibling;   
         }
 
         //trav is now datatype
         trav = currentNode->child->sibling;
+        symbolTableNode * st = NULL;
         if (!strcmp(trav->node->ele.internalNode->label,"ARRAY"))
         {
             //Check whether the lower/upper bounds of the array are of ID type,
@@ -601,17 +669,17 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         char * err = (char *)malloc(sizeof(char)*200);
         memset(err, '\0', sizeof(char)*200);
         //ID_node var is of type array
-        if(ret->ele.tag != Identifier)
+        if(ret->ele.tag != Identifier && ret->ele.tag != Array)
         {
             //ID_node can't be an array var or module's name, ERROR
             sprintf(err, "Line %d: '%s' variable can't be on LHS of an assignment because it isn't an ID.", 
-            ret->lineNum, ret->ele.data.arr.lexeme);
+            currentNode->child->node->ele.leafNode->lineNum, ret->ele.data.arr.lexeme);
             pushSemanticError(err);
             if(err!=NULL) free(err);
             return NULL;
         }
 
-        if(ret->ele.data.id.isIndex==1)
+        if(ret->ele.tag == Identifier && ret->ele.data.id.isIndex==1)
         {
             //Error catch
             //It's an index and I am in the scope of the corresponding for loop
@@ -621,8 +689,9 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             if(err!=NULL) free(err);
             return NULL;
         }
-
-        ret->ele.data.id.isAssigned = 1;    //ID_node has been assigned something
+        
+        if(ret->ele.tag == Identifier)
+            ret->ele.data.id.isAssigned = 1;    //ID_node has been assigned something
 
         //Either there was an error in type calculation of rightExpression or the type is an arrayType or type doesn't match
         if(rightType == NULL)
@@ -633,12 +702,53 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         }
         if(rightType->tag == ArrayType)
         {
-            sprintf(err,"Line %d: '%s' variable's type (%s) does not match the expression type (Array).", 
-            currentNode->child->node->ele.leafNode->lineNum, ret->ele.data.id.lexeme, ret->ele.data.id.type);
-            pushSemanticError(err);
-            if(rightType!=NULL) free(rightType);
-            if(err!=NULL) free(err);
-            return NULL;
+            if(ret->ele.tag == Array)
+            {
+                if(strcmp(ret->ele.data.arr.type, rightType->tp.arr.basicType))
+                {
+                    //Type mismatch, ERROR
+                    sprintf(err,"Line %d: '%s' variable's type (Array, %s) does not match the expression type (Array, %s).", 
+                    currentNode->child->node->ele.leafNode->lineNum, ret->ele.data.arr.lexeme, ret->ele.data.id.type, rightType->tp.type);
+                    pushSemanticError(err);
+                    if(rightType!=NULL) free(rightType);
+                    if(err!=NULL) free(err);
+                    return NULL;
+                }
+
+                int isStatic = 0;
+
+                if(!strcmp(rightType->tp.arr.lowerBound->type, "NUM") && !strcmp(rightType->tp.arr.upperBound->type, "NUM"))
+                    isStatic = 1;
+                if(ret->ele.data.arr.isDynamic == 0 && isStatic == 1)
+                {
+                    if(*(int *)ret->ele.data.arr.lowerIndex->value != *(int *)rightType->tp.arr.lowerBound->value ||
+                    *(int *)ret->ele.data.arr.upperIndex->value != *(int *)rightType->tp.arr.upperBound->value)
+                    {
+                        sprintf(err, "Line %d: Bounds of array '%s' (%d - %d) doesn't match the bounds of array '%s' (%d - %d).",
+                        currentNode->child->node->ele.leafNode->lineNum, ret->ele.data.arr.lexeme, 
+                        *(int *)ret->ele.data.arr.lowerIndex->value, *(int *)ret->ele.data.arr.upperIndex->value,
+                        currentNode->child->sibling->child->node->ele.leafNode->lexeme,
+                        *(int *)rightType->tp.arr.lowerBound->value, *(int *)rightType->tp.arr.upperBound->value);
+
+                        pushSemanticError(err);
+                        if(rightType!=NULL) free(rightType);
+                        if(err!=NULL) free(err);
+                        return NULL;
+                    }
+                }
+                if(rightType!=NULL) free(rightType);
+                if(err!=NULL) free(err);
+                return NULL;
+            }
+            else
+            {
+                sprintf(err,"Line %d: '%s' variable's type (%s) does not match the expression type (Array).", 
+                currentNode->child->node->ele.leafNode->lineNum, ret->ele.data.id.lexeme, ret->ele.data.id.type);
+                pushSemanticError(err);
+                if(rightType!=NULL) free(rightType);
+                if(err!=NULL) free(err);
+                return NULL;
+            }
         }
         if(strcmp(ret->ele.data.id.type, rightType->tp.type))
         {
@@ -932,7 +1042,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         int inputsize = listCount(currentNode->child->sibling->sibling->child);
         
         
-
+        int inputCountError = 0;
         if(inputsize != ret->ele.data.mod.inputcount)
         {
             //No of input parameters mismatch, ERROR
@@ -941,152 +1051,155 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             ret->ele.data.mod.lexeme);
             pushSemanticError(err);
             if(err!=NULL) free(err);
-            return NULL;
+            inputCountError = 1;
         }
 
         
 
         //trav is pointing to head of the input ID list
         astNode * trav = currentNode->child->sibling->sibling->child;
-        for(int i=0; i<inputsize; i++)
+
+        if(inputCountError == 0)
         {
-            // printf(" %s ",ret->ele.data.mod.inputList[i].data.id.lexeme);
-            // getchar(); getchar();
-
-            //Search for trav in the symbol table tree
-            symbolTableNode *id_arr = searchScope(tbStack, trav);
-
-            // printf(" %s ",id_arr->ele.data.id.lexeme);
-            // getchar(); getchar();
-
-            //trav isn't declared
-            if(id_arr == NULL)
+            for(int i=0; i<inputsize; i++)
             {
-                //Not declared, ERROR
-                //searchscope has already inserted not found errors!
-                continue; 
-                // return NULL;
-            }
-            
-            //tags match (either both are Identifier or Array)
-            if(ret->ele.data.mod.inputList[i].tag == id_arr->ele.tag)
-            {
-                // Both are IDs
-                if(id_arr->ele.tag == Identifier)
+                // printf(" %s ",ret->ele.data.mod.inputList[i].data.id.lexeme);
+                // getchar(); getchar();
+
+                //Search for trav in the symbol table tree
+                symbolTableNode *id_arr = searchScope(tbStack, trav);
+
+                // printf(" %s ",id_arr->ele.data.id.lexeme);
+                // getchar(); getchar();
+
+                //trav isn't declared
+                if(id_arr == NULL)
                 {
-                    //Type should match
-                    if(strcmp(id_arr->ele.data.id.type, ret->ele.data.mod.inputList[i].data.id.type))
+                    //Not declared, ERROR
+                    //searchscope has already inserted not found errors!
+                    continue; 
+                    // return NULL;
+                }
+                
+                //tags match (either both are Identifier or Array)
+                if(ret->ele.data.mod.inputList[i].tag == id_arr->ele.tag)
+                {
+                    // Both are IDs
+                    if(id_arr->ele.tag == Identifier)
                     {
-                        //Type mismatch, ERROR
-                        sprintf(err,"Line %d: Type of actual parameter %s (%s) does not match the type of formal parameter %s (%s).", 
-                        trav->node->ele.leafNode->lineNum, 
-                        trav->node->ele.leafNode->lexeme, 
-                        id_arr->ele.data.id.type, 
-                        ret->ele.data.mod.inputList[i].data.id.lexeme, 
-                        ret->ele.data.mod.inputList[i].data.id.type);
-                        pushSemanticError(err);
-                        // return NULL;
+                        //Type should match
+                        if(strcmp(id_arr->ele.data.id.type, ret->ele.data.mod.inputList[i].data.id.type))
+                        {
+                            //Type mismatch, ERROR
+                            sprintf(err,"Line %d: Type of actual parameter %s (%s) does not match the type of formal parameter %s (%s).", 
+                            trav->node->ele.leafNode->lineNum, 
+                            trav->node->ele.leafNode->lexeme, 
+                            id_arr->ele.data.id.type, 
+                            ret->ele.data.mod.inputList[i].data.id.lexeme, 
+                            ret->ele.data.mod.inputList[i].data.id.type);
+                            pushSemanticError(err);
+                            // return NULL;
+                        }
+                    }
+
+                    // Both are arrays
+                    else
+                    {
+                        int isError = 0;
+                        //Check basic type, should match
+                        if(strcmp(id_arr->ele.data.arr.type, ret->ele.data.mod.inputList[i].data.arr.type))
+                        {
+                            isError = 1;
+                            //Type mismatch, ERROR
+                            //arrays are of different type
+                            // sprintf(err,"Line %d: Type mismatch: Type of %s (%s, Array) and %s (%s, Array) doesn't match", 
+                            // currentNode->child->sibling->sibling->node->ele.internalNode->lineNumStart,
+                            // id_arr->ele.data.arr.lexeme,
+                            // id_arr->ele.data.arr.type,
+                            // ret->ele.data.mod.inputList[i].data.arr.lexeme,
+                            // ret->ele.data.mod.inputList[i].data.arr.type);
+                            // pushSemanticError(err);
+                        }
+                        //Check bounds (check only if types match)
+                        if(isError == 0)
+                        {
+                            //check the lower index matches when they are static NUMs
+                            if(!strcmp(ret->ele.data.mod.inputList[i].data.arr.lowerIndex->type, "NUM") && 
+                            !strcmp(id_arr->ele.data.arr.lowerIndex->type, "NUM"))
+                            {
+                                if(*(int*)(ret->ele.data.mod.inputList[i].data.arr.lowerIndex->value) != *(int*)id_arr->ele.data.arr.lowerIndex->value)
+                                {
+                                    //error
+                                    isError = 2;
+                                }
+                            }
+                            //check the upper index matches when they are static NUMS
+                            if(!strcmp(ret->ele.data.mod.inputList[i].data.arr.upperIndex->type, "NUM") && 
+                            !strcmp(id_arr->ele.data.arr.upperIndex->type, "NUM"))
+                            {
+                                if(*(int*)ret->ele.data.mod.inputList[i].data.arr.upperIndex->value != *(int *)id_arr->ele.data.arr.upperIndex->value)
+                                {
+                                    //error
+                                    isError = 2;
+                                }
+                            }
+                        }
+
+                        if(isError==1)
+                        {
+                            //Type mismatch, ERROR
+                            sprintf(err,"Line %d: Type of actual parameter %s (Array - %s) does not match the type of formal parameter %s (Array - %s).", 
+                            trav->node->ele.leafNode->lineNum, 
+                            trav->node->ele.leafNode->lexeme, 
+                            id_arr->ele.data.arr.type, ret->ele.data.mod.inputList[i].data.id.lexeme,
+                            ret->ele.data.mod.inputList[i].data.arr.type);
+                            pushSemanticError(err);
+                            // return NULL;
+                        }
+                        else if(isError==2)
+                        {
+                            //bounds mismatch ERROR
+                            sprintf(err,"Line %d: Bounds of actual parameter %s (Array) do not match the bounds of formal parameter %s (Array).", 
+                            trav->node->ele.leafNode->lineNum, 
+                            trav->node->ele.leafNode->lexeme, 
+                            ret->ele.data.mod.inputList[i].data.arr.lexeme);
+                            pushSemanticError(err);
+                            // return NULL;
+                        }
+                        
                     }
                 }
-
-                // Both are arrays
-                else
+                else    //tags don't match, one is array and other is ID
                 {
-                    int isError = 0;
-                    //Check basic type, should match
-                    if(strcmp(id_arr->ele.data.arr.type, ret->ele.data.mod.inputList[i].data.arr.type))
-                    {
-                        isError = 1;
-                        //Type mismatch, ERROR
-                        //arrays are of different type
-                        // sprintf(err,"Line %d: Type mismatch: Type of %s (%s, Array) and %s (%s, Array) doesn't match", 
-                        // currentNode->child->sibling->sibling->node->ele.internalNode->lineNumStart,
-                        // id_arr->ele.data.arr.lexeme,
-                        // id_arr->ele.data.arr.type,
-                        // ret->ele.data.mod.inputList[i].data.arr.lexeme,
-                        // ret->ele.data.mod.inputList[i].data.arr.type);
-                        // pushSemanticError(err);
-
-                    }
-                    //Check bounds (check only if types match)
-                    if(isError == 0)
-                    {
-                        //check the lower index matches when they are static NUMs
-                        if(!strcmp(ret->ele.data.mod.inputList[i].data.arr.lowerIndex->type, "NUM") && 
-                        !strcmp(id_arr->ele.data.arr.lowerIndex->type, "NUM"))
-                        {
-                            if(*(int*)(ret->ele.data.mod.inputList[i].data.arr.lowerIndex->value) != *(int*)id_arr->ele.data.arr.lowerIndex->value)
-                            {
-                                //error
-                                isError = 2;
-                            }
-                        }
-                        //check the upper index matches when they are static NUMS
-                        if(!strcmp(ret->ele.data.mod.inputList[i].data.arr.upperIndex->type, "NUM") && 
-                        !strcmp(id_arr->ele.data.arr.upperIndex->type, "NUM"))
-                        {
-                            if(*(int*)ret->ele.data.mod.inputList[i].data.arr.upperIndex->value != *(int *)id_arr->ele.data.arr.upperIndex->value)
-                            {
-                                //error
-                                isError = 2;
-                            }
-                        }
-                    }
-
-                    if(isError==1)
-                    {
-                        //Type mismatch, ERROR
-                        sprintf(err,"Line %d: Type of actual parameter %s (Array - %s) does not match the type of formal parameter %s (Array - %s).", 
-                        trav->node->ele.leafNode->lineNum, 
-                        trav->node->ele.leafNode->lexeme, 
-                        id_arr->ele.data.arr.type, ret->ele.data.mod.inputList[i].data.id.lexeme,
-                        ret->ele.data.mod.inputList[i].data.arr.type);
-                        pushSemanticError(err);
-                        // return NULL;
-                    }
-                    else if(isError==2)
-                    {
-                        //bounds mismatch ERROR
-                        sprintf(err,"Line %d: Bounds of actual parameter %s (Array) do not match the bounds of formal parameter %s (Array).", 
-                        trav->node->ele.leafNode->lineNum, 
-                        trav->node->ele.leafNode->lexeme, 
-                        ret->ele.data.mod.inputList[i].data.arr.lexeme);
-                        pushSemanticError(err);
-                        // return NULL;
-                    }
+                    //Type mismatch, ERROR
+                    char *actual,*formal ;
+                    if(ret->ele.data.mod.inputList[i].tag == Identifier)
+                        actual = ret->ele.data.mod.inputList[i].data.id.type;
+                    else
+                        actual = ret->ele.data.mod.inputList[i].data.arr.type;
                     
+                    if(id_arr->ele.tag == Identifier)
+                        formal = id_arr->ele.data.id.type;
+                    else
+                        formal = id_arr->ele.data.arr.type;    
+                    
+                    if(ret->ele.data.mod.inputList[i].tag == Array)
+                    {
+                        sprintf(err,"Line %d: Type of actual parameter %s (%s) does not match the type of formal parameter %s (Array, %s).",
+                        trav->node->ele.leafNode->lineNum, trav->node->ele.leafNode->lexeme, formal,
+                        ret->ele.data.mod.inputList[i].data.id.lexeme, actual);
+                    }
+                    else
+                    {
+                        sprintf(err,"Line %d: Type of actual parameter %s (Array, %s) does not match the type of formal parameter %s (%s).",
+                        trav->node->ele.leafNode->lineNum, trav->node->ele.leafNode->lexeme, formal,
+                        ret->ele.data.mod.inputList[i].data.id.lexeme, actual);   
+                    }  
+                    pushSemanticError(err);
+                    // return NULL;
                 }
+                trav = trav->sibling;
             }
-            else    //tags don't match, one is array and other is ID
-            {
-                //Type mismatch, ERROR
-                char *actual,*formal ;
-                if(ret->ele.data.mod.inputList[i].tag == Identifier)
-                    actual = ret->ele.data.mod.inputList[i].data.id.type;
-                else
-                    actual = ret->ele.data.mod.inputList[i].data.arr.type;
-                
-                if(id_arr->ele.tag == Identifier)
-                    formal = id_arr->ele.data.id.type;
-                else
-                    formal = id_arr->ele.data.arr.type;    
-                
-                if(ret->ele.data.mod.inputList[i].tag == Array)
-                {
-                    sprintf(err,"Line %d: Type of actual parameter %s (%s) does not match the type of formal parameter %s (Array, %s).",
-                    trav->node->ele.leafNode->lineNum, trav->node->ele.leafNode->lexeme, formal,
-                    ret->ele.data.mod.inputList[i].data.id.lexeme, actual);
-                }
-                else
-                {
-                    sprintf(err,"Line %d: Type of actual parameter %s (Array, %s) does not match the type of formal parameter %s (%s).",
-                    trav->node->ele.leafNode->lineNum, trav->node->ele.leafNode->lexeme, formal,
-                    ret->ele.data.mod.inputList[i].data.id.lexeme, actual);   
-                }  
-                pushSemanticError(err);
-                // return NULL;
-            }
-            trav = trav->sibling;
         }
 
         /*Now compare the ID_list_node (return) with the output_list of the function*/
