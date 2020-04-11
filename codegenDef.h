@@ -2,8 +2,8 @@
 #define CODEGENDEF_H_
 
 #define STR_SIZE 51
-int tmpNum = 0;
-int labelNum = 0;
+extern int tmpNum;
+extern int labelNum;
 typedef struct temporary
 {
     char name[STR_SIZE];

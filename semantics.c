@@ -103,7 +103,7 @@ symbolTableNode *searchScope(tableStack *tbStack, astNode *key)
             temp = sympop(tempStack);
             sympush(tbStack, temp);
         }
-        free(tempStack);
+        // free(tempStack);
         return NULL;
     }
     
@@ -141,7 +141,7 @@ symbolTableNode *searchScope(tableStack *tbStack, astNode *key)
                     temp = sympop(tempStack);
                     sympush(tbStack, temp);
                 }
-                free(tempStack);
+                // free(tempStack);
                 return NULL;
             }
         }
@@ -152,8 +152,8 @@ symbolTableNode *searchScope(tableStack *tbStack, astNode *key)
             temp = sympop(tempStack);
             sympush(tbStack, temp);
         }
-        if(err!=NULL) free(err);
-        if(tempStack!=NULL) free(tempStack);
+        // if(err!=NULL) free(err);
+        // if(tempStack!=NULL) free(tempStack);
         return ret;
     }
 }
@@ -194,7 +194,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             if(idNode == NULL)
             {
                 // ERROR: Undeclared variable
-                if(typeLeaf!=NULL) free(typeLeaf);
+                // if(typeLeaf!=NULL) free(typeLeaf);
                 return NULL;    
             }
             if(idNode->ele.tag == Identifier)
@@ -214,7 +214,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         {
             // ERROR : Invalid Leaf Node
             printf("Shouldn't have reached here\n");
-            if(typeLeaf!=NULL) free(typeLeaf);
+            // if(typeLeaf!=NULL) free(typeLeaf);
             return NULL;
         }
         return typeLeaf;
@@ -254,11 +254,11 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
 
         //Pop the ModuleDec symbol table
         newTable = sympop(tbStack);
-        if(newTable!=NULL) free(newTable);
+        // if(newTable!=NULL) free(newTable);
 
         //Pop the Program symbol table
         newTable = sympop(tbStack);
-        if(newTable!=NULL) free(newTable);
+        // if(newTable!=NULL) free(newTable);
     }
     else if(!strcmp(currentNode->node->ele.internalNode->label, "MODULES1"))
     {
@@ -345,23 +345,21 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         symbolTableNode *st = ret;
         symbolTableNode *tmp = NULL;
         
-        for(int i=0; i<st->ele.data.mod.outputcount; i++)
+        astNode * trav = currentNode->child->sibling->sibling->child;
+        while(trav != NULL)
         {
-            tmp = sym_hash_find(st->ele.data.mod.outputList[i].data.id.lexeme, &(tbStack->top->ele->hashtb), 0, NULL);
-            tmp->aux = 1;
+            tmp = sym_hash_find(trav->node->ele.leafNode->lexeme, &(tbStack->top->ele->hashtb), 0, NULL);
+            tmp->aux = 1;   
+            trav = trav->sibling->sibling;
         }
-        for(int i=0; i<st->ele.data.mod.inputcount; i++)
+        
+        trav = currentNode->child->sibling->child;
+        
+        while(trav != NULL)
         {
-            if(st->ele.data.mod.inputList[i].tag == Identifier)
-            {
-                tmp = sym_hash_find(st->ele.data.mod.inputList[i].data.id.lexeme, &(tbStack->top->ele->hashtb), 0, NULL);
-                tmp->aux = 1;
-            }
-            else if(st->ele.data.mod.inputList[i].tag == Array)
-            {
-                tmp = sym_hash_find(st->ele.data.mod.inputList[i].data.arr.lexeme, &(tbStack->top->ele->hashtb), 0, NULL);
-                tmp->aux = 1;
-            }
+            tmp = sym_hash_find(trav->node->ele.leafNode->lexeme, &(tbStack->top->ele->hashtb), 0, NULL);
+            tmp->aux = 1;
+            trav = trav->sibling->sibling;
         }
         //Push the moduleDef's symbol table on the stack
         sympush(tbStack, newTable);
@@ -371,27 +369,30 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         
         char * err = (char *)malloc(sizeof(char)*200);
         memset(err, '\0', sizeof(char)*200);
-        for(int i=0; i<st->ele.data.mod.outputcount; i++)
+
+        trav = currentNode->child->sibling->sibling->child;
+        while(trav != NULL)
         {
-            if(tmp->ele.tag == Identifier)
+            // if(tmp->ele.tag == Identifier)
+            // {
+            tmp = sym_hash_find(trav->node->ele.leafNode->lexeme, &(tbStack->top->ele->hashtb), 0, NULL);
+            if(tmp->ele.data.id.isAssigned == 0)
             {
-                tmp = sym_hash_find(st->ele.data.mod.outputList[i].data.id.lexeme, &(tbStack->top->ele->hashtb), 0, NULL);
-                if(tmp->ele.data.id.isAssigned == 0)
-                {
-                    //Some var in O/P is unassigned, ERROR.
-                    sprintf(err,"Line %d: %s (returned) variable not assigned in module %s", 
-                    tmp->lineNum, tmp->ele.data.id.lexeme, currentNode->child->node->ele.leafNode->lexeme);
-                    pushSemanticError(err);
-                    // newTable = sympop(tbStack);
-                    // free(newTable);
-                    // return NULL;
-                }
+                //Some var in O/P is unassigned, ERROR.
+                sprintf(err,"Line %d: %s (returned) variable not assigned in module %s", 
+                tmp->lineNum, tmp->ele.data.id.lexeme, currentNode->child->node->ele.leafNode->lexeme);
+                pushSemanticError(err);
+                // newTable = sympop(tbStack);
+                // free(newTable);
+                // return NULL;
             }
+            // }
+            trav = trav->sibling->sibling;
         }
         //Pop this module's symbol table (moduleDef's symbol table will be popped in its own scope)
-        if(err!=NULL) free(err);
+        // if(err!=NULL) free(err);
         newTable = sympop(tbStack);
-        if(newTable!=NULL) free(newTable);
+        // if(newTable!=NULL) free(newTable);
         return NULL;
     }
     else if(!strcmp(currentNode->node->ele.internalNode->label, "DRIVER"))
@@ -418,7 +419,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         typeChecker(currentNode->child, tbStack);
 
         tableStackEle *table = sympop(tbStack);
-        if(table!=NULL) free(table);
+        // if(table!=NULL) free(table);
         return NULL;
     }
     else if(!strcmp(currentNode->node->ele.internalNode->label, "MODULEDEF"))
@@ -444,7 +445,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                     sprintf(err,"Line %d: Lower bound of the FOR loop should be less then upper bound",
                     trav->child->sibling->child->node->ele.leafNode->lineNum);
                     pushSemanticError(err);
-                    free(err);
+                    // free(err);
                 }
             }
             
@@ -469,7 +470,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         
         //Pop this scope from the stack (as this moduleDef is over)
         newTable = sympop(tbStack);
-        if(newTable !=NULL) free(newTable);
+        // if(newTable !=NULL) free(newTable);
         return NULL;
     }
     else if(!strcmp(currentNode->node->ele.internalNode->label, "DECLARE"))
@@ -578,7 +579,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                     trav->child->child->node->ele.leafNode->lineNum,
                     trav->child->child->node->ele.leafNode->lexeme);
                     pushSemanticError(err);
-                    free(err);
+                    // free(err);
                 }
                 else if(st->ele.tag == Identifier)
                 {
@@ -591,7 +592,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                         trav->child->child->node->ele.leafNode->lexeme,
                         st->ele.data.id.type);
                         pushSemanticError(err);
-                        free(err);
+                        // free(err);
                     }
                 }
             }
@@ -614,7 +615,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                     trav->child->child->sibling->node->ele.leafNode->lineNum,
                     trav->child->child->sibling->node->ele.leafNode->lexeme);
                     pushSemanticError(err);
-                    free(err);
+                    // free(err);
                 }
                 else if(st->ele.tag == Identifier)
                 {
@@ -627,7 +628,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                         trav->child->child->sibling->node->ele.leafNode->lexeme,
                         st->ele.data.id.type);
                         pushSemanticError(err);
-                        free(err);
+                        // free(err);
                     }
                 }
             }
@@ -640,7 +641,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                 sprintf(err,"Line %d: Lower bound of the array(s) should be less then upper bound in declaration.",
                 trav->child->child->node->ele.leafNode->lineNum);
                 pushSemanticError(err);
-                free(err);
+                // free(err);
             }
         }
 
@@ -675,7 +676,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             sprintf(err, "Line %d: '%s' variable can't be on LHS of an assignment because it isn't an ID.", 
             currentNode->child->node->ele.leafNode->lineNum, ret->ele.data.arr.lexeme);
             pushSemanticError(err);
-            if(err!=NULL) free(err);
+            // if(err!=NULL) free(err);
             return NULL;
         }
 
@@ -686,7 +687,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             sprintf(err,"Line %d: '%s' variable can not be modified during FOR loop (index variable).", 
             currentNode->child->node->ele.leafNode->lineNum, ret->ele.data.id.lexeme); 
             pushSemanticError(err);
-            if(err!=NULL) free(err);
+            // if(err!=NULL) free(err);
             return NULL;
         }
         
@@ -696,7 +697,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         //Either there was an error in type calculation of rightExpression or the type is an arrayType or type doesn't match
         if(rightType == NULL)
         {
-            if(err!=NULL) free(err);
+            // if(err!=NULL) free(err);
             // free(rightType);
             return NULL;
         }
@@ -710,8 +711,8 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                     sprintf(err,"Line %d: '%s' variable's type (Array, %s) does not match the expression type (Array, %s).", 
                     currentNode->child->node->ele.leafNode->lineNum, ret->ele.data.arr.lexeme, ret->ele.data.id.type, rightType->tp.type);
                     pushSemanticError(err);
-                    if(rightType!=NULL) free(rightType);
-                    if(err!=NULL) free(err);
+                    // if(rightType!=NULL) free(rightType);
+                    // if(err!=NULL) free(err);
                     return NULL;
                 }
 
@@ -731,13 +732,13 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                         *(int *)rightType->tp.arr.lowerBound->value, *(int *)rightType->tp.arr.upperBound->value);
 
                         pushSemanticError(err);
-                        if(rightType!=NULL) free(rightType);
-                        if(err!=NULL) free(err);
+                        // if(rightType!=NULL) free(rightType);
+                        // if(err!=NULL) free(err);
                         return NULL;
                     }
                 }
-                if(rightType!=NULL) free(rightType);
-                if(err!=NULL) free(err);
+                // if(rightType!=NULL) free(rightType);
+                // if(err!=NULL) free(err);
                 return NULL;
             }
             else
@@ -745,8 +746,8 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                 sprintf(err,"Line %d: '%s' variable's type (%s) does not match the expression type (Array).", 
                 currentNode->child->node->ele.leafNode->lineNum, ret->ele.data.id.lexeme, ret->ele.data.id.type);
                 pushSemanticError(err);
-                if(rightType!=NULL) free(rightType);
-                if(err!=NULL) free(err);
+                // if(rightType!=NULL) free(rightType);
+                // if(err!=NULL) free(err);
                 return NULL;
             }
         }
@@ -756,12 +757,12 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             sprintf(err,"Line %d: '%s' variable's type (%s) does not match the expression type (%s).", 
             currentNode->child->node->ele.leafNode->lineNum,ret->ele.data.id.lexeme, ret->ele.data.id.type, rightType->tp.type);
             pushSemanticError(err);
-            if(rightType!=NULL) free(rightType);
-            if(err!=NULL) free(err);
+            // if(rightType!=NULL) free(rightType);
+            // if(err!=NULL) free(err);
             return NULL;
         }
-        if(err!=NULL) free(err);
-        if(rightType!=NULL) free(rightType);
+        // if(err!=NULL) free(err);
+        // if(rightType!=NULL) free(rightType);
         return NULL;
     }
     else if(!strcmp(currentNode->node->ele.internalNode->label, "GET_VAL"))
@@ -790,7 +791,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             currentNode->child->node->ele.leafNode->lineNum, 
             currentNode->child->node->ele.leafNode->lexeme);
             pushSemanticError(err);
-            if(err!=NULL) free(err);
+            // if(err!=NULL) free(err);
             return NULL;
         }
 
@@ -803,10 +804,10 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             currentNode->child->node->ele.leafNode->lineNum, 
             currentNode->child->node->ele.leafNode->lexeme); 
             pushSemanticError(err);
-            if(err!=NULL) free(err);
+            // if(err!=NULL) free(err);
             return NULL;
         }
-        if(err!=NULL) free(err);
+        // if(err!=NULL) free(err);
         ret->ele.data.id.isAssigned = 1;
         return NULL;
     } 
@@ -839,7 +840,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             currentNode->child->node->ele.leafNode->lexeme, 
             leftType_id->ele.data.id.type);
             pushSemanticError(err);
-            if(err!=NULL) free(err);
+            // if(err!=NULL) free(err);
             return NULL;
         }
         
@@ -851,7 +852,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             currentNode->child->sibling->node->ele.leafNode->lineNum, 
             currentNode->child->sibling->node->ele.leafNode->lexeme);
             pushSemanticError(err);
-            if(err!=NULL) free(err);
+            // if(err!=NULL) free(err);
             return NULL;
         }
         else if(!strcmp(currentNode->child->sibling->node->ele.leafNode->type, "NUM"))
@@ -869,7 +870,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                     //out of bounds errors
                     sprintf(err,"Line %d: Index (%s) is out of bounds for this Array - %s (%d - %d).",num->node->ele.leafNode->lineNum, num->node->ele.leafNode->lexeme, leftType_id->ele.data.arr.lexeme, *(int*)(leftType_id->ele.data.arr.lowerIndex->value), *(int*)(leftType_id->ele.data.arr.upperIndex->value));
                     pushSemanticError(err);
-                    if(err!=NULL) free(err);
+                    // if(err!=NULL) free(err);
                     return NULL;
                 }
             }
@@ -885,7 +886,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             if(index == NULL)
             {
                 //Undeclared index ID, ERROR
-                if(err!=NULL) free(err);
+                // if(err!=NULL) free(err);
                 return NULL;
             }
 
@@ -897,7 +898,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                 currentNode->child->sibling->node->ele.leafNode->lineNum, 
                 currentNode->child->sibling->node->ele.leafNode->lexeme);
                 pushSemanticError(err);
-                if(err!=NULL) free(err);
+                // if(err!=NULL) free(err);
                 return NULL;
             }
             
@@ -910,7 +911,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                 currentNode->child->sibling->node->ele.leafNode->lexeme, 
                 index->ele.data.id.type);
                 pushSemanticError(err);
-                if(err!=NULL) free(err);
+                // if(err!=NULL) free(err);
                 return NULL;
             }
             
@@ -921,7 +922,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         {
             //Some problem/error on the RHS_expression, return NULL
             // free(rightType);
-            if(err!=NULL) free(err);
+            // if(err!=NULL) free(err);
             return NULL;
         }        
         
@@ -933,8 +934,8 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             currentNode->child->node->ele.leafNode->lineNum, 
             leftType_id->ele.data.arr.type);
             pushSemanticError(err);
-            if(rightType!=NULL )free(rightType);
-            if(err!=NULL) free(err);
+            // if(rightType!=NULL )free(rightType);
+            // if(err!=NULL) free(err);
             return NULL;
         }
 
@@ -948,12 +949,12 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             leftType_id->ele.data.arr.type,
             rightType->tp.type);
             pushSemanticError(err);
-            if(rightType!=NULL )free(rightType);
-            if(err!=NULL) free(err);
+            // if(rightType!=NULL )free(rightType);
+            // if(err!=NULL) free(err);
             return NULL;
         }
-        if(rightType!=NULL )free(rightType);
-        if(err!=NULL) free(err);
+        // if(rightType!=NULL )free(rightType);
+        // if(err!=NULL) free(err);
         return NULL;
     } 
     else if(!strcmp(currentNode->node->ele.internalNode->label, "MODULECALL"))
@@ -976,7 +977,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             currentNode->child->sibling->node->ele.leafNode->lineNum,
             currentNode->child->sibling->node->ele.leafNode->lexeme);
             pushSemanticError(err);
-            if(err!=NULL) free(err);   
+            // if(err!=NULL) free(err);   
             return NULL;
         }
 
@@ -987,7 +988,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             currentNode->child->sibling->node->ele.leafNode->lineNum,
             currentNode->child->sibling->node->ele.leafNode->lexeme);
             pushSemanticError(err);
-            if(err!=NULL) free(err);
+            // if(err!=NULL) free(err);
             return NULL;
         }
         //Function is defined
@@ -1050,7 +1051,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             currentNode->child->sibling->sibling->node->ele.internalNode->lineNumStart,
             ret->ele.data.mod.lexeme);
             pushSemanticError(err);
-            if(err!=NULL) free(err);
+            // if(err!=NULL) free(err);
             inputCountError = 1;
         }
 
@@ -1210,7 +1211,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             sprintf(err,"Line %d: %s module call has output parameters mismatch (Number of parameters are different).", 
             currentNode->child->sibling->sibling->node->ele.internalNode->lineNumStart, ret->ele.data.mod.lexeme);
             pushSemanticError(err);
-            if(err!=NULL) free(err);
+            // if(err!=NULL) free(err);
             return NULL;
         }
 
@@ -1295,7 +1296,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             }
             trav = trav->sibling;
         }
-        if(err!=NULL) free(err);
+        // if(err!=NULL) free(err);
         return NULL;
     } 
     else if(!strcmp(currentNode->node->ele.internalNode->label, "FOR"))
@@ -1368,9 +1369,10 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             trav = trav->sibling;
         }
         
-        free(sympop(tbStack));
+        sympop(tbStack);
+        // free(sympop(tbStack));
         // free(newTable);
-        if(err!=NULL) free(err);
+        // if(err!=NULL) free(err);
         if(isNull == 0)
             id->ele.data.id.isIndex = 0; //isIndex restored back. Now it can change!
 
@@ -1458,7 +1460,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                 currentNode->child->node->ele.internalNode->lineNumStart);
             } 
             pushSemanticError(err);
-            if(free != NULL)    free(err);
+            // if(free != NULL)    free(err);
         }
 
         astNode *trav = currentNode->child->sibling;
@@ -1493,7 +1495,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         else
         {
             checkAssignment(currentNode->child, tbStack, &error, prevValues, &index);
-            if(prevValues!=NULL) free(prevValues);
+            // if(prevValues!=NULL) free(prevValues);
         }
 
         //No variable in Expr_node has been assigned in the body of while
@@ -1510,18 +1512,20 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                 sprintf(err,"Line %d: No variable in while's condition changes inside the loop.", 
                 currentNode->child->node->ele.internalNode->lineNumStart);
             }
-            if(isNull == 0)
-                free(exprType);
+            // if(isNull == 0)
+                // free(exprType);
             pushSemanticError(err);
-            if(err!=NULL) free(err);
-            free(sympop(tbStack));
+            // if(err!=NULL) free(err);
+            sympop(tbStack);
+            // free(sympop(tbStack));
             return NULL;
         }
 
-        if(err!=NULL) free(err);
-        if(isNull == 0)
-            free(exprType);
-        free(sympop(tbStack));
+        // if(err!=NULL) free(err);
+        // if(isNull == 0)
+            // free(exprType);
+        sympop(tbStack);
+        // free(sympop(tbStack));
         // free(newTable);
         return NULL;
     } 
@@ -1641,7 +1645,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                         trav->child->node->ele.leafNode->lineNum, 
                         trav->child->node->ele.leafNode->lexeme);
                         pushSemanticError(err);
-                        free(valType);
+                        // free(valType);
                         // free(sympop(tbStack));
                         // return NULL;
                     }
@@ -1653,7 +1657,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                         trav->child->node->ele.leafNode->lexeme,
                         valType->tp.type);
                         pushSemanticError(err);
-                        free(valType);
+                        // free(valType);
                         // free(sympop(tbStack));
                         // return NULL;
                     }
@@ -1734,7 +1738,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                         trav->child->node->ele.leafNode->lineNum, 
                         trav->child->node->ele.leafNode->lexeme);
                         pushSemanticError(err);
-                        free(valType);
+                        // free(valType);
                         // free(sympop(tbStack));
                         // return NULL;
                     }
@@ -1746,7 +1750,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                         trav->child->node->ele.leafNode->lexeme,
                         valType->tp.type);
                         pushSemanticError(err);
-                        free(valType);
+                        // free(valType);
                         // free(sympop(tbStack));
                         // return NULL;
                     }
@@ -1762,8 +1766,9 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             typeChecker(trav, tbStack);
             trav = trav->sibling;
         }
-        if(err!=NULL) free(err);
-        free(sympop(tbStack));
+        // if(err!=NULL) free(err);
+        sympop(tbStack);
+        // free(sympop(tbStack));
         return NULL;   
     }
     else if (!strcmp(currentNode->node->ele.internalNode->label, "CASE"))
@@ -1815,7 +1820,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         {
             //ID not declared ERROR
             //searchscope  has inserted the error in the list
-            if(err!=NULL) free(err);
+            // if(err!=NULL) free(err);
             return NULL;
         }
 
@@ -1849,7 +1854,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             currentNode->child->node->ele.leafNode->lexeme, 
             myNode->ele.data.id.type);
             pushSemanticError(err);
-            if(err!=NULL) free(err);
+            // if(err!=NULL) free(err);
             return NULL;
         }
 
@@ -1868,7 +1873,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                 {
                     //ID isn't declared, ERROR
                     //searchscope must have inserted the error
-                    if(err!=NULL) free(err);
+                    // if(err!=NULL) free(err);
                     return NULL;
                 }
                 if(st->ele.tag != Identifier)
@@ -1879,7 +1884,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                     currentNode->child->sibling->node->ele.leafNode->lexeme, 
                     st->ele.data.id.type);
                     pushSemanticError(err);
-                    if(err!=NULL) free(err);
+                    // if(err!=NULL) free(err);
                     return NULL;
                 }
                 
@@ -1891,7 +1896,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                     currentNode->child->sibling->node->ele.leafNode->lexeme, 
                     st->ele.data.id.type);
                     pushSemanticError(err);
-                    if(err!=NULL) free(err);
+                    // if(err!=NULL) free(err);
                     return NULL;
                 }
 
@@ -1914,13 +1919,13 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                         *(int*)(myNode->ele.data.arr.lowerIndex->value), 
                         *(int*)(myNode->ele.data.arr.upperIndex->value));
                         pushSemanticError(err);
-                        if(err!=NULL) free(err);
+                        // if(err!=NULL) free(err);
                         return NULL;
                     }
                 }
             }                
         }
-        if(err!=NULL) free(err);
+        // if(err!=NULL) free(err);
         return answer;
     }
     else if(!strcmp(currentNode->node->ele.internalNode->label, "PLUS") || 
@@ -1995,9 +2000,9 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             
             if(isArr == 1)
             {
-                if(leftType!=NULL)free(leftType);
-                if(rightType!=NULL)free(rightType);
-                if(err!=NULL) free(err);
+                // if(leftType!=NULL)free(leftType);
+                // if(rightType!=NULL)free(rightType);
+                // if(err!=NULL) free(err);
                 return NULL;
             }
             
@@ -2061,16 +2066,16 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                             // }
                         }
                         pushSemanticError(err);
-                        if(retType!=NULL)free(retType);
-                        if(leftType!=NULL)free(leftType);
-                        if(rightType!=NULL)free(rightType);
-                        if(err!=NULL) free(err);
+                        // if(retType!=NULL)free(retType);
+                        // if(leftType!=NULL)free(leftType);
+                        // if(rightType!=NULL)free(rightType);
+                        // if(err!=NULL) free(err);
                         return  NULL;
                     } 
 
-                    if(leftType!=NULL)free(leftType);
-                    if(rightType!=NULL)free(rightType);
-                    if(err!=NULL) free(err);        
+                    // if(leftType!=NULL)free(leftType);
+                    // if(rightType!=NULL)free(rightType);
+                    // if(err!=NULL) free(err);        
                     return retType;         
                 }
                 else
@@ -2084,13 +2089,13 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                     currentNode->node->ele.internalNode->label);
                     pushSemanticError(err);
 
-                    if(retType!=NULL)free(retType);
-                    if(leftType!=NULL)free(leftType);
-                    if(rightType!=NULL)free(rightType);
-                    if(err!=NULL) free(err);
+                    // if(retType!=NULL)free(retType);
+                    // if(leftType!=NULL)free(leftType);
+                    // if(rightType!=NULL)free(rightType);
+                    // if(err!=NULL) free(err);
                     return NULL;
                 }
-                if(err!=NULL) free(err);
+                // if(err!=NULL) free(err);
             }
             
             else if(!strcmp(currentNode->node->ele.internalNode->label, "LT") || 
@@ -2146,16 +2151,16 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                         //     currentNode->node->ele.internalNode->label);
                         // }
                         pushSemanticError(err);
-                        if(retType!=NULL)free(retType);
-                        if(leftType!=NULL)free(leftType);
-                        if(rightType!=NULL)free(rightType);
-                        if(err!=NULL) free(err);
+                        // if(retType!=NULL)free(retType);
+                        // if(leftType!=NULL)free(leftType);
+                        // if(rightType!=NULL)free(rightType);
+                        // if(err!=NULL) free(err);
                         return NULL;
                     }
                     
-                    if(leftType!=NULL)free(leftType);
-                    if(rightType!=NULL)free(rightType);
-                    if(err!=NULL) free(err);
+                    // if(leftType!=NULL)free(leftType);
+                    // if(rightType!=NULL)free(rightType);
+                    // if(err!=NULL) free(err);
                     return retType;         
                 }
                 else
@@ -2169,10 +2174,10 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                     currentNode->node->ele.internalNode->label);
                     pushSemanticError(err);
 
-                    if(retType!=NULL)free(retType);
-                    if(leftType!=NULL)free(leftType);
-                    if(rightType!=NULL)free(rightType);
-                    if(err!=NULL) free(err);
+                    // if(retType!=NULL)free(retType);
+                    // if(leftType!=NULL)free(leftType);
+                    // if(rightType!=NULL)free(rightType);
+                    // if(err!=NULL) free(err);
                     return NULL;
                 }
             }
@@ -2232,15 +2237,15 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                             // }
                         }
                         pushSemanticError(err);
-                        if(retType!=NULL)free(retType);
-                        if(leftType!=NULL)free(leftType);
-                        if(rightType!=NULL)free(rightType);
-                        if(err!=NULL) free(err);
+                        // if(retType!=NULL)free(retType);
+                        // if(leftType!=NULL)free(leftType);
+                        // if(rightType!=NULL)free(rightType);
+                        // if(err!=NULL) free(err);
                         return  NULL;
                     }   
-                    if(leftType!=NULL)free(leftType);
-                    if(rightType!=NULL)free(rightType);
-                    if(err!=NULL) free(err);
+                    // if(leftType!=NULL)free(leftType);
+                    // if(rightType!=NULL)free(rightType);
+                    // if(err!=NULL) free(err);
                     return retType;         
                 }
                 else
@@ -2253,10 +2258,10 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                     rightType->tp.type,
                     currentNode->node->ele.internalNode->label);
                     pushSemanticError(err);
-                    if(retType!=NULL)free(retType);
-                    if(leftType!=NULL)free(leftType);
-                    if(rightType!=NULL)free(rightType);
-                    if(err!=NULL) free(err);
+                    // if(retType!=NULL)free(retType);
+                    // if(leftType!=NULL)free(leftType);
+                    // if(rightType!=NULL)free(rightType);
+                    // if(err!=NULL) free(err);
                     return NULL;
                 }
             }
@@ -2285,8 +2290,8 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                 //     currentNode->node->ele.internalNode->label);
                 // }
                 pushSemanticError(err);
-                if(childType!=NULL) free(childType);
-                if(err!=NULL) free(err);
+                // if(childType!=NULL) free(childType);
+                // if(err!=NULL) free(err);
                 return NULL;
             }
             type *retType = (type *)malloc(sizeof(type));
@@ -2318,13 +2323,13 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                 //     currentNode->node->ele.internalNode->label);
                 // }
                 pushSemanticError(err);
-                if(retType!=NULL) free(retType);
-                if(childType!=NULL) free(childType);
-                if(err!=NULL) free(err);
+                // if(retType!=NULL) free(retType);
+                // if(childType!=NULL) free(childType);
+                // if(err!=NULL) free(err);
                 return NULL;
             }
-            if(childType!=NULL) free(childType);
-            if(err!=NULL) free(err);
+            // if(childType!=NULL) free(childType);
+            // if(err!=NULL) free(err);
             return retType;
         }
     }

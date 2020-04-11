@@ -837,7 +837,6 @@ void formulation(astNode *astRoot, symbolTable *current)
             tmp->sibling = moduleST;
         }
     }
-    
     else if(!strcmp(astRoot->node->ele.internalNode->label, "MODULEDEF"))
     {
         char *str = (char *)malloc(sizeof(char)*25); 
@@ -867,8 +866,7 @@ void formulation(astNode *astRoot, symbolTable *current)
                 tmp = tmp->sibling;
             }
             tmp->sibling = moduledefST;
-        }    
-        
+        }
     }
 
     else if(!strcmp(astRoot->node->ele.internalNode->label, "DRIVER"))
