@@ -177,18 +177,17 @@ int main(int argc, char * argv[])
                     initializeErrorList();
                     symbolTable *table = NULL;
                     formulation(ast, table);
-                    printSymbolTable(symbolTableRoot);
+                    // printSymbolTable(symbolTableRoot);
                     tableStack *tbStack= (tableStack*)malloc(sizeof(tableStack));
                     tbStack->top = NULL;
                     tbStack->size = 0;
                     tbStack->bottom = NULL;
                     typeChecker(ast, tbStack);
                     printSemanticErrors();
-                    
-                    
-                    //freeing memory not needed anymore
-                    freeprasetree(parseTree);
-                    freegrammar(grammar);
+
+                    // freeing memory not needed anymore
+                    // freeprasetree(parseTree);
+                    // freegrammar(grammar);
                     break;
 
             case 4: //Time analysis
