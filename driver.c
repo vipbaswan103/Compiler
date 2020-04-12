@@ -185,7 +185,7 @@ int main(int argc, char * argv[])
                     tbStack->bottom = NULL;
                     typeChecker(ast, tbStack);
                     printSemanticErrors();
-                    quad * labels = (quad *)malloc(sizeof(quad));
+                    // quad * labels = (quad *)malloc(sizeof(quad));
                     intermed * ircode = generateIRCode(ast, NULL);
                     printCode(ircode->code);
                     // freeing memory not needed anymore
