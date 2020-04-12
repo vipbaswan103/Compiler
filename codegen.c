@@ -1,7 +1,9 @@
 #include "codegenDef.h"
 #include "ast.h"
+
 int tmpNum = 0;
 int labelNum = 0;
+
 void getOp(char * name, char * op)
 {
     if(!strcmp(name,"PLUS"))
@@ -195,8 +197,8 @@ intermed * generateIRCode(astNode * currentNode, quad * labels)
             final->code->next = NULL;
             mergeCode(&(leftchild->code), rightchild->code);
             mergeCode(&(leftchild->code), final->code);
-            free(final->code->ele);
-            free(final->code);
+            // free(final->code->ele);
+            // free(final->code);
             final->code = leftchild->code;
             free(leftchild);
             free(rightchild);
@@ -1081,7 +1083,8 @@ intermed * generateIRCode(astNode * currentNode, quad * labels)
             strcpy(param->ele->op, "param\0");
             initQuad(param->ele, trav->node->ele.leafNode->lexeme, "\0", "\0");
 
-            mergeCode(&(final->code), param);
+            mergeCode(&param, final->code);
+            final->code = param;
             paramCount++;
             trav = trav->sibling;
         }
