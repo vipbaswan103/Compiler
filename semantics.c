@@ -784,10 +784,10 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
 
         
 
-        if(ret->ele.tag == Array)
+        if(ret->ele.tag == Module)
         {
             //Can't be array varible, ERROR
-            sprintf(err,"Line %d: %s variable is of Array type (Not Allowed).", 
+            sprintf(err,"Line %d: %s variable is of Module type (Not Allowed).", 
             currentNode->child->node->ele.leafNode->lineNum, 
             currentNode->child->node->ele.leafNode->lexeme);
             pushSemanticError(err);
@@ -796,7 +796,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         }
 
         //ID_node has been assigned something
-        if(ret->ele.data.id.isIndex==1)
+        if((ret->ele.tag == Identifier && ret->ele.data.id.isIndex==1))
         {
             //Error catch
             //It's an index and I am in the scope of the corresponding for loop
@@ -808,7 +808,8 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             return NULL;
         }
         // if(err!=NULL) free(err);
-        ret->ele.data.id.isAssigned = 1;
+        if(ret->ele.tag == Identifier)
+            ret->ele.data.id.isAssigned = 1;
         return NULL;
     } 
     
