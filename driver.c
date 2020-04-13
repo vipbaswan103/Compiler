@@ -186,7 +186,10 @@ int main(int argc, char * argv[])
                     typeChecker(ast, tbStack);
                     printSemanticErrors();
                     // quad * labels = (quad *)malloc(sizeof(quad));
-                    intermed * ircode = generateIRCode(ast, NULL);
+                    tbStack->top = NULL;
+                    tbStack->size = 0;
+                    tbStack->bottom = NULL;
+                    intermed * ircode = generateIRCode(ast, NULL, tbStack);
                     printCode(ircode->code);
                     // freeing memory not needed anymore
                     // freeprasetree(parseTree);
