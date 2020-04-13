@@ -192,6 +192,7 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
             strcpy(goto2->ele->op, "goto\0");
             
             //merge all the codes in order
+            // E1 code - E2 code - if E1 relop  E2 - goto true - goto false 
             mergeCode(&(leftchild->code), rightchild->code);
             mergeCode(&(leftchild->code), ifcode);
             mergeCode(&(leftchild->code), goto1);
@@ -239,24 +240,33 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
         if(labels != NULL)
         {
             //inside while
+            //assume the clause is B1 && B2
+
             quad *l = (quad *)malloc(sizeof(quad));
+            //get a new label for the true condition jump from B1 to B2
             getLabel(l->arg1);
+            //the false condition is a short cicuit to the false of the whole clause
             strcpy(l->arg2,labels->arg2);
+
+            //call the left and right child with respective true and false labels
             intermed* leftchild = generateIRCode(currentNode->child, l, tbStack);
             intermed* rightchild = generateIRCode(currentNode->child->sibling, labels, tbStack);
             
+            //synthesize the clause itself.
             intermed* final;
             initializeFinalCode(&final);
             getTemporary(&(final->t));
 
             IRcode *labCode = (IRcode *)malloc(sizeof(IRcode));
             labCode->ele = (quad *)malloc(sizeof(quad));
-            
+            labCode->next = NULL;
+
+            //label statement for B2
             strcpy(labCode->ele->arg1, l->arg1);
             strcpy(labCode->ele->op, ":\0");
             
-            labCode->next = NULL;
-            
+            //code order - left side code for B1, label of B2, code for B2
+            //goto statements will come with relop sides not AND, OR, NOt
             mergeCode(&(leftchild->code), labCode);
             mergeCode(&(leftchild->code), rightchild->code);
             final->code = leftchild->code;
@@ -267,10 +277,11 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
         }
         else
         {
-            //RHS of assignment statement
+            //RHS of assignment statement cause labels are empty
             intermed* leftchild = generateIRCode(currentNode->child, labels, tbStack);
             intermed* rightchild = generateIRCode(currentNode->child->sibling, labels, tbStack);
 
+            //initialise  the final code to be returned
             intermed* final;
             initializeFinalCode(&final);
             getTemporary(&(final->t));
@@ -280,6 +291,8 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
             strcpy(final->code->ele->arg2, rightchild->t.name);
             strcpy(final->code->ele->result, final->t.name);
             final->code->next = NULL;
+            
+            // order left - right - AND statement to combine the two into new temporary
             mergeCode(&(leftchild->code), rightchild->code);
             mergeCode(&(leftchild->code), final->code);
             final->code = leftchild->code;
@@ -290,16 +303,21 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
         }
     }
     else if(!strcmp(currentNode->node->ele.internalNode->label, "OR"))
-    {
-        //Correct this code 
+    { 
         if(labels != NULL)
         {
+            //inside w while condition
             quad *l = (quad *)malloc(sizeof(quad));
+            //get a new label for when B1 is false
             getLabel(l->arg2);
+            // the true label is that of overall B.true
             strcpy(l->arg1,labels->arg1);
+
+            //call the left and right child with respective labels
             intermed* leftchild = generateIRCode(currentNode->child, l, tbStack);
             intermed* rightchild = generateIRCode(currentNode->child->sibling, labels, tbStack);
             
+            //initialize the final to be returned
             intermed* final;
             initializeFinalCode(&final);
             getTemporary(&(final->t));
@@ -309,6 +327,10 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
             strcpy(labCode->ele->op, ":\0");
             strcpy(labCode->ele->arg1, l->arg2);
             labCode->next = NULL;
+
+            //merge in order
+            // left/B1 - right/B2 label - B2 code
+            //goto will be in relop stages, not here at the OR,AND, NOT level
             mergeCode(&(leftchild->code), labCode);
             mergeCode(&(leftchild->code), rightchild->code);
             final->code = leftchild->code;
@@ -319,6 +341,7 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
         }
         else
         {
+            //simple boolean expression
             intermed* leftchild = generateIRCode(currentNode->child, labels, tbStack);
             intermed* rightchild = generateIRCode(currentNode->child->sibling, labels, tbStack);
 
@@ -331,6 +354,9 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
             strcpy(final->code->ele->arg2, rightchild->t.name);
             strcpy(final->code->ele->result, final->t.name);
             final->code->next = NULL;
+
+            // merge in order
+            //left - right - OR statement code
             mergeCode(&(leftchild->code), rightchild->code);
             mergeCode(&(leftchild->code), final->code);
             final->code = leftchild->code;
