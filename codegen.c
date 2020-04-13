@@ -36,7 +36,7 @@ void getOp(char * name, char * op)
 
 void getTemporary(temporary * tmp)
 {
-    sprintf(tmp->name, "t%d", tmpNum);
+    sprintf(tmp->name, "_t%d", tmpNum);
     tmpNum++;
 }
 
@@ -147,7 +147,7 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
 
         free(leftchild);
         free(rightchild);
-
+        
         return final;
     }
 
@@ -205,12 +205,13 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
         }
         else
         {
-            // the label has not's
+            // the label has nothing, just a normal boolean expressison
             intermed* leftchild = generateIRCode(currentNode->child, labels, tbStack);
             intermed* rightchild = generateIRCode(currentNode->child->sibling, labels, tbStack);
 
             intermed* final;
             initializeFinalCode(&final);
+            //since it is a normal expression, 
             getTemporary(&(final->t));
             
             initQuad(final->code->ele, leftchild->t.name, rightchild->t.name, final->t.name);
@@ -465,6 +466,18 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
 
         tableStackEle *newTable = NULL;
         symbolTable *st = symbolTableRoot->child->sibling;
+
+        IRcode *scopeStart = (IRcode*)malloc(sizeof(IRcode));
+        scopeStart->ele = (quad*)malloc(sizeof(quad));
+        scopeStart->next = NULL;
+        strcpy(scopeStart->ele->op,"SCOPESTARTMODULE");
+        initQuad(scopeStart->ele,"\0","\0","\0");
+
+        IRcode *scopeEnd = (IRcode*)malloc(sizeof(IRcode));
+        scopeEnd->ele = (quad*)malloc(sizeof(IRcode));
+        scopeEnd->next = NULL;
+        strcpy(scopeEnd->ele->op,"SCOPEENDMODULE");
+        initQuad(scopeEnd->ele,"\0","\0","\0");
         
         while(trav != NULL)
         {
@@ -474,7 +487,10 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
             sympush(tbStack, newTable);
             st = st->sibling;
             tmp = generateIRCode(trav, NULL, tbStack);
+            mergeCode(&(final->code),scopeStart);
             mergeCode(&(final->code),tmp->code);
+            mergeCode(&(final->code),scopeEnd);
+
             trav = trav->sibling;
         }
         return final;
@@ -486,6 +502,18 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
         intermed* final = (intermed *)malloc(sizeof(intermed));
         final->code = NULL;
         intermed* tmp;
+
+        IRcode *scopeStart = (IRcode*)malloc(sizeof(IRcode));
+        scopeStart->ele = (quad*)malloc(sizeof(quad));
+        scopeStart->next = NULL;
+        strcpy(scopeStart->ele->op,"SCOPESTARTMODULE");
+        initQuad(scopeStart->ele,"\0","\0","\0");
+
+        IRcode *scopeEnd = (IRcode*)malloc(sizeof(IRcode));
+        scopeEnd->ele = (quad*)malloc(sizeof(IRcode));
+        scopeEnd->next = NULL;
+        strcpy(scopeEnd->ele->op,"SCOPEENDMODULE");
+        initQuad(scopeEnd->ele,"\0","\0","\0");
 
         tableStackEle *newTable = NULL;
         symbolTable *st = symbolTableRoot->child->sibling;
@@ -503,7 +531,11 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
             sympush(tbStack, newTable);
             st = st->sibling;
             tmp = generateIRCode(trav, NULL, tbStack);
+
+            mergeCode(&(final->code),scopeStart);
             mergeCode(&(final->code),tmp->code);
+            mergeCode(&(final->code),scopeEnd);
+            
             trav = trav->sibling;
         }
         return final;
@@ -569,6 +601,18 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
             trav = trav->sibling;
         }
 
+        IRcode *scopeStart = (IRcode*)malloc(sizeof(IRcode));
+        scopeStart->ele = (quad*)malloc(sizeof(quad));
+        scopeStart->next = NULL;
+        strcpy(scopeStart->ele->op,"SCOPESTARTMODULE");
+        initQuad(scopeStart->ele,"\0","\0","\0");
+
+        IRcode *scopeEnd = (IRcode*)malloc(sizeof(IRcode));
+        scopeEnd->ele = (quad*)malloc(sizeof(IRcode));
+        scopeEnd->next = NULL;
+        strcpy(scopeEnd->ele->op,"SCOPEENDMODULE");
+        initQuad(scopeEnd->ele,"\0","\0","\0");
+
         tableStackEle *newTable = (tableStackEle *)malloc(sizeof(tableStackEle));
         newTable->ele = trav;
         newTable->next = NULL;
@@ -607,9 +651,12 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
         strcpy(ret->ele->op,"RET\0");
         initQuad(ret->ele, "\0","\0","\0");
 
+        mergeCode(&(scopeStart), finaldef);
+        finaldef = scopeStart;
         mergeCode(&(finaldef), body->code);
         mergeCode(&(finaldef), labelCode);
         mergeCode(&(finaldef), ret);
+        mergeCode(&(finaldef), scopeEnd);
         
         body->code = finaldef;
                 
@@ -691,6 +738,18 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
         stmtsCode = (intermed*)malloc(sizeof(intermed));
         stmtsCode->code = NULL;
 
+        IRcode *scopeStart = (IRcode*)malloc(sizeof(IRcode));
+        scopeStart->ele = (quad*)malloc(sizeof(quad));
+        scopeStart->next = NULL;
+        strcpy(scopeStart->ele->op,"SCOPESTART");
+        initQuad(scopeStart->ele,"\0","\0","\0");
+
+        IRcode *scopeEnd = (IRcode*)malloc(sizeof(IRcode));
+        scopeEnd->ele = (quad*)malloc(sizeof(IRcode));
+        scopeEnd->next = NULL;
+        strcpy(scopeEnd->ele->op,"SCOPEEND");
+        initQuad(scopeEnd->ele,"\0","\0","\0");
+
         int isEnd = 0;
         tableStackEle *newNode = NULL;
         symbolTable *st = tbStack->top->ele->child;
@@ -705,6 +764,8 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
                 newNode->next = NULL;
                 sympush(tbStack, newNode);
                 st = st->sibling;
+                
+                mergeCode(&(stmtsCode->code), scopeStart);
                 //If there is some stmt after this stmt
                 if(trav->sibling != NULL)
                 {
@@ -730,6 +791,8 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
                     //Now, there isn't any need for the "goto begin" code
                     isEnd = 1;
                 }
+                
+                mergeCode(&(stmtsCode->code), scopeEnd);
             }
             else
             {
@@ -821,6 +884,19 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
 
         stmtsCode = (intermed*)malloc(sizeof(intermed));
         stmtsCode->code = NULL;
+        
+        IRcode *scopeStart = (IRcode*)malloc(sizeof(IRcode));
+        scopeStart->ele = (quad*)malloc(sizeof(quad));
+        scopeStart->next = NULL;
+        strcpy(scopeStart->ele->op,"SCOPESTART");
+        initQuad(scopeStart->ele,"\0","\0","\0");
+
+        IRcode *scopeEnd = (IRcode*)malloc(sizeof(IRcode));
+        scopeEnd->ele = (quad*)malloc(sizeof(IRcode));
+        scopeEnd->next = NULL;
+        strcpy(scopeEnd->ele->op,"SCOPEEND");
+        initQuad(scopeEnd->ele,"\0","\0","\0");
+
 
         //isEnd = 0 means there is need for "goto begin" stmt at the end of this loop
         int isEnd = 0;
@@ -843,6 +919,7 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
                 // children with labels if they (any child) need the label of 
                 // the right sibling
 
+                mergeCode(&(stmtsCode->code), scopeStart);
                 //If there is some stmt after this stmt
                 if(trav->sibling != NULL)
                 {
@@ -868,6 +945,7 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
                     //Now, there isn't any need for the "goto begin" code
                     isEnd = 1;
                 }
+                mergeCode(&(stmtsCode->code), scopeEnd);
             }
             else
             {
@@ -908,7 +986,7 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
         }
         intermed* cummulator = (intermed*)malloc(sizeof(intermed));
         cummulator->code = NULL;
-        
+
         intermed** caseStmts = (intermed**) malloc(sizeof(intermed*)*len);
         intermed* switchcode;
         trav = currentNode->child->sibling;
@@ -984,7 +1062,19 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
             
         intermed* stmtsCode, *stmtCode;
         stmtsCode = (intermed *)malloc(sizeof(intermed));
-        
+                
+        IRcode *scopeStart = (IRcode*)malloc(sizeof(IRcode));
+        scopeStart->ele = (quad*)malloc(sizeof(quad));
+        scopeStart->next = NULL;
+        strcpy(scopeStart->ele->op,"SCOPESTART");
+        initQuad(scopeStart->ele,"\0","\0","\0");
+
+        IRcode *scopeEnd = (IRcode*)malloc(sizeof(IRcode));
+        scopeEnd->ele = (quad*)malloc(sizeof(IRcode));
+        scopeEnd->next = NULL;
+        strcpy(scopeEnd->ele->op,"SCOPEEND");
+        initQuad(scopeEnd->ele,"\0","\0","\0");
+
         //isEnd = 0 means there is need for "goto begin" stmt at the end of this loop
         int isEnd = 0;
         tableStackEle * newNode = NULL;
@@ -1004,6 +1094,7 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
                 // children with labels if they (any child) need the label of 
                 // the right sibling
 
+                mergeCode(&(stmtsCode->code), scopeStart);
                 //If there is some stmt after this stmt
                 if(trav->sibling != NULL)
                 {
@@ -1029,6 +1120,7 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
                     //Now, there isn't any need for the "goto begin" code
                     isEnd = 1;
                 }
+                mergeCode(&(stmtsCode->code), scopeEnd);
             }
             else
             {
@@ -1079,6 +1171,18 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
         //isEnd = 0 means there is need for "goto begin" stmt at the end of this loop
         int isEnd = 0;
         
+        IRcode *scopeStart = (IRcode*)malloc(sizeof(IRcode));
+        scopeStart->ele = (quad*)malloc(sizeof(quad));
+        scopeStart->next = NULL;
+        strcpy(scopeStart->ele->op,"SCOPESTART");
+        initQuad(scopeStart->ele,"\0","\0","\0");
+
+        IRcode *scopeEnd = (IRcode*)malloc(sizeof(IRcode));
+        scopeEnd->ele = (quad*)malloc(sizeof(IRcode));
+        scopeEnd->next = NULL;
+        strcpy(scopeEnd->ele->op,"SCOPEEND");
+        initQuad(scopeEnd->ele,"\0","\0","\0");
+
         tableStackEle * newNode = NULL;
         symbolTable * st = tbStack->top->ele->child;
         while(trav != NULL)
@@ -1097,6 +1201,7 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
                 // children with labels if they (any child) need the label of 
                 // the right sibling
 
+                mergeCode(&(stmtsCode->code), scopeStart);
                 //If there is some stmt after this stmt
                 if(trav->sibling != NULL)
                 {
@@ -1122,6 +1227,7 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
                     //Now, there isn't any need for the "goto begin" code
                     isEnd = 1;
                 }
+                mergeCode(&(stmtsCode->code), scopeEnd);
             }
             else
             {
