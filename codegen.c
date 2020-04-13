@@ -370,15 +370,15 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
     {
         intermed* rightchild = generateIRCode(currentNode->child->sibling, NULL, tbStack);
         
-        //arg1 holds RHS temp, result holds LHS, op holds "="
+        // arg1 holds RHS temp, result holds LHS, op holds "="
         intermed* final;
         initializeFinalCode(&final);
         strcpy(final->code->ele->op, "=\0");
-        strcpy(final->code->ele->result , currentNode->child->node->ele.leafNode->lexeme);
-        strcpy(final->code->ele->arg1 , rightchild->t.name);
+        initQuad(final->code->ele,
+        rightchild->t.name,
+        "\0",  // when arg2 is empty , we know that it is assignop and not array assign op
+        currentNode->child->node->ele.leafNode->lexeme);
         
-        //when arg2 is empty , we know that it is assignop and not array assign op
-        strcpy(final->code->ele->arg2 , "\0");
         final->code->next = NULL;
         
         // right side expressions code first 
@@ -493,9 +493,12 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
         intermed* final;
         initializeFinalCode(&final); 
         strcpy(final->code->ele->op, "=\0");
-        strcpy(final->code->ele->result , currentNode->child->node->ele.leafNode->lexeme);
-        strcpy(final->code->ele->arg1 , currentNode->child->sibling->node->ele.leafNode->lexeme);
-        strcpy(final->code->ele->arg2 , rightchild->t.name); //when arg2 is not empty we know that it is assignoparr
+        
+        initQuad(final->code->ele,
+        rightchild->t.name,
+        currentNode->child->sibling->node->ele.leafNode->lexeme,
+        currentNode->child->node->ele.leafNode->lexeme); //when arg2 is not empty we know that it is assignoparr
+       
         
         final->code->next = NULL;
         mergeCode(&(rightchild->code), tmp->code);
@@ -602,14 +605,17 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
         //      3) ret
         //      4) moduledef
         
+        // module is one level inside (remember)
+        // there is modules1 and modules2, inside which there is modules
+        // inside that is moduledef 
         tableStackEle *newTable = (tableStackEle *)malloc(sizeof(tableStackEle));
         newTable->ele = tbStack->top->ele->child;
         newTable->next = NULL;
 
-        //Push the moduleDef's symbol table on the stack
+        // Push the moduleDef's symbol table on the stack
         sympush(tbStack, newTable);
 
-        //finalDef is just a label for the module
+        // finalDef is just a label for the module
         IRcode* finaldef = (IRcode *)malloc(sizeof(IRcode)); 
         finaldef->next=NULL;   
         finaldef->ele = (quad*)malloc(sizeof(quad));      
@@ -623,26 +629,26 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
 
         intermed* body = NULL;
         
-        //body has the code from the moduledef astNode
+        // body has the code from the moduledef astNode
         body = generateIRCode(currentNode->child->sibling->sibling->sibling, l, tbStack);
 
-        //label quad for the module's last label of RET 
-        //done for "what if" while was the last statement of the module
+        // label quad for the module's last label of RET 
+        // done for "what if" while was the last statement of the module
         IRcode *labelCode = (IRcode *)malloc(sizeof(IRcode));
         labelCode->ele = (quad *)malloc(sizeof(quad));
         labelCode->next = NULL;
         strcpy(labelCode->ele->op, ":\0");
         initQuad(labelCode->ele, l->arg1, "\0", "\0");
 
-        //return statement for the module
+        // return statement for the module
         IRcode* ret = (IRcode *)malloc(sizeof(IRcode)); 
         ret->next=NULL;        
         ret->ele = (quad *)malloc(sizeof(quad));
         strcpy(ret->ele->op,"RET\0");
         initQuad(ret->ele, "\0","\0","\0");
 
-        //order 
-        //label for module - body - next label - ret
+        // order 
+        // label for module - body - next label - ret
         mergeCode(&(finaldef), body->code);
         mergeCode(&(finaldef), labelCode);
         mergeCode(&(finaldef), ret);
@@ -655,7 +661,7 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
     }
     else if(!strcmp(currentNode->node->ele.internalNode->label, "DRIVER"))
     {  
-        //find the driver
+        // find the driver in trav
         symbolTable *trav = symbolTableRoot->child->sibling;
         while(strcmp(trav->symLexeme, "Driver"))
         {
@@ -677,15 +683,16 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
         tableStackEle *newTable = (tableStackEle *)malloc(sizeof(tableStackEle));
         newTable->ele = trav;
         newTable->next = NULL;
-        //Push the driver's symbol table on the stack
+        // Push the driver's symbol table on the stack
         sympush(tbStack, newTable);
         
         newTable = (tableStackEle *)malloc(sizeof(tableStackEle));
         newTable->ele = trav->child;
         newTable->next = NULL;
-        //Push the moduleDef's symbol table on the stack
+        // Push the moduleDef's symbol table on the stack
         sympush(tbStack, newTable);
-
+        
+        // name of the module is the label for it
         IRcode* finaldef = (IRcode *)malloc(sizeof(IRcode)); 
         finaldef->next=NULL;   
         finaldef->ele = (quad*)malloc(sizeof(quad));      
@@ -693,6 +700,9 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
 
         initQuad(finaldef->ele, "main", "\0" ,"\0");   
 
+        // create a label and pass it to statements inside the body
+        // to tackle a possible while loop at the end of the body
+        // think of it like ret's label
         quad *l = (quad *)malloc(sizeof(quad));
         strcpy(l->op, "\0");
         initQuad(l, "\0", "\0", "\0");
@@ -706,12 +716,15 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
         strcpy(labelCode->ele->op, ":\0");
         initQuad(labelCode->ele, l->arg1, "\0", "\0");
 
+        // RET statement
         IRcode* ret = (IRcode *)malloc(sizeof(IRcode)); 
         ret->next=NULL;        
         ret->ele = (quad *)malloc(sizeof(quad));
         strcpy(ret->ele->op,"RET\0");
         initQuad(ret->ele, "\0","\0","\0");
 
+        // merge the code in order
+        // startscope, finaldef, body, ret's label, ret, scopeend
         mergeCode(&(scopeStart), finaldef);
         finaldef = scopeStart;
         mergeCode(&(finaldef), body->code);
@@ -727,12 +740,15 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
     
     else if(!strcmp(currentNode->node->ele.internalNode->label, "FOR"))
     {
-        // For - 3 Children
+        // For node has 3 Children
         // ID
         // Range 
         // Statements
+        
+        // REMEMBER : We don't have to insert a startscope and endscaope here
+        // because it was inserted at the time the for, while or switch was encountered
 
-        //Code for ID = <lowerBound>
+        // Code for ID = <lowerBound> (set the id as the lower bound)
         IRcode * assignCode = (IRcode *)malloc(sizeof(IRcode));
         assignCode->ele = (quad *)malloc(sizeof(quad));
         assignCode->next = NULL;
@@ -741,16 +757,15 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
         initQuad(assignCode->ele, currentNode->child->sibling->child->node->ele.leafNode->lexeme,
         "\0", currentNode->child->node->ele.leafNode->lexeme);
 
-        //Code for goto label 1
+        // Code for goto label 1, this is the loop incrementor goto
         IRcode * goto1 = (IRcode *)malloc(sizeof(IRcode));
         goto1->ele = (quad *)malloc(sizeof(quad));
         goto1->next = NULL;
         strcpy(goto1->ele->op, "goto\0");
+        initQuad(goto1->ele,"\0","\0","\0");
         getLabel(goto1->ele->arg1);
-        strcpy(goto1->ele->arg2, "\0");
-        strcpy(goto1->ele->result, "\0");
 
-        //Code for if
+        // Code for if
         IRcode *ifcode = (IRcode *)malloc(sizeof(IRcode));
         ifcode->ele = (quad *)malloc(sizeof(quad));
         ifcode->next = NULL;
@@ -760,25 +775,23 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
         currentNode->child->sibling->child->sibling->node->ele.leafNode->lexeme,
         "if\0");
 
-        //Code for goto label 2
+        // Code for goto label 2, the body of the for loop
         IRcode *goto2 = (IRcode *)malloc(sizeof(IRcode));
         goto2->ele = (quad *)malloc(sizeof(quad));
         goto2->next = NULL;
 
         strcpy(goto2->ele->op, "goto\0");
+        initQuad(goto2->ele,"\0","\0","\0");
         getLabel(goto2->ele->arg1);
-        strcpy(goto2->ele->arg2, "\0");
-        strcpy(goto2->ele->result, "\0");
-
-        //Code for goto lable 3
+        
+        //Code for goto label 3, goto statement with label as what we got from parent
+        //goto3 has the next statement of the whole FOR loop
         IRcode *goto3 = (IRcode *)malloc(sizeof(IRcode));
         goto3->ele = (quad *)malloc(sizeof(quad));
         goto3->next = NULL;
-
+        
         strcpy(goto3->ele->op, "goto\0");
-        strcpy(goto3->ele->arg1, labels->arg1);
-        strcpy(goto3->ele->arg2, "\0");
-        strcpy(goto3->ele->result, "\0");
+        initQuad(goto3->ele,labels->arg1,"\0","\0");
 
         quad* stmtsLabel = (quad *)malloc(sizeof(quad));
         strcpy(stmtsLabel->op, "\0");
@@ -786,7 +799,7 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
 
         astNode * trav = currentNode->child->sibling;
         intermed* stmtsCode, *stmtCode;
-
+        
         stmtsCode = (intermed*)malloc(sizeof(intermed));
         stmtsCode->code = NULL;
 
@@ -818,9 +831,11 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
                 st = st->sibling;
                 
                 mergeCode(&(stmtsCode->code), scopeStart);
+                
                 //If there is some stmt after this stmt
                 if(trav->sibling != NULL)
                 {
+                    // get a new label for the stmtsLabel
                     getLabel(stmtsLabel->arg1);
                     stmtCode = generateIRCode(trav, stmtsLabel, tbStack);
 
