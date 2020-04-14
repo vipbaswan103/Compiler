@@ -4,6 +4,9 @@
 #define STR_SIZE 51
 extern int tmpNum;
 extern int labelNum;
+
+typedef enum {ID = 2, CONSTANT = 1, NONE = 0} argtype;
+
 typedef struct temporary
 {
     char name[STR_SIZE];
@@ -18,6 +21,8 @@ typedef struct quad
     char arg1[STR_SIZE];
     char arg2[STR_SIZE];
     char result[STR_SIZE];
+    argtype tag1;
+    argtype tag2;
 }quad;
 
 typedef struct IRcode
