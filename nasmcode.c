@@ -3,6 +3,8 @@
 #include "symbolTable.h"
 #include "semantics.h"
 #include "codegen.h"
+#include "nasmcode.h"
+
 symbolTableNode *searchScopeIRcode(tableStack *tbStack, char *key)
 {
     //initialise the temporary stack
@@ -35,10 +37,11 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT)
     // tmp keeps a track of which children we go inside
     // when we start a new scope
     symbolTable * tmp ;
+    
     if(symT == symbolTableRoot)
-        tmp = symT->child->sibling;
+        tmp = symT->child->sibling; // MODULES1
     else
-        tmp = symT->child;
+        tmp = symT->child; // MODULEDEC
     
     // the current IRcode we are on
     IRcode * trav = code;
@@ -60,6 +63,7 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT)
             newNode->next = NULL;
             sympush(tbStack, newNode);
 
+            trav = trav->next;
             trav = nasmRecur(trav, tbStack, tmp->child);
             tmp = tmp->sibling;
         }
@@ -69,6 +73,7 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT)
             newNode->ele = tmp;
             newNode->next = NULL;
             sympush(tbStack, newNode);
+            trav = trav->next;
             trav = nasmRecur(trav, tbStack, tmp);
             tmp = tmp->sibling;
         }
@@ -76,12 +81,12 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT)
         {
             sympop(tbStack);
             sympop(tbStack);
-            return trav->next;
+            return trav;
         }
         else if(!strcmp(trav->ele->op,"SCOPEEND"))
 		{
             sympop(tbStack);
-			return trav->next;
+			return trav;
 		}
         else if(!strcmp(trav->ele->op,"+"))
         {
@@ -249,10 +254,10 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT)
             symbolTableNode *ret1, *ret2, *res; 
             
             res = searchScopeIRcode(tbStack, trav->ele->result);
-            if(trav->ele->arg1 == NUM)
+            if(trav->ele->tag1 == NUM)
             {
                 printf("MOV AX, %sd\n", trav->ele->arg1);
-                if(trav->ele->arg2 == NUM)
+                if(trav->ele->tag2 == NUM)
                 {
                     printf("MOV BX, %sd\n", trav->ele->arg2);
                 }
@@ -261,12 +266,12 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT)
                     ret2 = searchScopeIRcode(tbStack, trav->ele->arg2);
                     printf("MOV BX, [EBP-8-%d]\n",ret2->offset);
                 }
-                printf("MUL BX");
+                printf("MUL BX\n");
                 printf("MOV [EBP-8-%d], AX\n", res->offset);
             }
-            else if(trav->ele->arg1 == RNUM)
+            else if(trav->ele->tag1 == RNUM)
             {
-                if(trav->ele->arg2 == RNUM)
+                if(trav->ele->tag2 == RNUM)
                 {
 
                 }
@@ -281,7 +286,7 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT)
                 if(!strcmp(res->ele.data.id.type, "INTEGER"))
                 {
                     printf("MOV AX, [EBP-8-%d]\n",ret1->offset);
-                    if(trav->ele->arg2 == NUM)
+                    if(trav->ele->tag2 == NUM)
                     {
                         printf("MOV BX, %sd\n", trav->ele->arg2);
                     }
@@ -290,7 +295,7 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT)
                         ret2 = searchScopeIRcode(tbStack, trav->ele->arg2);
                         printf("MOV BX, [EBP-8-%d]\n",ret2->offset);
                     }
-                    printf("MUL BX");
+                    printf("MUL BX\n");
                     printf("MOV [EBP-8-%d], AX\n", res->offset);
                 }
                 else
@@ -304,10 +309,10 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT)
         {
             symbolTableNode *ret1, *ret2, *res; 
             res = searchScopeIRcode(tbStack, trav->ele->result);
-            if(trav->ele->arg1 == NUM)
+            if(trav->ele->tag1 == NUM)
             {
                 printf("MOV AX, %sd\n", trav->ele->arg1);
-                if(trav->ele->arg2 == NUM)
+                if(trav->ele->tag2 == NUM)
                 {
                     printf("MOV CX, %sd\n", trav->ele->arg2);
                 }
@@ -320,9 +325,9 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT)
                 printf("DIV CX");
                 printf("MOV [EBP-8-%d], AX\n", res->offset);
             }
-            else if(trav->ele->arg1 == RNUM)
+            else if(trav->ele->tag1 == RNUM)
             {
-                if(trav->ele->arg2 == RNUM)
+                if(trav->ele->tag2 == RNUM)
                 {
                     // instruction unknown
                 }
@@ -338,7 +343,7 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT)
                 if(!strcmp(res->ele.data.id.type, "INTEGER"))
                 {
                     printf("MOV AX, [EBP-8-%d]\n",ret1->offset);
-                    if(trav->ele->arg2 == NUM)
+                    if(trav->ele->tag2 == NUM)
                     {
                         printf("MOV CX, %sd\n", trav->ele->arg2);
                     }
@@ -409,14 +414,13 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT)
         // label1: t := 1
         // label2: t := 0
 
-        else if (!strcmp(trav->ele->op, "LT") ||
-        !strcmp(trav->ele->op, "GT") ||
-        !strcmp(trav->ele->op, "LE") ||
-        !strcmp(trav->ele->op, "GE") ||
-        !strcmp(trav->ele->op, "EQ") ||
-        !strcmp(trav->ele->op, "NE"))
+        else if (!strcmp(trav->ele->op, "<") ||
+        !strcmp(trav->ele->op, ">") ||
+        !strcmp(trav->ele->op, "<=") ||
+        !strcmp(trav->ele->op, ">=") ||
+        !strcmp(trav->ele->op, "==") ||
+        !strcmp(trav->ele->op, "!="))
         {
-            symbolTableNode *res = searchScopeIRcode(tbStack, trav->ele->result);
             int instType;
             if(trav->ele->tag1 == NUM)
             {
@@ -464,17 +468,17 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT)
                 if(instType == 0) // NUM
                 {    
                     printf("CMP AX, BX\n");
-                    if(!strcmp(trav->ele->op, "GE"))
+                    if(!strcmp(trav->ele->op, ">="))
                         printf("JGE %s\n", trav->next->ele->arg1);
-                    else if(!strcmp(trav->ele->op, "LE"))
+                    else if(!strcmp(trav->ele->op, "<="))
                         printf("JLE %s\n", trav->next->ele->arg1);
-                    else if(!strcmp(trav->ele->op, "LT"))
+                    else if(!strcmp(trav->ele->op, "<"))
                         printf("JL %s\n", trav->next->ele->arg1);
-                    else if(!strcmp(trav->ele->op, "GT"))
+                    else if(!strcmp(trav->ele->op, ">"))
                         printf("JG %s\n", trav->next->ele->arg1);
-                    else if(!strcmp(trav->ele->op, "EQ"))
+                    else if(!strcmp(trav->ele->op, "=="))
                         printf("JE %s\n", trav->next->ele->arg1);
-                    else if(!strcmp(trav->ele->op, "NE"))
+                    else if(!strcmp(trav->ele->op, "!="))
                         printf("JNE %s\n", trav->next->ele->arg1);
                     
                     // you have goto in next to next as well
@@ -486,7 +490,6 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT)
                         trav = trav->next;
                     }
                     trav = trav->next;
-
                 }
                 else
                 {
@@ -495,6 +498,7 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT)
             }
             else
             {
+                symbolTableNode *res = searchScopeIRcode(tbStack, trav->ele->result);
                 // Integer
                 if(instType == 0)
                 {    
@@ -502,17 +506,17 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT)
                     char label1[21], label2[21];
                     getLabel(label1);
                     getLabel(label2);
-                    if(!strcmp(trav->ele->op, "GE"))
+                    if(!strcmp(trav->ele->op, ">="))
                         printf("JGE %s\n", label1);
-                    else if(!strcmp(trav->ele->op, "LE"))
+                    else if(!strcmp(trav->ele->op, "<="))
                         printf("JLE %s\n", label1);
-                    else if(!strcmp(trav->ele->op, "LT"))
+                    else if(!strcmp(trav->ele->op, "<"))
                         printf("JL %s\n", label1);
-                    else if(!strcmp(trav->ele->op, "GT"))
+                    else if(!strcmp(trav->ele->op, ">"))
                         printf("JG %s\n", label1);
-                    else if(!strcmp(trav->ele->op, "EQ"))
+                    else if(!strcmp(trav->ele->op, "=="))
                         printf("JE %s\n", label1);
-                    else if(!strcmp(trav->ele->op, "NE"))
+                    else if(!strcmp(trav->ele->op, "!="))
                         printf("JNE %s\n", label1);
                     printf("JMP %s\n", label2);
                     printf("%s: MOV [EBP-8-%d], 1b\n", label1, res->offset);
@@ -557,23 +561,23 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT)
                     
                     if(!strcmp(arr->ele.data.arr.lowerIndex->type,"NUM"))
                     {
-                        printf("MOV BX, %sd\n", trav->ele->arg2);
+                        printf("MOV BX, %dd\n", *(int *)arr->ele.data.arr.lowerIndex->value);
                     }
                     else
                     {
-                        symbolTableNode * index = searchScopeIRcode(tbStack, trav->ele->arg2);
+                        symbolTableNode * index = searchScopeIRcode(tbStack, arr->ele.data.arr.lowerIndex->lexeme);
                         printf("MOV BX, [EBP-8-%d]\n", index->offset);
                     }
 
                     // just to make it zero
-                    printf("XOR EAX, EAX");
+                    printf("XOR EAX, EAX\n");
                     if(!strcmp(arr->ele.data.arr.upperIndex->type,"NUM"))
                     {
-                        printf("MOV AX, %sd\n", trav->ele->arg2);
+                        printf("MOV AX, %dd\n", *(int *)arr->ele.data.arr.upperIndex->value);
                     }
                     else
                     {
-                        symbolTableNode * index = searchScopeIRcode(tbStack, trav->ele->arg2);
+                        symbolTableNode * index = searchScopeIRcode(tbStack, arr->ele.data.arr.upperIndex->lexeme);
                         printf("MOV AX, [EBP-8-%d]\n", index->offset);
                     }
                     
@@ -606,29 +610,27 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT)
                 else if(!strcmp(arr->ele.data.arr.type, "BOOLEAN"))
                     printf("MOV AX, 1d\n"); 
                 
-                if(trav->ele->arg2 == NUM)
+                if(trav->ele->tag2 == NUM)
                 {
-                    printf("MUL %sd\n", trav->ele->arg2);              
+                    printf("MOV BX, %sd\n", trav->ele->arg2);              
                 }
                 else
                 {
                     symbolTableNode* index = searchScopeIRcode(tbStack, trav->ele->arg2);
                     printf("MOV BX, [EBP-8-%d]\n", index->offset);
-                    
-                    if(!strcpy(arr->ele.data.arr.lowerIndex->type, "NUM"))
-                    {
-                        printf("SUB BX, %sd\n", *(int *)arr->ele.data.arr.lowerIndex->type);
-                    }
-                    else
-                    {
-                        //it is an ID
-                        symbolTableNode *lowerbound = searchScopeIRcode(tbStack, arr->ele.data.arr.lowerIndex->lexeme);
-                        printf("MOV CX, [EBP-8-%d]\n", lowerbound->offset);
-                        printf("SUB BX, CX\n");
-                    }
-                    printf("MUL BX\n");
                 }
-                
+                if(!strcmp(arr->ele.data.arr.lowerIndex->type, "NUM"))
+                {
+                    printf("SUB BX, %dd\n", *(int *)arr->ele.data.arr.lowerIndex->value);
+                }
+                else
+                {
+                    //it is an ID
+                    symbolTableNode *lowerbound = searchScopeIRcode(tbStack, arr->ele.data.arr.lowerIndex->lexeme);
+                    printf("MOV CX, [EBP-8-%d]\n", lowerbound->offset);
+                    printf("SUB BX, CX\n");
+                }
+                printf("MUL BX\n");
                 printf("MOV EBX, [EBP-8-%d]\n", arr->offset);
                 printf("ADD EAX, EBX\n");
                 //AX contains the address of the array element on RHS
@@ -711,33 +713,35 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT)
                 // BaseAdd(Array) = ESP 
                 // ESP = ESP - (m-n+1)*(width)
                 
-                symbolTableNode * tempo = searchScopeIRcode(tbStack, trav->ele->arg1);
+                symbolTableNode * tempo = NULL;
+                if(trav->ele->tag1 == ID)
+                    tempo = searchScopeIRcode(tbStack, trav->ele->arg1);
                 symbolTableNode * arr = searchScopeIRcode(tbStack, trav->ele->result);
                 
                 //allocate the memory to the 
                 if(arr->ele.data.arr.isDynamic == 1)
                 {
-                    printf("MOV [EBP-8-%d], ESP", arr->offset);
+                    printf("MOV [EBP-8-%d], ESP\n", arr->offset);
                     
                     if(!strcmp(arr->ele.data.arr.lowerIndex->type,"NUM"))
                     {
-                        printf("MOV BX, %sd\n", trav->ele->arg2);
+                        printf("MOV BX, %dd\n", *(int *)(arr->ele.data.arr.lowerIndex->value));
                     }
                     else
                     {
-                        symbolTableNode * index = searchScopeIRcode(tbStack, trav->ele->arg2);
+                        symbolTableNode * index = searchScopeIRcode(tbStack, arr->ele.data.arr.lowerIndex->lexeme);
                         printf("MOV BX, [EBP-8-%d]\n", index->offset);
                     }
 
                     // just to make it zero
-                    printf("XOR EAX, EAX");
+                    printf("XOR EAX, EAX\n");
                     if(!strcmp(arr->ele.data.arr.upperIndex->type,"NUM"))
                     {
-                        printf("MOV AX, %sd\n", trav->ele->arg2);
+                        printf("MOV AX, %dd\n", *(int *)(arr->ele.data.arr.upperIndex->value));
                     }
                     else
                     {
-                        symbolTableNode * index = searchScopeIRcode(tbStack, trav->ele->arg2);
+                        symbolTableNode * index = searchScopeIRcode(tbStack, arr->ele.data.arr.upperIndex->lexeme);
                         printf("MOV AX, [EBP-8-%d]\n", index->offset);
                     }
                     
@@ -751,7 +755,7 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT)
                     else if(!strcmp(arr->ele.data.arr.type, "BOOLEAN"))
                         printf("MUL 1d\n");
                     
-                    printf("SUB ESP, EAX");
+                    printf("SUB ESP, EAX\n");
                     
                     // marking that the array is dynamic, and allocated
                     arr->ele.data.arr.isDynamic = 2;
@@ -770,51 +774,81 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT)
                 else if(!strcmp(arr->ele.data.arr.type, "BOOLEAN"))
                     printf("MOV AX, 1d\n"); 
                 
-                if(trav->ele->arg2 == NUM)
+                if(trav->ele->tag2 == NUM)
                 {
-                    printf("MUL %sd\n", trav->ele->arg2);              
+                    printf("MOV BX, %sd\n", trav->ele->arg2);              
                 }
                 else
                 {
                     symbolTableNode* index = searchScopeIRcode(tbStack, trav->ele->arg2);
                     printf("MOV BX, [EBP-8-%d]\n", index->offset);
-                    
-                    if(!strcpy(arr->ele.data.arr.lowerIndex->type, "NUM"))
-                    {
-                        printf("SUB BX, %sd\n", *(int *)arr->ele.data.arr.lowerIndex->type);
-                    }
-                    else
-                    {
-                        //it is an ID
-                        symbolTableNode *lowerbound = searchScopeIRcode(tbStack, arr->ele.data.arr.lowerIndex->lexeme);
-                        printf("MOV CX, [EBP-8-%d]\n", lowerbound->offset);
-                        printf("SUB BX, CX\n");
-                    }
-                    printf("MUL BX\n");
                 }
-                
+
+
+                if(!strcmp(arr->ele.data.arr.lowerIndex->type, "NUM"))
+                {
+                    printf("SUB BX, %dd\n", *(int *)arr->ele.data.arr.lowerIndex->value);
+                }
+                else
+                {
+                    //it is an ID
+                    symbolTableNode *lowerbound = searchScopeIRcode(tbStack, arr->ele.data.arr.lowerIndex->lexeme);
+                    printf("MOV CX, [EBP-8-%d]\n", lowerbound->offset);
+                    printf("SUB BX, CX\n");
+                }
+
+
+                printf("MUL BX\n");
                 printf("MOV EBX, [EBP-8-%d]\n", arr->offset);
                 printf("ADD EAX, EBX\n");
                 //AX contains the address of the array element on LHS
 
-                if(!strcmp(arr->ele.data.arr.type, "INTEGER"))
+                if(tempo != NULL)
                 {
-                    printf("MOV BX, [EBP-8-%d]\n", tempo->offset);
-                    printf("MOV [EAX], BX\n");
+                    if(!strcmp(arr->ele.data.arr.type, "INTEGER"))
+                    {
+                        printf("MOV BX, [EBP-8-%d]\n", tempo->offset);
+                        printf("MOV [EAX], BX\n");
+                    }
+                    else if(!strcmp(arr->ele.data.arr.type, "REAL"))
+                    {
+                        // printf("MOV EBX, [EBP-8-%d]\n", tempo->offset);
+                        // printf("MOV [EAX], EBX\n");
+                    }
+                    else if(!strcmp(arr->ele.data.arr.type, "BOOLEAN"))
+                    {   
+                        printf("MOV BL, [EBP-8-%d]\n", tempo->offset);
+                        printf("MOV [EAX], BL\n"); 
+                    }
                 }
-                else if(!strcmp(arr->ele.data.arr.type, "REAL"))
+                else
                 {
-                    // printf("MOV EBX, [EBP-8-%d]\n", tempo->offset);
-                    // printf("MOV [EAX], EBX\n");
-                }
-                else if(!strcmp(arr->ele.data.arr.type, "BOOLEAN"))
-                {   
-                    printf("MOV BL, [EBP-8-%d]\n", tempo->offset);
-                    printf("MOV [EAX], BL\n"); 
-                }
+                    if(!strcmp(arr->ele.data.arr.type, "INTEGER"))
+                    {
+                        printf("MOV BX, %sd\n", trav->ele->arg1);
+                        printf("MOV [EAX], BX\n");
+                    }
+                    else if(!strcmp(arr->ele.data.arr.type, "REAL"))
+                    {
+                        // printf("MOV EBX, [EBP-8-%d]\n", tempo->offset);
+                        // printf("MOV [EAX], EBX\n");
+                    }
+                    else if(!strcmp(arr->ele.data.arr.type, "BOOLEAN"))
+                    {   
+                        if(!strcmp(trav->ele->arg1, "true"))
+                            printf("MOV BL, 1b\n");
+                        else
+                            printf("MOV BL, 0b\n");
+                        printf("MOV [EAX], BL\n"); 
+                    }
+                }    
             }
         }
-        else if(!strcmp(trav->ele->op, ""))
+        else if(!strcmp(trav->ele->op, "scanf"))
+        {
+            
+        }
+        else if(!strcmp(trav->ele->op, "printf"))
         {
             
         }
