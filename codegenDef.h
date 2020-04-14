@@ -5,7 +5,7 @@
 extern int tmpNum;
 extern int labelNum;
 
-typedef enum {ID = 2, CONSTANT = 1, NONE = 0} argtype;
+typedef enum {ID = 4, NUM = 3, RNUM = 2, BOOL = 1, NONE = 0} argtype;
 
 typedef struct temporary
 {

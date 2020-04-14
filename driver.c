@@ -14,6 +14,8 @@
 #include <time.h>
 #include "semantics.h"
 #include "codegen.h"
+#include "nasmcode.h"
+
 void seeTokenization()
 {
     Token * tkn = NULL;
@@ -191,7 +193,16 @@ int main(int argc, char * argv[])
                     tbStack->bottom = NULL;
                     intermed * ircode = generateIRCode(ast, NULL, tbStack);
                     printCode(ircode->code);
-                    printSymbolTable(symbolTableRoot);
+                    // printSymbolTable(symbolTableRoot);
+                    tbStack->top = NULL;
+                    tbStack->size = 0;
+                    tbStack->bottom = NULL;
+                    tableStackEle * newNode = (tableStackEle *)malloc(sizeof(tableStackEle));
+                    newNode->ele = symbolTableRoot;
+                    newNode->next = NULL;
+                    sympush(tbStack, newNode);
+                    symbolTable * symT = symbolTableRoot;
+                    nasmRecur(ircode->code, tbStack, symT);
                     // freeing memory not needed anymore
                     // freeprasetree(parseTree);
                     // freegrammar(grammar);
