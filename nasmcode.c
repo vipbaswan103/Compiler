@@ -1,7 +1,6 @@
 #include "codegenDef.h"
 #include "symbolTableDef.h"
 
-
 void nasmCode(IRcode* code, tableStack* tbbStack)
 {
     // if(arg1 find in synmol table) load AX, arg1
@@ -20,4 +19,4 @@ void nasmCode(IRcode* code, tableStack* tbbStack)
         }
         trav = trav->next;
     }
-}
+}    

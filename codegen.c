@@ -3,6 +3,7 @@
 #include "symbolTableDef.h"
 #include "symbolTable.h"
 #include "semantics.h"
+
 int tmpNum = 0;
 int labelNum = 0;
 
@@ -34,10 +35,42 @@ void getOp(char * name, char * op)
         strcpy(op, "OR\0");
 }
 
-void getTemporary(temporary * tmp)
+void getTemporary(temporary * tmp, tableStack *tbStack, int temptype)
 {
     sprintf(tmp->name, "_t%d", tmpNum);
     tmpNum++;
+    symbolTableNode * newNode = (symbolTableNode *)malloc(sizeof(symbolTableNode));
+
+    //Integer
+    if(temptype == 0)
+    {
+        newNode->width = INTEGER_SIZE;
+        strcpy(newNode->ele.data.id.type, "INTEGER\0");
+    }
+    //REAL
+    else if(temptype==1)
+    {
+        newNode->width = REAL_SIZE;
+        strcpy(newNode->ele.data.id.type, "REAL\0");
+    }
+    //BOOLEAN
+    else if(temptype==2)
+    {
+        newNode->width = BOOLEAN_SIZE;
+        strcpy(newNode->ele.data.id.type, "BOOLEAN\0");
+    }
+    newNode->offset = tbStack->top->ele->currentOffset;
+    tbStack->top->ele->currentOffset += newNode->width;
+    
+    newNode->lineNum  = -1;
+    newNode->aux = -1;
+    newNode->next = NULL;
+    newNode->ele.tag = Identifier;
+    strcpy(newNode->ele.data.id.lexeme,tmp-name);
+    newNode->ele.data.id.value = NULL;
+    newNode->ele.data.id.isIndex = -1;
+    newNode->ele.data.id.isAssigned = 1;
+    sym_hash_insert(newNode,tbStack->top->ele->hashtb);
 }
 
 void initQuad(quad *ele ,char* arg1, char* arg2, char* result)
@@ -129,15 +162,78 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
 
     //arithmetic operators
     if(!strcmp(currentNode->node->ele.internalNode->label, "PLUS") || 
-    !strcmp(currentNode->node->ele.internalNode->label, "MINUS") ||
-    !strcmp(currentNode->node->ele.internalNode->label, "MUL") ||
+    !strcmp(currentNode->node->ele.internalNode->label, "MINUS"))
+    {
+        //Binary case
+        if(currentNode->child->sibling != NULL)
+        {
+            intermed* leftchild = generateIRCode(currentNode->child, labels, tbStack);
+            intermed* rightchild = generateIRCode(currentNode->child->sibling, labels, tbStack);
+            intermed* final;
+            initializeFinalCode(&final);
+            
+            int tempType;
+            if(!strcmp(leftchild->t.type,"INTEGER"))
+                tempType=0;     
+            else if(!strcmp(leftchild->t.type,"REAL"))
+                tempType=1;
+            else if(!strcmp(leftchild->t.type,"BOOLEAN"))
+                tempType=2;
+            
+            getTemporary(&(final->t), tbStack, tempType);
+            
+            initQuad(final->code->ele, leftchild->t.name, rightchild->t.name, final->t.name);
+            getOp(currentNode->node->ele.internalNode->label, final->code->ele->op);
+            mergeCode(&(leftchild->code), rightchild->code);
+            mergeCode(&(leftchild->code), final->code);
+            final->code = leftchild->code;
+
+            free(leftchild);
+            free(rightchild);
+            
+            return final;
+        }
+        //Unary case
+        else
+        {
+            intermed* child = generateIRCode(currentNode->child, labels, tbStack);
+            intermed* final;
+            initializeFinalCode(&final);
+
+            int tempType;
+            if(!strcmp(child->t.type,"INTEGER"))
+                tempType=0;     
+            else if(!strcmp(child->t.type,"REAL"))
+                tempType=1;
+            else if(!strcmp(child->t.type,"BOOLEAN"))
+                tempType=2;
+
+            getTemporary(&(final->t), tbStack, tempType);
+            
+            initQuad(final->code->ele, child->t.name, "\0", final->t.name);
+            getOp(currentNode->node->ele.internalNode->label, final->code->ele->op);
+            mergeCode(&(child->code), final->code);
+            final->code = child->code;
+            free(child);
+            return final;
+        }
+    }
+    if(!strcmp(currentNode->node->ele.internalNode->label, "MUL") || 
     !strcmp(currentNode->node->ele.internalNode->label, "DIV"))
     {
         intermed* leftchild = generateIRCode(currentNode->child, labels, tbStack);
         intermed* rightchild = generateIRCode(currentNode->child->sibling, labels, tbStack);
         intermed* final;
         initializeFinalCode(&final);
-        getTemporary(&(final->t));
+
+        int tempType;
+        if(!strcmp(leftchild->t.type,"INTEGER"))
+            tempType=0;     
+        else if(!strcmp(leftchild->t.type,"REAL"))
+            tempType=1;
+        else if(!strcmp(leftchild->t.type,"BOOLEAN"))
+            tempType=2;
+        getTemporary(&(final->t), tbStack, tempType);
         
         initQuad(final->code->ele, leftchild->t.name, rightchild->t.name, final->t.name);
         getOp(currentNode->node->ele.internalNode->label, final->code->ele->op);
@@ -162,7 +258,7 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
         if(labels != NULL)
         {
             // the labels have something, this means that the boolean expression is 
-            //bring used for a "if else" like clause, with labels containing the 
+            //bring used for a "if else" like clause, with labels containing the
             //place for false and true jumps
             intermed* leftchild = generateIRCode(currentNode->child, labels, tbStack);
             intermed* rightchild = generateIRCode(currentNode->child->sibling, labels, tbStack);
@@ -212,8 +308,11 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
 
             intermed* final;
             initializeFinalCode(&final);
-            //since it is a normal expression, 
-            getTemporary(&(final->t));
+            // since it is a normal expression,
+
+            // get a temporary and it's type is boolean
+            getTemporary(&(final->t), tbStack, 2);
+
             
             initQuad(final->code->ele, leftchild->t.name, rightchild->t.name, final->t.name);
             getOp(currentNode->node->ele.internalNode->label, final->code->ele->op);
@@ -255,7 +354,7 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
             //synthesize the clause itself.
             intermed* final;
             initializeFinalCode(&final);
-            getTemporary(&(final->t));
+            getTemporary(&(final->t), tbStack, 2);
 
             IRcode *labCode = (IRcode *)malloc(sizeof(IRcode));
             labCode->ele = (quad *)malloc(sizeof(quad));
@@ -284,7 +383,7 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
             //initialise  the final code to be returned
             intermed* final;
             initializeFinalCode(&final);
-            getTemporary(&(final->t));
+            getTemporary(&(final->t), tbStack, 2);
             
             getOp(currentNode->node->ele.internalNode->label, final->code->ele->op);
             strcpy(final->code->ele->arg1, leftchild->t.name);
@@ -320,7 +419,7 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
             //initialize the final to be returned
             intermed* final;
             initializeFinalCode(&final);
-            getTemporary(&(final->t));
+            getTemporary(&(final->t), tbStack, 2);
 
             IRcode *labCode = (IRcode *)malloc(sizeof(IRcode));
             labCode->ele = (quad *)malloc(sizeof(quad));
@@ -347,7 +446,7 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
 
             intermed* final;
             initializeFinalCode(&final);
-            getTemporary(&(final->t));
+            getTemporary(&(final->t), tbStack, 2);
             
             getOp(currentNode->node->ele.internalNode->label, final->code->ele->op);
             strcpy(final->code->ele->arg1, leftchild->t.name);
@@ -1372,8 +1471,16 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
                 initQuad(assignCode->ele, node->ele.data.arr.lowerIndex->lexeme,
                 "\0", "\0");
 
+                int tempType;
+                if(!strcmp(node->ele.data.arr.type,"INTEGER"))
+                    tempType = 0;
+                else if (!strcmp(node->ele.data.arr.type,"REAL"))
+                    tempType = 1;
+                else
+                    tempType = 2;
+
                 temporary tmp;
-                getTemporary(&tmp);
+                getTemporary(&tmp, tbStack, tempType);
                 strcpy(assignCode->ele->result, tmp.name);
 
                 //Code for goto label 1
@@ -1537,8 +1644,16 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
             initQuad(assignCode->ele, node->ele.data.arr.lowerIndex->lexeme,
             "\0", "\0");
 
+            int tempType;
+            if(!strcmp(node->ele.data.arr.type,"INTEGER"))
+                tempType = 0;
+            else if (!strcmp(node->ele.data.arr.type,"REAL"))
+                tempType = 1;
+            else
+                tempType = 2;
+
             temporary tmp;
-            getTemporary(&tmp);
+            getTemporary(&tmp, tbStack, tempType);
             strcpy(assignCode->ele->result, tmp.name);
 
             //Code for goto label 1
@@ -1658,8 +1773,9 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
             {
                 intermed *final = (intermed*)malloc(sizeof(intermed));
                 final->code = NULL;
+                symbolTableNode *type1 = searchScope(tbStack, currentNode->child);;
                 strcpy(final->t.name, currentNode->child->node->ele.leafNode->lexeme);
-                strcpy(final->t.type, "ID\0");
+                strcpy(final->t.type, type1->ele.data.id.type);
                 return final;
             }
             // Used in Boolean Comparison
@@ -1837,7 +1953,16 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
                 assign->ele = (quad *)malloc(sizeof(quad));
                 assign->next = NULL;
                 strcpy(assign->ele->op, "=");
-                getTemporary(&(final->t));
+
+                int tempType;
+                if(!strcmp(node->ele.data.arr.type,"INTEGER"))
+                    tempType = 0;
+                else if (!strcmp(node->ele.data.arr.type,"REAL"))
+                    tempType = 1;
+                else
+                    tempType = 2;
+                
+                getTemporary(&(final->t), tbStack, tempType);
                 strcpy(assign->ele->arg1, currentNode->child->node->ele.leafNode->lexeme); // array name
                 strcpy(assign->ele->arg2, currentNode->child->sibling->node->ele.leafNode->lexeme);
                 strcpy(assign->ele->result, final->t.name);
@@ -1877,7 +2002,16 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
             {
                 initializeFinalCode(&final);
                 strcpy(final->code->ele->op, "=");
-                getTemporary(&(final->t));
+
+                int tempType;
+                if(!strcmp(node->ele.data.arr.type,"INTEGER"))
+                    tempType = 0;
+                else if (!strcmp(node->ele.data.arr.type,"REAL"))
+                    tempType = 1;
+                else
+                    tempType = 2;
+
+                getTemporary(&(final->t), tbStack, tempType);
                 strcpy(final->code->ele->arg1, currentNode->child->node->ele.leafNode->lexeme);
                 strcpy(final->code->ele->arg2, currentNode->child->sibling->node->ele.leafNode->lexeme);
                 strcpy(final->code->ele->result, final->t.name);
