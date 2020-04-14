@@ -1,0 +1,13 @@
+
+<<<driver program>>>
+start
+	declare x, y, z:integer;
+	declare a, b, c:integer;
+	a:= 5;
+	b:= 9;
+	get_value(x);
+	get_value(y);
+	z:= a*b + y*x;	
+    print(z);
+end
+

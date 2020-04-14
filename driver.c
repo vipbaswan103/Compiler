@@ -191,6 +191,7 @@ int main(int argc, char * argv[])
                     tbStack->bottom = NULL;
                     intermed * ircode = generateIRCode(ast, NULL, tbStack);
                     printCode(ircode->code);
+                    printSymbolTable(symbolTableRoot);
                     // freeing memory not needed anymore
                     // freeprasetree(parseTree);
                     // freegrammar(grammar);

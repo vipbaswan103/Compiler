@@ -40,7 +40,9 @@ void getTemporary(temporary * tmp, tableStack *tbStack, int temptype)
     sprintf(tmp->name, "_t%d", tmpNum);
     tmpNum++;
     symbolTableNode * newNode = (symbolTableNode *)malloc(sizeof(symbolTableNode));
-
+    
+    newNode->ele.data.id.type = (char *)malloc(sizeof(char)*51);
+    newNode->ele.data.id.lexeme = (char *)malloc(sizeof(char)*51);
     //Integer
     if(temptype == 0)
     {
@@ -66,11 +68,11 @@ void getTemporary(temporary * tmp, tableStack *tbStack, int temptype)
     newNode->aux = -1;
     newNode->next = NULL;
     newNode->ele.tag = Identifier;
-    strcpy(newNode->ele.data.id.lexeme,tmp-name);
+    strcpy(newNode->ele.data.id.lexeme,tmp->name);
     newNode->ele.data.id.value = NULL;
     newNode->ele.data.id.isIndex = -1;
     newNode->ele.data.id.isAssigned = 1;
-    sym_hash_insert(newNode,tbStack->top->ele->hashtb);
+    sym_hash_insert(newNode, &(tbStack->top->ele->hashtb));
 }
 
 void initQuad(quad *ele ,char* arg1, char* arg2, char* result)
