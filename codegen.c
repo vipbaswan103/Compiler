@@ -380,6 +380,10 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
         currentNode->child->node->ele.leafNode->lexeme);
         
         final->code->next = NULL;
+
+        //set tags for arg1 and arg2
+        final->code->ele->tag1 = ID;
+        final->code->ele->tag2 = NONE;
         
         // right side expressions code first 
         // then the statement of assignment itself
@@ -403,26 +407,38 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
         if(!strcmp(currentNode->child->sibling->node->ele.leafNode->type, "ID") ||
         node->ele.data.arr.isDynamic == 1)
         {
-            //either the index is an ID
-            //or the array itself is dynamic 
+            // either the index is an ID
+            // or the array itself is dynamic 
 
             IRcode * ifcode1 = (IRcode *)malloc(sizeof(IRcode));
             ifcode1->ele = (quad *)malloc(sizeof(quad));
             ifcode1->next = NULL;
             
-            //create a quad for upper index check 
-            //op is less tha equal, arg1 is the index (ID or NUM), arg2 is the upperindex (ID or NUM) 
-            //again result capturesthe fact that it is an if condition
+            // create a quad for upper index check 
+            // op is less tha equal, arg1 is the index (ID or NUM), arg2 is the upperindex (ID or NUM) 
+            // again result capturesthe fact that it is an if condition
             strcpy(ifcode1->ele->op, "<=\0");
             initQuad(ifcode1->ele, currentNode->child->sibling->node->ele.leafNode->lexeme,
             node->ele.data.arr.upperIndex->lexeme, "if\0");
-
-            //create a goto statement for true condition
+            
+            // arg1 tag is set
+            if(!strcmp(currentNode->child->sibling->node->ele.leafNode->type,"NUM"))
+                ifcode1->ele->tag1 = CONSTANT;
+            else if(!strcmp(currentNode->child->sibling->node->ele.leafNode->type,"ID"))
+                ifcode1->ele->tag1 = ID;
+            
+            // arg2 tag is set
+            if(!strcmp(node->ele.data.arr.upperIndex->type,"NUM"))
+                ifcode1->ele->tag2 = CONSTANT;
+            else if(!strcmp(node->ele.data.arr.upperIndex->type,"ID"))
+                ifcode1->ele->tag2 = ID;
+            
+            // create a goto statement for true condition
             IRcode * goto1 = (IRcode *)malloc(sizeof(IRcode));
             goto1->ele = (quad *)malloc(sizeof(quad));
             goto1->next = NULL;
             
-            //new label for the true condition
+            // new label for the true condition
             strcpy(goto1->ele->op, "goto\0");
             initQuad(goto1->ele, "\0", "\0", "\0");
             getLabel(goto1->ele->arg1);
@@ -1284,14 +1300,14 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
                     mergeCode(&(stmtsCode->code), stmtCode->code);
                     mergeCode(&(stmtsCode->code), labelCode);
                 }
-                //If this is the last stmt
+                // If this is the last stmt
                 else
                 {
                     strcpy(stmtsLabel->arg1, labels->arg1);
                     stmtCode = generateIRCode(trav, stmtsLabel, tbStack);
                     mergeCode(&(stmtsCode->code), stmtCode->code);
 
-                    //Now, there isn't any need for the "goto begin" code
+                    // Now, there isn't any need for the "goto begin" code
                     isEnd = 1;
                 }
                 mergeCode(&(stmtsCode->code), scopeEnd);
@@ -1311,14 +1327,40 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
     }
     else if(!strcmp(currentNode->node->ele.internalNode->label, "PRINT"))
     {
-        // If ID_ARR is not accessing an array element
-        if(currentNode->child->child->sibling == NULL)
+        intermed * final = NULL;
+        if(currentNode->child->node->tag == Leaf)
         {
-            // Case 1 : ID is an Array
-            symbolTableNode * node = searchScope(tbStack, currentNode->child->child);
+            // this is a BOOL constant  or NUM or RUM
+
+            final = (intermed *)malloc(sizeof(intermed));
+            final->code = NULL;
+                
+            IRcode *print = (IRcode *)malloc(sizeof(IRcode));
+            print->ele = (quad *)malloc(sizeof(quad));
+            print->next = NULL;
+
+            strcpy(print->ele->op, "printf\0");
+            initQuad(print->ele, currentNode->child->node->ele.leafNode->lexeme, "\0",
+            "\0");
+            print->ele->tag1 = CONSTANT;
+            print->ele->tag2 = NONE;
+
+            mergeCode(&(final->code), print);
+            return final;
+        }
+        else if(currentNode->child->child->sibling == NULL)
+        {
+             
             intermed * final = NULL;
+            symbolTableNode * node = searchScope(tbStack, currentNode->child->child);
+            // Case 1 : ID is an Array
             if(node->ele.tag == Array)
             {
+                // we are assssigning the temporary as the lowerbound of the range
+                // then we print the element and then incremenet the value of the 
+                // index, then again jump to the conditional check and break out of the loop
+                // in case the condition is not satisfied
+
                 final = (intermed *)malloc(sizeof(intermed));
                 final->code = NULL;
                 
@@ -1343,6 +1385,9 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
                 strcpy(goto1->ele->arg2, "\0");
                 strcpy(goto1->ele->result, "\0");
 
+                goto1->ele->tag1=NONE;
+                goto1->ele->tag2=NONE;
+
                 //Code for if
                 IRcode *ifcode = (IRcode *)malloc(sizeof(IRcode));
                 ifcode->ele = (quad *)malloc(sizeof(quad));
@@ -1363,6 +1408,9 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
                 strcpy(goto2->ele->arg2, "\0");
                 strcpy(goto2->ele->result, "\0");
 
+                goto2->ele->tag1=NONE;
+                goto2->ele->tag2=NONE;
+
                 //Code for goto lable 3
                 IRcode *goto3 = (IRcode *)malloc(sizeof(IRcode));
                 goto3->ele = (quad *)malloc(sizeof(quad));
@@ -1372,6 +1420,9 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
                 getLabel(goto3->ele->arg1);
                 strcpy(goto3->ele->arg2, "\0");
                 strcpy(goto3->ele->result, "\0");
+
+                goto3->ele->tag1=NONE;
+                goto3->ele->tag2=NONE;
 
                 //Code for label 1
                 IRcode * label1 = (IRcode *)malloc(sizeof(IRcode));
@@ -1406,7 +1457,7 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
                 initQuad(incr->ele, assignCode->ele->result, "1\0",
                 assignCode->ele->result);
 
-                //Code for scanf
+                //Code for printf
                 IRcode *print = (IRcode *)malloc(sizeof(IRcode));
                 print->ele = (quad *)malloc(sizeof(quad));
                 print->next = NULL;
@@ -1436,9 +1487,14 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
                 strcpy(final->code->ele->arg1, currentNode->child->child->node->ele.leafNode->lexeme);
                 strcpy(final->code->ele->arg2, "\0");
                 strcpy(final->code->ele->result, "\0");
+                final->code->ele->tag1 = ID;
+                final->code->ele->tag2 = NONE;
+                
                 return final;
             }
         }
+
+        //printing an array element
         else
         {
             intermed * final = NULL;
@@ -1446,19 +1502,14 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
 
             intermed *child = generateIRCode(currentNode->child, labels, tbStack);
 
-            // IRcode * assign  = (IRcode *)malloc(sizeof(IRcode));
-            // assign->ele = (quad *)malloc(sizeof(quad));
-            // assign->next = NULL;
-            // strcpy(assign->ele->op, "=");
-            // getTemporary(&(child->t));
-            // strcpy(assign->ele->arg1, currentNode->child->child->node->ele.leafNode->lexeme);
-            // strcpy(assign->ele->arg2, currentNode->child->child->sibling->node->ele.leafNode->lexeme);
-            // strcpy(assign->ele->result, child->t.name);
             IRcode * print  = (IRcode *)malloc(sizeof(IRcode));
             print->ele = (quad *)malloc(sizeof(quad));
             print->next = NULL;
             strcpy(print->ele->op, "printf\0");
             initQuad(print->ele, child->t.name, "\0", "\0");
+
+            print->ele->tag1 = ID;
+            print->ele->tag2 = NONE;
                        
             mergeCode(&(final->code), child->code);
             mergeCode(&(final->code), print);
@@ -1598,7 +1649,8 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
         //2 (max) children;
             //id_node
             //which_node
-        // Checking if ID_ARR is just ID
+
+        // Checking if ID_ARR is just ID or  Array Type without an index
         if(currentNode->child->sibling == NULL)
         {
             // Not a Boolean comparison
@@ -1606,7 +1658,8 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
             {
                 intermed *final = (intermed*)malloc(sizeof(intermed));
                 final->code = NULL;
-                strcpy(final->t.name,currentNode->child->node->ele.leafNode->lexeme);
+                strcpy(final->t.name, currentNode->child->node->ele.leafNode->lexeme);
+                strcpy(final->t.type, "ID\0");
                 return final;
             }
             // Used in Boolean Comparison
@@ -1620,18 +1673,25 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
 
                 strcpy(ifcode->ele->op, "==\0");
                 initQuad(ifcode->ele, currentNode->child->node->ele.leafNode->lexeme, "TRUE\0","if\0");
+                ifcode->ele->tag1 = ID;
+                ifcode->ele->tag2 = CONSTANT;
                 
                 IRcode *gotoTrueCase = (IRcode *)malloc(sizeof(IRcode));
                 gotoTrueCase->ele = (quad *)malloc(sizeof(quad));
                 gotoTrueCase->next = NULL;
                 strcpy(gotoTrueCase->ele->op, "goto\0");
                 initQuad(gotoTrueCase->ele, labels->arg1, "\0", "\0");
+                gotoTrueCase->ele->tag1 = NONE;
+                gotoTrueCase->ele->tag2 = NONE;
+                
                 
                 IRcode *gotoFalseCase = (IRcode *)malloc(sizeof(IRcode));
                 gotoFalseCase->ele = (quad *)malloc(sizeof(quad));
                 gotoFalseCase->next = NULL;
                 strcpy(gotoFalseCase->ele->op, "goto\0");
                 initQuad(gotoFalseCase->ele, labels->arg2, "\0", "\0");
+                gotoFalseCase->ele->tag1 = NONE;
+                gotoFalseCase->ele->tag2 = NONE;
                                 
                 mergeCode(&(final->code), ifcode);
                 mergeCode(&(final->code), gotoTrueCase);
@@ -1639,7 +1699,7 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
                 return final;
             }
         }
-        // ID_ARR is of Array Type
+        // ID_ARR is an Array element
         else
         {
             //Add the dynamic type (bound, in our case) checking code
@@ -1662,6 +1722,18 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
                 initQuad(ifcode1->ele, currentNode->child->sibling->node->ele.leafNode->lexeme,
                 node->ele.data.arr.upperIndex->lexeme, "if\0");
 
+                //set the type of the index, to help the final code generation of these conditions 
+                if(!strcmp(currentNode->child->sibling->node->ele.leafNode->type,"NUM"))
+                    ifcode1->ele->tag1 = CONSTANT;
+                else if(!strcmp(currentNode->child->sibling->node->ele.leafNode->type,"ID"))
+                    ifcode1->ele->tag1 = ID;
+
+                if(!strcmp(node->ele.data.arr.upperIndex->type,"NUM"))
+                    ifcode1->ele->tag2 = CONSTANT;
+                else if(!strcmp(node->ele.data.arr.upperIndex->type,"ID"))
+                    ifcode1->ele->tag2 = ID;
+                
+
                 IRcode * goto1 = (IRcode *)malloc(sizeof(IRcode));
                 goto1->ele = (quad *)malloc(sizeof(quad));
                 goto1->next = NULL;
@@ -1670,6 +1742,9 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
                 initQuad(goto1->ele, "\0", "\0", "\0");
                 getLabel(goto1->ele->arg1);
 
+                goto1->ele->tag1=NONE;
+                goto1->ele->tag2=NONE;
+
                 IRcode * goto2 = (IRcode *)malloc(sizeof(IRcode));
                 goto2->ele = (quad *)malloc(sizeof(quad));
                 goto2->next = NULL;
@@ -1677,12 +1752,18 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
                 strcpy(goto2->ele->op, "goto\0");
                 initQuad(goto2->ele, "RUNTIME_ERROR\0", "\0", "\0");
 
+                goto2->ele->tag1=NONE;
+                goto2->ele->tag2=NONE;
+
                 IRcode * label1 = (IRcode *)malloc(sizeof(IRcode));
                 label1->ele = (quad *)malloc(sizeof(quad));
                 label1->next = NULL;
                 
                 strcpy(label1->ele->op, ":\0");
                 initQuad(label1->ele, goto1->ele->arg1, "\0", "\0");
+
+                label1->ele->tag1=NONE;
+                label1->ele->tag2=NONE;
 
                 IRcode * ifcode2 = (IRcode *)malloc(sizeof(IRcode));
                 ifcode2->ele = (quad *)malloc(sizeof(quad));
@@ -1692,6 +1773,17 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
                 initQuad(ifcode2->ele, currentNode->child->sibling->node->ele.leafNode->lexeme,
                 node->ele.data.arr.lowerIndex->lexeme, "if\0");
 
+                if(!strcmp(currentNode->child->sibling->node->ele.leafNode->type,"NUM"))
+                    ifcode2->ele->tag1 = CONSTANT;
+                else if(!strcmp(currentNode->child->sibling->node->ele.leafNode->type,"ID"))
+                    ifcode2->ele->tag1 = ID; 
+                
+                if(!strcmp(node->ele.data.arr.lowerIndex->type,"NUM"))
+                    ifcode2->ele->tag2 = CONSTANT;
+                else if(!strcmp(node->ele.data.arr.lowerIndex->type,"ID"))
+                    ifcode2->ele->tag2 = ID;
+
+
                 IRcode * goto3 = (IRcode *)malloc(sizeof(IRcode));
                 goto3->ele = (quad *)malloc(sizeof(quad));
                 goto3->next = NULL;
@@ -1700,6 +1792,9 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
                 initQuad(goto3->ele, "\0", "\0", "\0");
                 getLabel(goto3->ele->arg1);
 
+                goto3->ele->tag1=NONE;
+                goto3->ele->tag2=NONE;
+
                 IRcode * goto4 = (IRcode *)malloc(sizeof(IRcode));
                 goto4->ele = (quad *)malloc(sizeof(quad));
                 goto4->next = NULL;
@@ -1707,12 +1802,17 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
                 strcpy(goto4->ele->op, "goto\0");
                 initQuad(goto4->ele, "RUNTIME_ERROR\0", "\0", "\0");
 
+                goto4->ele->tag1=NONE;
+                goto4->ele->tag2=NONE;
+
                 IRcode * label2 = (IRcode *)malloc(sizeof(IRcode));
                 label2->ele = (quad *)malloc(sizeof(quad));
                 label2->next = NULL;
                 
                 strcpy(label2->ele->op, ":\0");
                 initQuad(label2->ele, goto3->ele->arg1, "\0", "\0");
+                label2->ele->tag1=NONE;
+                label2->ele->tag2=NONE;
 
                 mergeCode(&(tmp->code), ifcode1);
                 mergeCode(&(tmp->code), goto1);
@@ -1724,21 +1824,30 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
                 mergeCode(&(tmp->code), label2);
             }
 
-            //Case 1: Part of while() condition
+            
             intermed *final;
             if(labels != NULL)
             {
+                // Case 1: Array element is a Part of while() condition
                 final = (intermed*)malloc(sizeof(intermed));
                 final->code = NULL;
                 
+                // create a new tempoary and assign it the array eleement
                 IRcode * assign  = (IRcode *)malloc(sizeof(IRcode));
                 assign->ele = (quad *)malloc(sizeof(quad));
                 assign->next = NULL;
                 strcpy(assign->ele->op, "=");
                 getTemporary(&(final->t));
-                strcpy(assign->ele->arg1, currentNode->child->node->ele.leafNode->lexeme);
+                strcpy(assign->ele->arg1, currentNode->child->node->ele.leafNode->lexeme); // array name
                 strcpy(assign->ele->arg2, currentNode->child->sibling->node->ele.leafNode->lexeme);
                 strcpy(assign->ele->result, final->t.name);
+
+                assign->ele->tag1 = ID; // cause its an array name
+
+                if(!strcmp(currentNode->child->sibling->node->ele.leafNode->type,"ID"))
+                    assign->ele->tag2 = ID;
+                else 
+                    assign->ele->tag2 = CONSTANT;
 
                 IRcode *ifcode = (IRcode *)malloc(sizeof(IRcode));
                 ifcode->ele = (quad *)malloc(sizeof(quad));
@@ -1746,7 +1855,7 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
 
                 strcpy(ifcode->ele->op, "==\0");
                 initQuad(ifcode->ele, final->t.name, "TRUE\0","if\0");
-                
+
                 IRcode *goto1 = (IRcode *)malloc(sizeof(IRcode));
                 goto1->ele = (quad *)malloc(sizeof(quad));
                 goto1->next = NULL;
@@ -1772,6 +1881,14 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
                 strcpy(final->code->ele->arg1, currentNode->child->node->ele.leafNode->lexeme);
                 strcpy(final->code->ele->arg2, currentNode->child->sibling->node->ele.leafNode->lexeme);
                 strcpy(final->code->ele->result, final->t.name);
+
+                final->code->ele->tag1=  ID;
+                
+                if(!strcmp(currentNode->child->sibling->node->ele.leafNode->type,"ID"))
+                    final->code->ele->tag2 = ID;
+                else 
+                    final->code->ele->tag2 = CONSTANT;
+
                 tmp->t = final->t;
             }
             mergeCode(&(tmp->code), final->code);
@@ -1810,27 +1927,36 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
         mergeCode(&(final->code), call);
         return final;
     }
+
+    // now we deal with constants
     else if((currentNode->node->tag == Leaf))
     {
+        
         if(!strcmp(currentNode->node->ele.leafNode->type, "NUM") 
         || !strcmp(currentNode->node->ele.leafNode->type, "RNUM"))
         {
+            // arithmetic constants
             intermed * final = (intermed *)malloc(sizeof(intermed));
             final->code = NULL;
             strcpy(final->t.name, currentNode->node->ele.leafNode->lexeme);
+            strcpy(final->t.type,"CONSTANT");
             return final;
         }
         else
         {
+            // boolean constants
             if(labels == NULL)
             {
+                // occuring in normal expressions
                 intermed * final = (intermed *)malloc(sizeof(intermed));
                 final->code = NULL;
                 strcpy(final->t.name, currentNode->node->ele.leafNode->lexeme);
+                strcpy(final->t.type,"CONSTANT");
                 return final;
             }
             else
             {
+                // while like expressions
                 intermed * final = (intermed *)malloc(sizeof(intermed));
                 final->code = NULL;
                 IRcode *goto1;
@@ -1852,6 +1978,9 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
                     initQuad(goto1->ele, labels->arg2, "\0", "\0");
                 }
 
+                goto1->ele->tag1=NONE;
+                goto1->ele->tag2=NONE;
+                
                 mergeCode(&(final->code), goto1);
                 return final;
             }
