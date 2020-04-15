@@ -402,17 +402,7 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT)
             }
         }
         
-        // if a<=b
-
-        // t := a <= b
-
-        // mov AX,a
-        // mov BX,b
-        // cmp a,b
-        // "JLE" label1
-        //  jmp lable2
-        // label1: t := 1
-        // label2: t := 0
+        
 
         else if (!strcmp(trav->ele->op, "<") ||
         !strcmp(trav->ele->op, ">") ||
@@ -528,19 +518,7 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT)
                 }
             }
         }
-        // 3rd
-        // 2nd
-        // 1st -------------------
-        // y
-        // x
-        // ADD (1st)
-        // A := B
         
-        // A[5] = B[6]
-        // t := B[6]
-        // A[5] := t
-        // t1 := t2
-        // t1 := A
         else if(!strcmp(trav->ele->op, "="))
         {
             if(trav->ele->result[0]=='_')
@@ -841,7 +819,7 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT)
                             printf("MOV BL, 0b\n");
                         printf("MOV [EAX], BL\n"); 
                     }
-                }    
+                }   
             }
         }
         else if(!strcmp(trav->ele->op, "scanf"))
@@ -849,6 +827,14 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT)
             
         }
         else if(!strcmp(trav->ele->op, "printf"))
+        {
+            
+        }
+        else if(!strcmp(trav->ele->op,":"))
+        {
+            printf("%s:\n",trav->ele->arg1);
+        }
+        else if(!strcmp(trav->ele->op,"param"))
         {
             
         }

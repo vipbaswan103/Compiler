@@ -202,6 +202,9 @@ int main(int argc, char * argv[])
                     newNode->next = NULL;
                     sympush(tbStack, newNode);
                     symbolTable * symT = symbolTableRoot;
+                    printf("\n\n--------------------------- \n");
+                    printf("NASM CODE\n");
+                    printf("--------------------------- \n");
                     nasmRecur(ircode->code, tbStack, symT);
                     // freeing memory not needed anymore
                     // freeprasetree(parseTree);
