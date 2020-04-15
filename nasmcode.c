@@ -523,110 +523,133 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT)
         {
             if(trav->ele->result[0]=='_')
             {
-                // the result is a temporary and this means
-                // the right side is for sure a array element
-
                 // BaseAdd(Array) = ESP 
                 // ESP = ESP - (m-n+1)*(width)
                 
                 symbolTableNode * tempo = searchScopeIRcode(tbStack, trav->ele->result);
-                symbolTableNode * arr = searchScopeIRcode(tbStack, trav->ele->arg1);
-                
-                //allocate the memory to the 
-                if(arr->ele.data.arr.isDynamic == 1)
+                if(trav->ele->tag1 == NUM)
                 {
-                    printf("MOV [EBP-8-%d], ESP", arr->offset);
-                    
-                    if(!strcmp(arr->ele.data.arr.lowerIndex->type,"NUM"))
-                    {
-                        printf("MOV BX, %dd\n", *(int *)arr->ele.data.arr.lowerIndex->value);
-                    }
-                    else
-                    {
-                        symbolTableNode * index = searchScopeIRcode(tbStack, arr->ele.data.arr.lowerIndex->lexeme);
-                        printf("MOV BX, [EBP-8-%d]\n", index->offset);
-                    }
-
-                    // just to make it zero
-                    printf("XOR EAX, EAX\n");
-                    if(!strcmp(arr->ele.data.arr.upperIndex->type,"NUM"))
-                    {
-                        printf("MOV AX, %dd\n", *(int *)arr->ele.data.arr.upperIndex->value);
-                    }
-                    else
-                    {
-                        symbolTableNode * index = searchScopeIRcode(tbStack, arr->ele.data.arr.upperIndex->lexeme);
-                        printf("MOV AX, [EBP-8-%d]\n", index->offset);
-                    }
-                    
-                    printf("INC AX\n");
-                    printf("SUB AX,BX\n");
-
-                    if(!strcmp(arr->ele.data.arr.type, "INTEGER"))
-                        printf("MUL 2d\n");
-                    else if(!strcmp(arr->ele.data.arr.type, "REAL"))
-                        printf("MUL 4d\n");
-                    else if(!strcmp(arr->ele.data.arr.type, "BOOLEAN"))
-                        printf("MUL 1d\n");
-                    
-                    printf("SUB ESP, EAX");
-                    
-                    // marking that the array is dynamic, and allocated
-                    arr->ele.data.arr.isDynamic = 2;
+                    //_t0 := 10
+                    printf("MOV AX, %sd\n", trav->ele->arg1);
+                    printf("MOV [BP-8-%d], AX\n", tempo->offset);
                 }
-                
-                // t0 = A[i]
-                // BaseAdd(A) + i*(width)
-
-                // printf("MOV AX, [EBP-8-%d]", arr->offset);
-
-                printf("XOR AX, AX\n");
-                if(!strcmp(arr->ele.data.arr.type, "INTEGER"))
-                    printf("MOV AX, 2d\n"); 
-                else if(!strcmp(arr->ele.data.arr.type, "REAL"))
-                    printf("MOV AX, 4d\n"); 
-                else if(!strcmp(arr->ele.data.arr.type, "BOOLEAN"))
-                    printf("MOV AX, 1d\n"); 
-                
-                if(trav->ele->tag2 == NUM)
+                else if(trav->ele->tag1 == RNUM)
                 {
-                    printf("MOV BX, %sd\n", trav->ele->arg2);              
+
+                }
+                else if(trav->ele->tag1 == BOOL)
+                {
+
                 }
                 else
                 {
-                    symbolTableNode* index = searchScopeIRcode(tbStack, trav->ele->arg2);
-                    printf("MOV BX, [EBP-8-%d]\n", index->offset);
-                }
-                if(!strcmp(arr->ele.data.arr.lowerIndex->type, "NUM"))
-                {
-                    printf("SUB BX, %dd\n", *(int *)arr->ele.data.arr.lowerIndex->value);
-                }
-                else
-                {
-                    //it is an ID
-                    symbolTableNode *lowerbound = searchScopeIRcode(tbStack, arr->ele.data.arr.lowerIndex->lexeme);
-                    printf("MOV CX, [EBP-8-%d]\n", lowerbound->offset);
-                    printf("SUB BX, CX\n");
-                }
-                printf("MUL BX\n");
-                printf("MOV EBX, [EBP-8-%d]\n", arr->offset);
-                printf("ADD EAX, EBX\n");
-                //AX contains the address of the array element on RHS
+                    symbolTableNode * arr = searchScopeIRcode(tbStack, trav->ele->arg1);
 
-                if(!strcmp(arr->ele.data.arr.type, "INTEGER"))
-                {
-                    printf("MOV BX, [EAX]\n");
-                    printf("MOV [EBP-8-%d], EBX\n", tempo->offset);
-                }
-                else if(!strcmp(arr->ele.data.arr.type, "REAL"))
-                {
-                    // printf("MOV EBX, [EAX]\n");
-                    // printf("MOV [EBP-8-%d], EBX\n", tempo->offset);
-                }
-                else if(!strcmp(arr->ele.data.arr.type, "BOOLEAN"))
-                {   
-                    printf("MOV BL, [EAX]\n");
-                    printf("MOV [EBP-8-%d], EBX\n", tempo->offset); 
+                    if(arr->ele.tag != Array)
+                    {
+                        //_t0 = low;
+                        printf("MOV AX, [BP-8-%d]\n",arr->offset);
+                        printf("MOV [BP-8-%d], AX\n",tempo->offset);
+                    }
+                    else
+                    {
+                        //allocate the memory to the 
+                        if(arr->ele.data.arr.isDynamic == 1)
+                        {
+                            printf("MOV [EBP-8-%d], ESP", arr->offset);
+                            
+                            if(!strcmp(arr->ele.data.arr.lowerIndex->type,"NUM"))
+                            {
+                                printf("MOV BX, %dd\n", *(int *)arr->ele.data.arr.lowerIndex->value);
+                            }
+                            else
+                            {
+                                symbolTableNode * index = searchScopeIRcode(tbStack, arr->ele.data.arr.lowerIndex->lexeme);
+                                printf("MOV BX, [EBP-8-%d]\n", index->offset);
+                            }
+
+                            // just to make it zero
+                            printf("XOR EAX, EAX\n");
+                            if(!strcmp(arr->ele.data.arr.upperIndex->type,"NUM"))
+                            {
+                                printf("MOV AX, %dd\n", *(int *)arr->ele.data.arr.upperIndex->value);
+                            }
+                            else
+                            {
+                                symbolTableNode * index = searchScopeIRcode(tbStack, arr->ele.data.arr.upperIndex->lexeme);
+                                printf("MOV AX, [EBP-8-%d]\n", index->offset);
+                            }
+                            
+                            printf("INC AX\n");
+                            printf("SUB AX,BX\n");
+
+                            if(!strcmp(arr->ele.data.arr.type, "INTEGER"))
+                                printf("MUL 2d\n");
+                            else if(!strcmp(arr->ele.data.arr.type, "REAL"))
+                                printf("MUL 4d\n");
+                            else if(!strcmp(arr->ele.data.arr.type, "BOOLEAN"))
+                                printf("MUL 1d\n");
+                            
+                            printf("SUB ESP, EAX");
+                            
+                            // marking that the array is dynamic, and allocated
+                            arr->ele.data.arr.isDynamic = 2;
+                        }
+                        
+                        // t0 = A[i]
+                        // BaseAdd(A) + i*(width)
+
+                        // printf("MOV AX, [EBP-8-%d]", arr->offset);
+
+                        printf("XOR AX, AX\n");
+                        if(!strcmp(arr->ele.data.arr.type, "INTEGER"))
+                            printf("MOV AX, 2d\n"); 
+                        else if(!strcmp(arr->ele.data.arr.type, "REAL"))
+                            printf("MOV AX, 4d\n"); 
+                        else if(!strcmp(arr->ele.data.arr.type, "BOOLEAN"))
+                            printf("MOV AX, 1d\n"); 
+                        
+                        if(trav->ele->tag2 == NUM)
+                        {
+                            printf("MOV BX, %sd\n", trav->ele->arg2);              
+                        }
+                        else
+                        {
+                            symbolTableNode* index = searchScopeIRcode(tbStack, trav->ele->arg2);
+                            printf("MOV BX, [EBP-8-%d]\n", index->offset);
+                        }
+                        if(!strcmp(arr->ele.data.arr.lowerIndex->type, "NUM"))
+                        {
+                            printf("SUB BX, %dd\n", *(int *)arr->ele.data.arr.lowerIndex->value);
+                        }
+                        else
+                        {
+                            //it is an ID
+                            symbolTableNode *lowerbound = searchScopeIRcode(tbStack, arr->ele.data.arr.lowerIndex->lexeme);
+                            printf("MOV CX, [EBP-8-%d]\n", lowerbound->offset);
+                            printf("SUB BX, CX\n");
+                        }
+                        printf("MUL BX\n");
+                        printf("MOV EBX, [EBP-8-%d]\n", arr->offset);
+                        printf("ADD EAX, EBX\n");
+                        //AX contains the address of the array element on RHS
+
+                        if(!strcmp(arr->ele.data.arr.type, "INTEGER"))
+                        {
+                            printf("MOV BX, [EAX]\n");
+                            printf("MOV [EBP-8-%d], EBX\n", tempo->offset);
+                        }
+                        else if(!strcmp(arr->ele.data.arr.type, "REAL"))
+                        {
+                            // printf("MOV EBX, [EAX]\n");
+                            // printf("MOV [EBP-8-%d], EBX\n", tempo->offset);
+                        }
+                        else if(!strcmp(arr->ele.data.arr.type, "BOOLEAN"))
+                        {   
+                            printf("MOV BL, [EAX]\n");
+                            printf("MOV [EBP-8-%d], EBX\n", tempo->offset); 
+                        }
+                    }
                 }
             }
             else if(!strcmp(trav->ele->arg2, "\0"))
@@ -861,7 +884,7 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT)
                     // TO DO: check this 
                     // @Vipin my phone is not detecting my sim
                     // read this case meanwhile please
-                    printf("MOV BX,[EBP-8-%d]",var->offset); 
+                    printf("MOV BX,[EBP-8-%d]", var->offset); 
                     //here EBP is not necessarily the EBP of the variable's scope
                 }
                 else if(var->ele.data.id.type == "REAL")

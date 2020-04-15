@@ -23,6 +23,8 @@
 typedef enum {Identifier = 2, Array = 1, Module = 0} entryType;
 typedef enum {Declaration = 2, Type = 1, Others = 0} errorType;
 
+int currentOffset;
+
 //primitive data type 1
 typedef struct identifier
 {

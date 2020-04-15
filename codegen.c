@@ -113,11 +113,10 @@ void mergeCode(IRcode ** code1, IRcode * code2)
     IRcode * trav = *code1;
     while(trav->next != NULL)
     {
+        printf("%s %s %s %s\n", trav->ele->result, trav->ele->arg1, trav->ele->op, trav->ele->arg2);
         trav = trav->next;
-        printf(" %s | %s | %s | %s \n", trav->ele->op, trav->ele->arg1, trav->ele->arg2, trav->ele->result);
-    }   
+    }
     trav->next = code2;
-
 }
 
 void printCode(IRcode * code)
@@ -824,22 +823,22 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
 
         tableStackEle *newTable = NULL;
         symbolTable *st = symbolTableRoot->child->sibling;
-
-        //statements to help us in final pass for identifiying when to change the scope
-        IRcode *scopeStart = (IRcode*)malloc(sizeof(IRcode));
-        scopeStart->ele = (quad*)malloc(sizeof(quad));
-        scopeStart->next = NULL;
-        strcpy(scopeStart->ele->op,"SCOPESTARTMODULE");
-        initQuad(scopeStart->ele,"\0","\0","\0");
-
-        IRcode *scopeEnd = (IRcode*)malloc(sizeof(IRcode));
-        scopeEnd->ele = (quad*)malloc(sizeof(IRcode));
-        scopeEnd->next = NULL;
-        strcpy(scopeEnd->ele->op,"SCOPEENDMODULE");
-        initQuad(scopeEnd->ele,"\0","\0","\0");
         
         while(trav != NULL)
         {
+            //statements to help us in final pass for identifiying when to change the scope
+            IRcode *scopeStart = (IRcode*)malloc(sizeof(IRcode));
+            scopeStart->ele = (quad*)malloc(sizeof(quad));
+            scopeStart->next = NULL;
+            strcpy(scopeStart->ele->op,"SCOPESTARTMODULE");
+            initQuad(scopeStart->ele,"\0","\0","\0");
+
+            IRcode *scopeEnd = (IRcode*)malloc(sizeof(IRcode));
+            scopeEnd->ele = (quad*)malloc(sizeof(IRcode));
+            scopeEnd->next = NULL;
+            strcpy(scopeEnd->ele->op,"SCOPEENDMODULE");
+            initQuad(scopeEnd->ele,"\0","\0","\0");
+
             newTable = (tableStackEle *)malloc(sizeof(tableStackEle));
             newTable->ele = st;
             newTable->next = NULL;
@@ -866,18 +865,6 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
         final->code = NULL;
         intermed* tmp;
 
-        IRcode *scopeStart = (IRcode*)malloc(sizeof(IRcode));
-        scopeStart->ele = (quad*)malloc(sizeof(quad));
-        scopeStart->next = NULL;
-        strcpy(scopeStart->ele->op,"SCOPESTARTMODULE");
-        initQuad(scopeStart->ele,"\0","\0","\0");
-
-        IRcode *scopeEnd = (IRcode*)malloc(sizeof(IRcode));
-        scopeEnd->ele = (quad*)malloc(sizeof(IRcode));
-        scopeEnd->next = NULL;
-        strcpy(scopeEnd->ele->op,"SCOPEENDMODULE");
-        initQuad(scopeEnd->ele,"\0","\0","\0");
-
         tableStackEle *newTable = NULL;
         symbolTable *st = symbolTableRoot->child->sibling;
         while(strcmp(st->symLexeme, "Driver"))
@@ -888,6 +875,18 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
 
         while(trav!=NULL)
         {
+            IRcode *scopeStart = (IRcode*)malloc(sizeof(IRcode));
+            scopeStart->ele = (quad*)malloc(sizeof(quad));
+            scopeStart->next = NULL;
+            strcpy(scopeStart->ele->op,"SCOPESTARTMODULE");
+            initQuad(scopeStart->ele,"\0","\0","\0");
+
+            IRcode *scopeEnd = (IRcode*)malloc(sizeof(IRcode));
+            scopeEnd->ele = (quad*)malloc(sizeof(IRcode));
+            scopeEnd->next = NULL;
+            strcpy(scopeEnd->ele->op,"SCOPEENDMODULE");
+            initQuad(scopeEnd->ele,"\0","\0","\0");
+
             newTable = (tableStackEle *)malloc(sizeof(tableStackEle));
             newTable->ele = st;
             newTable->next = NULL;
@@ -1032,13 +1031,13 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
         // merge the code in order
         // startscope, finaldef, body, ret's label, ret, scopeend
         mergeCode(&(scopeStart), finaldef);
-        // finaldef = scopeStart;
         mergeCode(&(scopeStart), body->code);
         mergeCode(&(scopeStart), labelCode);
         mergeCode(&(scopeStart), ret);
         mergeCode(&(scopeStart), scopeEnd);
         
         body->code = scopeStart;
+                
                 
         sympop(tbStack);
         return body;
@@ -1116,8 +1115,6 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
         stmtsCode = (intermed*)malloc(sizeof(intermed));
         stmtsCode->code = NULL;
 
-        
-
         int isEnd = 0;
         tableStackEle *newNode = NULL;
         symbolTable *st = tbStack->top->ele->child;
@@ -1140,7 +1137,7 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
                 strcpy(scopeEnd->ele->op,"SCOPEEND");
                 initQuad(scopeEnd->ele,"\0","\0","\0");
                 scopeEnd->ele->tag1 = NONE;
-                
+
                 newNode = (tableStackEle *)malloc(sizeof(tableStackEle));
                 newNode->ele = st;
                 newNode->next = NULL;
@@ -1271,22 +1268,6 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
         stmtsCode = (intermed*)malloc(sizeof(intermed));
         stmtsCode->code = NULL;
         
-        IRcode *scopeStart = (IRcode*)malloc(sizeof(IRcode));
-        scopeStart->ele = (quad*)malloc(sizeof(quad));
-        scopeStart->next = NULL;
-        strcpy(scopeStart->ele->op,"SCOPESTART");
-        initQuad(scopeStart->ele,"\0","\0","\0");
-        scopeStart->ele->tag1 = NONE;
-        scopeStart->ele->tag2 = NONE;
-
-        IRcode *scopeEnd = (IRcode*)malloc(sizeof(IRcode));
-        scopeEnd->ele = (quad*)malloc(sizeof(IRcode));
-        scopeEnd->next = NULL;
-        strcpy(scopeEnd->ele->op,"SCOPEEND");
-        initQuad(scopeEnd->ele,"\0","\0","\0");
-        scopeEnd->ele->tag1 = NONE;
-        scopeEnd->ele->tag2 = NONE;
-
         //isEnd = 0 means there is need for "goto begin" stmt at the end of this loop
         int isEnd = 0;
         
@@ -1298,6 +1279,22 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
             !strcmp(trav->node->ele.internalNode->label, "WHILE") ||
             !strcmp(trav->node->ele.internalNode->label, "SWITCH"))
             {
+                IRcode *scopeStart = (IRcode*)malloc(sizeof(IRcode));
+                scopeStart->ele = (quad*)malloc(sizeof(quad));
+                scopeStart->next = NULL;
+                strcpy(scopeStart->ele->op,"SCOPESTART");
+                initQuad(scopeStart->ele,"\0","\0","\0");
+                scopeStart->ele->tag1 = NONE;
+                scopeStart->ele->tag2 = NONE;
+
+                IRcode *scopeEnd = (IRcode*)malloc(sizeof(IRcode));
+                scopeEnd->ele = (quad*)malloc(sizeof(IRcode));
+                scopeEnd->next = NULL;
+                strcpy(scopeEnd->ele->op,"SCOPEEND");
+                initQuad(scopeEnd->ele,"\0","\0","\0");
+                scopeEnd->ele->tag1 = NONE;
+                scopeEnd->ele->tag2 = NONE;
+
                 newNode = (tableStackEle *)malloc(sizeof(tableStackEle));
                 newNode->ele = st;
                 newNode->next = NULL;
@@ -1469,22 +1466,6 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
             
         intermed* stmtsCode, *stmtCode;
         stmtsCode = (intermed *)malloc(sizeof(intermed));
-                
-        IRcode *scopeStart = (IRcode*)malloc(sizeof(IRcode));
-        scopeStart->ele = (quad*)malloc(sizeof(quad));
-        scopeStart->next = NULL;
-        strcpy(scopeStart->ele->op,"SCOPESTART");
-        initQuad(scopeStart->ele,"\0","\0","\0");
-        scopeStart->ele->tag1=NONE;
-        scopeStart->ele->tag2=NONE;
-        
-        IRcode *scopeEnd = (IRcode*)malloc(sizeof(IRcode));
-        scopeEnd->ele = (quad*)malloc(sizeof(IRcode));
-        scopeEnd->next = NULL;
-        strcpy(scopeEnd->ele->op,"SCOPEEND");
-        initQuad(scopeEnd->ele,"\0","\0","\0");
-        scopeEnd->ele->tag1 = NONE;
-        scopeEnd->ele->tag2 = NONE;
         
         //isEnd = 0 means there is need for "goto begin" stmt at the end of this loop
         int isEnd = 0;
@@ -1496,6 +1477,22 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
             !strcmp(trav->node->ele.internalNode->label, "WHILE") ||
             !strcmp(trav->node->ele.internalNode->label, "SWITCH"))
             {
+                IRcode *scopeStart = (IRcode*)malloc(sizeof(IRcode));
+                scopeStart->ele = (quad*)malloc(sizeof(quad));
+                scopeStart->next = NULL;
+                strcpy(scopeStart->ele->op,"SCOPESTART");
+                initQuad(scopeStart->ele,"\0","\0","\0");
+                scopeStart->ele->tag1=NONE;
+                scopeStart->ele->tag2=NONE;
+                
+                IRcode *scopeEnd = (IRcode*)malloc(sizeof(IRcode));
+                scopeEnd->ele = (quad*)malloc(sizeof(IRcode));
+                scopeEnd->next = NULL;
+                strcpy(scopeEnd->ele->op,"SCOPEEND");
+                initQuad(scopeEnd->ele,"\0","\0","\0");
+                scopeEnd->ele->tag1 = NONE;
+                scopeEnd->ele->tag2 = NONE;
+
                 newNode = (tableStackEle *)malloc(sizeof(tableStackEle));
                 newNode->ele = st;
                 newNode->next = NULL;
@@ -1587,22 +1584,6 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
         //isEnd = 0 means there is need for "goto begin" stmt at the end of this loop
         int isEnd = 0;
         
-        IRcode *scopeStart = (IRcode*)malloc(sizeof(IRcode));
-        scopeStart->ele = (quad*)malloc(sizeof(quad));
-        scopeStart->next = NULL;
-        strcpy(scopeStart->ele->op,"SCOPESTART");
-        initQuad(scopeStart->ele,"\0","\0","\0");
-        scopeStart->ele->tag1 = NONE;
-        scopeStart->ele->tag2 = NONE;
-        
-        IRcode *scopeEnd = (IRcode*)malloc(sizeof(IRcode));
-        scopeEnd->ele = (quad*)malloc(sizeof(IRcode));
-        scopeEnd->next = NULL;
-        strcpy(scopeEnd->ele->op,"SCOPEEND");
-        initQuad(scopeEnd->ele,"\0","\0","\0");
-        scopeEnd->ele->tag1=NONE;
-        scopeEnd->ele->tag2=NONE;
-        
 
         tableStackEle * newNode = NULL;
         symbolTable * st = tbStack->top->ele->child;
@@ -1612,6 +1593,22 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
             !strcmp(trav->node->ele.internalNode->label, "WHILE") ||
             !strcmp(trav->node->ele.internalNode->label, "SWITCH"))
             {
+                IRcode *scopeStart = (IRcode*)malloc(sizeof(IRcode));
+                scopeStart->ele = (quad*)malloc(sizeof(quad));
+                scopeStart->next = NULL;
+                strcpy(scopeStart->ele->op,"SCOPESTART");
+                initQuad(scopeStart->ele,"\0","\0","\0");
+                scopeStart->ele->tag1 = NONE;
+                scopeStart->ele->tag2 = NONE;
+                
+                IRcode *scopeEnd = (IRcode*)malloc(sizeof(IRcode));
+                scopeEnd->ele = (quad*)malloc(sizeof(IRcode));
+                scopeEnd->next = NULL;
+                strcpy(scopeEnd->ele->op,"SCOPEEND");
+                initQuad(scopeEnd->ele,"\0","\0","\0");
+                scopeEnd->ele->tag1=NONE;
+                scopeEnd->ele->tag2=NONE;
+
                 newNode = (tableStackEle *)malloc(sizeof(tableStackEle));
                 newNode->ele = st;
                 newNode->next = NULL;

@@ -318,12 +318,13 @@ void formulation(astNode *astRoot, symbolTable *current)
                 else if(!strcmp(type->child->sibling->node->ele.leafNode->type,"BOOLEAN"))
                     tmp = BOOLEAN_SIZE;
                 
-                if( (!strcmp(newNode->ele.data.arr.lowerIndex->type,"ID")) || (!strcmp(newNode->ele.data.arr.upperIndex->type,"ID")) )
+                if( (!strcmp(newNode->ele.data.arr.lowerIndex->type,"ID")) 
+                || (!strcmp(newNode->ele.data.arr.upperIndex->type,"ID")) )
                 {
                     //dynamic array
                     newNode->width = POINTER_SIZE;
-                    newNode->offset = current->currentOffset;
-                    current->currentOffset += POINTER_SIZE;
+                    newNode->offset = currentOffset;
+                    currentOffset += POINTER_SIZE;
                     newNode->ele.data.arr.isDynamic = 1;   
                 }
                 else    
@@ -331,9 +332,9 @@ void formulation(astNode *astRoot, symbolTable *current)
                     //static array
                     newNode->ele.data.arr.isDynamic = 0;
                     int size = *(int *)newNode->ele.data.arr.upperIndex->value - *(int*)newNode->ele.data.arr.lowerIndex->value + 1;
-                    newNode->offset = current->currentOffset;
+                    newNode->offset = currentOffset;
                     newNode->width = tmp * size + POINTER_SIZE;
-                    current->currentOffset += newNode->width;
+                    currentOffset += newNode->width;
                 }
                 newNode->next = NULL;
             }
@@ -355,8 +356,8 @@ void formulation(astNode *astRoot, symbolTable *current)
                     newNode->width = BOOLEAN_SIZE;
                     
                 newNode->next = NULL;
-                newNode->offset = current->currentOffset;
-                current->currentOffset += newNode->width;
+                newNode->offset = currentOffset;
+                currentOffset += newNode->width;
             }
             symbolTableNode *ret = sym_hash_insert(newNode, &(current->hashtb));
             if(ret != NULL) //redeclaration of an ID within the same scope
@@ -575,7 +576,7 @@ void formulation(astNode *astRoot, symbolTable *current)
                 node->lineNum = traveller->node->ele.leafNode->lineNum;
                 
                 
-                node->offset = current->currentOffset;
+                node->offset = currentOffset;
                 int tmp=0;
                 if(!strcmp(traveller->sibling->child->sibling->node->ele.leafNode->type,"INTEGER"))
                     tmp = INTEGER_SIZE;
@@ -589,8 +590,8 @@ void formulation(astNode *astRoot, symbolTable *current)
                 {
                     //dynamic array
                     node->width = POINTER_SIZE;
-                    node->offset = current->currentOffset;
-                    current->currentOffset += POINTER_SIZE;
+                    node->offset = currentOffset;
+                    currentOffset += POINTER_SIZE;
                     node->ele.data.arr.isDynamic = 1;   
                 }
                 else    
@@ -598,9 +599,9 @@ void formulation(astNode *astRoot, symbolTable *current)
                     //static array
                     node->ele.data.arr.isDynamic = 0;
                     int size = *(int *)node->ele.data.arr.upperIndex->value - *(int*)node->ele.data.arr.lowerIndex->value + 1;
-                    node->offset = current->currentOffset;
+                    node->offset = currentOffset;
                     node->width = tmp * size + POINTER_SIZE;
-                    current->currentOffset += node->width;
+                    currentOffset += node->width;
                 }
 
                 node->next = NULL;
@@ -622,8 +623,8 @@ void formulation(astNode *astRoot, symbolTable *current)
                     node->width = 1;
                     
                 node->next = NULL;
-                node->offset = current->currentOffset;
-                current->currentOffset += node->width;
+                node->offset = currentOffset;
+                currentOffset += node->width;
             }
             newNode->ele.data.mod.inputList[i] = node->ele;
             symbolTableNode *ret = sym_hash_insert(node, &(moduleST->hashtb));
@@ -702,8 +703,8 @@ void formulation(astNode *astRoot, symbolTable *current)
                 {
                     //dynamic array
                     node->width = POINTER_SIZE;
-                    node->offset = current->currentOffset;
-                    current->currentOffset += POINTER_SIZE;
+                    node->offset = currentOffset;
+                    currentOffset += POINTER_SIZE;
                     node->ele.data.arr.isDynamic = 1;   
                 }
                 else    
@@ -711,9 +712,9 @@ void formulation(astNode *astRoot, symbolTable *current)
                     //static array
                     node->ele.data.arr.isDynamic = 0;
                     int size = *(int *)node->ele.data.arr.upperIndex->value - *(int*)node->ele.data.arr.lowerIndex->value + 1;
-                    node->offset = current->currentOffset;
+                    node->offset = currentOffset;
                     node->width = tmp * size + POINTER_SIZE;
-                    current->currentOffset += node->width;
+                    currentOffset += node->width;
                 }
 
                 node->next = NULL;    
@@ -735,8 +736,8 @@ void formulation(astNode *astRoot, symbolTable *current)
                     node->width = BOOLEAN_SIZE;
                     
                 node->next = NULL;
-                node->offset = current->currentOffset;
-                current->currentOffset += node->offset;
+                node->offset = currentOffset;
+                currentOffset += node->offset;
             }
             newNode->ele.data.mod.outputList[i] = node->ele;
             symbolTableNode *ret = sym_hash_insert(node, &(moduleST->hashtb));
@@ -816,6 +817,7 @@ void formulation(astNode *astRoot, symbolTable *current)
             if(ret!=NULL) free(ret);
         }
         
+        currentOffset = 0;
         formulation(astRoot->child, moduleST);
         formulation(astRoot->child->sibling, moduleST);
         formulation(astRoot->child->sibling->sibling, moduleST);
@@ -867,6 +869,7 @@ void formulation(astNode *astRoot, symbolTable *current)
             }
             tmp->sibling = moduledefST;
         }
+        currentOffset = 0;
     }
 
     else if(!strcmp(astRoot->node->ele.internalNode->label, "DRIVER"))
@@ -874,6 +877,7 @@ void formulation(astNode *astRoot, symbolTable *current)
         char *str = (char*)malloc(sizeof(char)*10); strcpy(str,"Driver");
         symbolTable * driverST = initializeSymbolTable(str,astRoot->node->ele.internalNode->lineNumStart, astRoot->node->ele.internalNode->lineNumEnd);
         
+        currentOffset = 0;
         formulation(astRoot->child,driverST);
 
         //linking of symbols tables
@@ -889,8 +893,8 @@ void formulation(astNode *astRoot, symbolTable *current)
                 tmp = tmp->sibling;
             }
             tmp->sibling = driverST;
-        }    
-        
+        }   
+        currentOffset = 0; 
     }
     else if(!strcmp(astRoot->node->ele.internalNode->label, "WHILE"))
     {
@@ -898,6 +902,8 @@ void formulation(astNode *astRoot, symbolTable *current)
         memset(str, '\0', sizeof(char)*(strlen(str)));
         sprintf(str, "%s",current->symLexeme);
         symbolTable *whileST = initializeSymbolTable(str, astRoot->node->ele.internalNode->lineNumStart, astRoot->node->ele.internalNode->lineNumEnd);
+        // whileST->currentOffset = currentOffset;
+
         astNode *trav = astRoot->child->sibling;
         while(trav != NULL)
         {
@@ -926,7 +932,7 @@ void formulation(astNode *astRoot, symbolTable *current)
         memset(str, '\0', sizeof(char)*(strlen(str)));
         sprintf(str, "%s",current->symLexeme);
         symbolTable *forST = initializeSymbolTable(str, astRoot->node->ele.internalNode->lineNumStart, astRoot->node->ele.internalNode->lineNumEnd);
-        
+        // forST->currentOffset = currentOffset;
 
         //call the formulation on all statements 
         astNode *trav = astRoot->child->sibling->sibling;
@@ -962,7 +968,7 @@ void formulation(astNode *astRoot, symbolTable *current)
         memset(str, '\0', sizeof(char)*(strlen(str)));
         sprintf(str, "%s",current->symLexeme);
         symbolTable *switchST = initializeSymbolTable(str, astRoot->node->ele.internalNode->lineNumStart, astRoot->node->ele.internalNode->lineNumEnd);
-        
+        // switchST->currentOffset = currentOffset;
         
         formulation(astRoot->child->sibling, switchST);
 
