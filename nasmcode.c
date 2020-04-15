@@ -834,7 +834,54 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT)
         {
             printf("%s:\n",trav->ele->arg1);
         }
+
         else if(!strcmp(trav->ele->op,"param"))
+        {
+            // insert the parameter on the stack
+            // leave those many spaces and push the value
+
+            symbolTableNode* var = searchScopeIRcode(tbStack,trav->ele->arg1);
+            
+            if(var->ele.tag == Array)
+            {
+                // a lot actions taken here
+                // bounds are to be pushed as well for static
+                // for dynamic, only the address of the array is fine (check this)
+            }
+            else if(var->ele.tag==Identifier)
+            {
+
+                printf("XOR EAX, EAX");
+                printf("XOR EBX, EBX");
+                
+                if(var->ele.data.id.type == "INTEGER")
+                {
+                    printf("MOV AX, 2d");
+                    
+                    // TO DO: check this
+                    printf("MOV BX,[EBP-8-%d]",var->offset); 
+                    //here EBP is not necessarily the EBP of the variable's scope
+                }
+                else if(var->ele.data.id.type == "REAL")
+                {
+                    // printf("MOV AX, 4d");
+                    // printf("MOV EBX, %fd", *(float*)(var->ele.data.id.value));
+
+                    //dont know how to load
+                }    
+                else if(var->ele.data.id.type == "BOOLEAN")
+                {
+                    printf("MOV AX, 1d");
+                    
+                    
+                }    
+
+                printf("SUB ESP,EAX");
+
+
+            }
+        }
+        else if(!strcmp(trav->ele->op,"call"))
         {
             
         }
