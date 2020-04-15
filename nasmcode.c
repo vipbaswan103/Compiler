@@ -858,7 +858,9 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT)
                 {
                     printf("MOV AX, 2d");
                     
-                    // TO DO: check this
+                    // TO DO: check this 
+                    // @Vipin my phone is not detecting my sim
+                    // read this case meanwhile please
                     printf("MOV BX,[EBP-8-%d]",var->offset); 
                     //here EBP is not necessarily the EBP of the variable's scope
                 }
@@ -870,10 +872,10 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT)
                     //dont know how to load
                 }    
                 else if(var->ele.data.id.type == "BOOLEAN")
-                {
+                { 
                     printf("MOV AX, 1d");
                     
-                    
+
                 }    
 
                 printf("SUB ESP,EAX");
