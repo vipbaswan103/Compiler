@@ -112,8 +112,12 @@ void mergeCode(IRcode ** code1, IRcode * code2)
 
     IRcode * trav = *code1;
     while(trav->next != NULL)
+    {
         trav = trav->next;
+        printf(" %s | %s | %s | %s \n", trav->ele->op, trav->ele->arg1, trav->ele->arg2, trav->ele->result);
+    }   
     trav->next = code2;
+
 }
 
 void printCode(IRcode * code)
@@ -191,31 +195,31 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
 
             initQuad(final->code->ele, leftchild->t.name, rightchild->t.name, final->t.name);
             getOp(currentNode->node->ele.internalNode->label, final->code->ele->op);
-            mergeCode(&(leftchild->code), rightchild->code);
-            mergeCode(&(leftchild->code), final->code);
-            final->code = leftchild->code;
-
             // verify whether the node is a leaf (NUM or RNUM)
             // ID would be in ID_ARR so nit a leaf
             if(currentNode->child->sibling->node->tag == Leaf)
             {
                 if(!strcmp(currentNode->child->sibling->node->ele.leafNode->type, "NUM"))
-                    final->code->ele->tag1 = NUM;
-                else
-                    final->code->ele->tag1 = RNUM;
-            }
-            else
-                final->code->ele->tag1 = ID;
-            
-            if(currentNode->child->node->tag == Leaf)
-            {
-                if(!strcmp(currentNode->child->node->ele.leafNode->type, "NUM"))
                     final->code->ele->tag2 = NUM;
                 else
                     final->code->ele->tag2 = RNUM;
             }
             else
                 final->code->ele->tag2 = ID;
+            
+            if(currentNode->child->node->tag == Leaf)
+            {
+                if(!strcmp(currentNode->child->node->ele.leafNode->type, "NUM"))
+                    final->code->ele->tag1 = NUM;
+                else
+                    final->code->ele->tag1 = RNUM;
+            }
+            else
+                final->code->ele->tag1 = ID;
+                
+            mergeCode(&(leftchild->code), rightchild->code);
+            mergeCode(&(leftchild->code), final->code);
+            final->code = leftchild->code;
 
             free(leftchild);
             free(rightchild);
@@ -241,9 +245,6 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
             
             initQuad(final->code->ele, child->t.name, "\0", final->t.name);
             getOp(currentNode->node->ele.internalNode->label, final->code->ele->op);
-            mergeCode(&(child->code), final->code);
-            final->code = child->code;
-
             if(currentNode->child->node->tag == Leaf)
             {
                 if(!strcmp(currentNode->child->node->ele.leafNode->type, "NUM"))
@@ -253,7 +254,9 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
             }
             else
                 final->code->ele->tag1 = ID;
-
+                
+            mergeCode(&(child->code), final->code);
+            final->code = child->code;
                 
             free(child);
             return final;
@@ -278,29 +281,30 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
         
         initQuad(final->code->ele, leftchild->t.name, rightchild->t.name, final->t.name);
         getOp(currentNode->node->ele.internalNode->label, final->code->ele->op);
-        mergeCode(&(leftchild->code), rightchild->code);
-        mergeCode(&(leftchild->code), final->code);
-        final->code = leftchild->code;
 
         if(currentNode->child->sibling->node->tag == Leaf)
         {
             if(!strcmp(currentNode->child->sibling->node->ele.leafNode->type, "NUM"))
-                final->code->ele->tag1 = NUM;
-            else
-                final->code->ele->tag1 = RNUM;
-        }
-        else
-            final->code->ele->tag1 = ID;
-        
-        if(currentNode->child->node->tag == Leaf)
-        {
-            if(!strcmp(currentNode->child->node->ele.leafNode->type, "NUM"))
                 final->code->ele->tag2 = NUM;
             else
                 final->code->ele->tag2 = RNUM;
         }
         else
             final->code->ele->tag2 = ID;
+        
+        if(currentNode->child->node->tag == Leaf)
+        {
+            if(!strcmp(currentNode->child->node->ele.leafNode->type, "NUM"))
+                final->code->ele->tag1 = NUM;
+            else
+                final->code->ele->tag1 = RNUM;
+        }
+        else
+            final->code->ele->tag1 = ID;
+
+        mergeCode(&(leftchild->code), rightchild->code);
+        mergeCode(&(leftchild->code), final->code);
+        final->code = leftchild->code;
 
         free(leftchild);
         free(rightchild);
@@ -321,8 +325,8 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
             // the labels have something, this means that the boolean expression is 
             //bring used for a "if else" like clause, with labels containing the
             //place for false and true jumps
-            intermed* leftchild = generateIRCode(currentNode->child, labels, tbStack);
-            intermed* rightchild = generateIRCode(currentNode->child->sibling, labels, tbStack);
+            intermed* leftchild = generateIRCode(currentNode->child, NULL, tbStack);
+            intermed* rightchild = generateIRCode(currentNode->child->sibling, NULL, tbStack);
             
             //ifcode will have the conditional code's quads
             IRcode* ifcode = (IRcode *)malloc(sizeof(IRcode));
@@ -338,7 +342,7 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
             initQuad(ifcode->ele, leftchild->t.name, rightchild->t.name, "if\0");
             getOp(currentNode->node->ele.internalNode->label, ifcode->ele->op);
 
-            if(currentNode->child->sibling->node->tag == Leaf)
+            if(currentNode->child->node->tag == Leaf)
             {
                 if(!strcmp(currentNode->child->sibling->node->ele.leafNode->type, "NUM"))
                     ifcode->ele->tag1 = NUM;
@@ -348,7 +352,7 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
             else
                 ifcode->ele->tag1 = ID;
             
-            if(currentNode->child->node->tag == Leaf)
+            if(currentNode->child->sibling->node->tag == Leaf)
             {
                 if(!strcmp(currentNode->child->node->ele.leafNode->type, "NUM"))
                     ifcode->ele->tag2 = NUM;
@@ -404,22 +408,22 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
             if(currentNode->child->sibling->node->tag == Leaf)
             {
                 if(!strcmp(currentNode->child->sibling->node->ele.leafNode->type, "NUM"))
-                    final->code->ele->tag1 = NUM;
-                else
-                    final->code->ele->tag1 = RNUM;
-            }
-            else
-                final->code->ele->tag1 = ID;
-            
-            if(currentNode->child->node->tag == Leaf)
-            {
-                if(!strcmp(currentNode->child->node->ele.leafNode->type, "NUM"))
                     final->code->ele->tag2 = NUM;
                 else
                     final->code->ele->tag2 = RNUM;
             }
             else
                 final->code->ele->tag2 = ID;
+            
+            if(currentNode->child->node->tag == Leaf)
+            {
+                if(!strcmp(currentNode->child->node->ele.leafNode->type, "NUM"))
+                    final->code->ele->tag1 = NUM;
+                else
+                    final->code->ele->tag1 = RNUM;
+            }
+            else
+                final->code->ele->tag1 = ID;
 
             final->code->next = NULL;
             mergeCode(&(leftchild->code), rightchild->code);
@@ -499,14 +503,14 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
             strcpy(final->code->ele->result, final->t.name);
 
             if(currentNode->child->sibling->node->tag == Leaf)
-                final->code->ele->tag1 = BOOL;
-            else
-                final->code->ele->tag1 = ID;
-            
-            if(currentNode->child->node->tag == Leaf)
                 final->code->ele->tag2 = BOOL;
             else
                 final->code->ele->tag2 = ID;
+            
+            if(currentNode->child->node->tag == Leaf)
+                final->code->ele->tag1 = BOOL;
+            else
+                final->code->ele->tag1 = ID;
                 
             final->code->next = NULL;
             
@@ -550,14 +554,14 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
 
             labCode->next = NULL;
             if(currentNode->child->sibling->node->tag == Leaf)
-                final->code->ele->tag1 = BOOL;
-            else
-                final->code->ele->tag1 = ID;
-            
-            if(currentNode->child->node->tag == Leaf)
                 final->code->ele->tag2 = BOOL;
             else
                 final->code->ele->tag2 = ID;
+            
+            if(currentNode->child->node->tag == Leaf)
+                final->code->ele->tag1 = BOOL;
+            else
+                final->code->ele->tag1 = ID;
 
             //merge in order
             // left/B1 - right/B2 label - B2 code
@@ -586,14 +590,14 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
             strcpy(final->code->ele->result, final->t.name);
 
             if(currentNode->child->sibling->node->tag == Leaf)
-                final->code->ele->tag1 = BOOL;
-            else
-                final->code->ele->tag1 = ID;
-            
-            if(currentNode->child->node->tag == Leaf)
                 final->code->ele->tag2 = BOOL;
             else
                 final->code->ele->tag2 = ID;
+            
+            if(currentNode->child->node->tag == Leaf)
+                final->code->ele->tag1 = BOOL;
+            else
+                final->code->ele->tag1 = ID;
 
             final->code->next = NULL;
 
@@ -1028,13 +1032,13 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
         // merge the code in order
         // startscope, finaldef, body, ret's label, ret, scopeend
         mergeCode(&(scopeStart), finaldef);
-        finaldef = scopeStart;
-        mergeCode(&(finaldef), body->code);
-        mergeCode(&(finaldef), labelCode);
-        mergeCode(&(finaldef), ret);
-        mergeCode(&(finaldef), scopeEnd);
+        // finaldef = scopeStart;
+        mergeCode(&(scopeStart), body->code);
+        mergeCode(&(scopeStart), labelCode);
+        mergeCode(&(scopeStart), ret);
+        mergeCode(&(scopeStart), scopeEnd);
         
-        body->code = finaldef;
+        body->code = scopeStart;
                 
         sympop(tbStack);
         return body;
@@ -1112,19 +1116,7 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
         stmtsCode = (intermed*)malloc(sizeof(intermed));
         stmtsCode->code = NULL;
 
-        IRcode *scopeStart = (IRcode*)malloc(sizeof(IRcode));
-        scopeStart->ele = (quad*)malloc(sizeof(quad));
-        scopeStart->next = NULL;
-        strcpy(scopeStart->ele->op,"SCOPESTART");
-        initQuad(scopeStart->ele,"\0","\0","\0");
-        scopeStart->ele->tag1 = NONE;
-
-        IRcode *scopeEnd = (IRcode*)malloc(sizeof(IRcode));
-        scopeEnd->ele = (quad*)malloc(sizeof(IRcode));
-        scopeEnd->next = NULL;
-        strcpy(scopeEnd->ele->op,"SCOPEEND");
-        initQuad(scopeEnd->ele,"\0","\0","\0");
-        scopeEnd->ele->tag1 = NONE;
+        
 
         int isEnd = 0;
         tableStackEle *newNode = NULL;
@@ -1135,6 +1127,20 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
             !strcmp(trav->node->ele.internalNode->label, "WHILE") ||
             !strcmp(trav->node->ele.internalNode->label, "SWITCH"))
             {
+                IRcode *scopeStart = (IRcode*)malloc(sizeof(IRcode));
+                scopeStart->ele = (quad*)malloc(sizeof(quad));
+                scopeStart->next = NULL;
+                strcpy(scopeStart->ele->op,"SCOPESTART");
+                initQuad(scopeStart->ele,"\0","\0","\0");
+                scopeStart->ele->tag1 = NONE;
+
+                IRcode *scopeEnd = (IRcode*)malloc(sizeof(IRcode));
+                scopeEnd->ele = (quad*)malloc(sizeof(IRcode));
+                scopeEnd->next = NULL;
+                strcpy(scopeEnd->ele->op,"SCOPEEND");
+                initQuad(scopeEnd->ele,"\0","\0","\0");
+                scopeEnd->ele->tag1 = NONE;
+                
                 newNode = (tableStackEle *)malloc(sizeof(tableStackEle));
                 newNode->ele = st;
                 newNode->next = NULL;
@@ -1743,10 +1749,10 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
                 "if\0");
 
                 if(!strcmp(node->ele.data.arr.upperIndex->type, "NUM"))
-                    assignCode->ele->tag2 = NUM;
+                    ifcode->ele->tag2 = NUM;
                 else
-                    assignCode->ele->tag2 = ID;    
-                assignCode->ele->tag1 = ID;
+                    ifcode->ele->tag2 = ID;    
+                ifcode->ele->tag1 = ID;
 
                 //Code for goto label 2
                 IRcode *goto2 = (IRcode *)malloc(sizeof(IRcode));
@@ -1946,11 +1952,11 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
             node->ele.data.arr.upperIndex->lexeme,
             "if\0");
 
-            assignCode->ele->tag1 = ID;
+            ifcode->ele->tag1 = ID;
             if(!strcmp(node->ele.data.arr.upperIndex->type, "NUM"))
-                assignCode->ele->tag2 = NUM;
+                ifcode->ele->tag2 = NUM;
             else
-                assignCode->ele->tag2 = ID;
+                ifcode->ele->tag2 = ID;
 
             //Code for goto label 2
             IRcode *goto2 = (IRcode *)malloc(sizeof(IRcode));
@@ -2011,8 +2017,8 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
             strcpy(incr->ele->op, "+\0");
             initQuad(incr->ele, assignCode->ele->result, "1\0",
             assignCode->ele->result);
-            assignCode->ele->tag1 = ID;
-            assignCode->ele->tag2 = NUM;
+            incr->ele->tag1 = ID;
+            incr->ele->tag2 = NUM;
             
             //Code for scanf
             IRcode *scan = (IRcode *)malloc(sizeof(IRcode));
