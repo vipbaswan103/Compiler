@@ -17,7 +17,7 @@ symbolTableNode *searchScopeIRcode(tableStack *tbStack, char *key)
     tableStackEle *temp = NULL;
     
     //its not the scope of module declarations and I did not find anything, put it on the other stack
-    while((ret = sym_hash_find(key, &(tbStack->top->ele->hashtb), 0, NULL)) == NULL)
+    while(tbStack->size > 0 && (ret = sym_hash_find(key, &(tbStack->top->ele->hashtb), 0, NULL)) == NULL)
     {
         temp = sympop(tbStack);
         sympush(tempStack, temp);
@@ -34,8 +34,8 @@ symbolTableNode *searchScopeIRcode(tableStack *tbStack, char *key)
 void pre_process(FILE * fp)
 {
     //fprintf(fp,"extern printf;\n");
-    
-    fprintf(fp,"SECTION .data;\n");
+    fprintf(fp,"extern printf \n extern scanf\n");
+    fprintf(fp,"SECTION .data\n");
     fprintf(fp,"\tprintmessage: db \"The number is: %%d\", 10, 0\n");
     fprintf(fp,"\tscanmessage: db \"Enter the number:\", 0\n");
     fprintf(fp,"\t_booleanMem: db 1d\n");
@@ -49,7 +49,7 @@ void pre_process(FILE * fp)
     fprintf(fp,"\t_true: dw 1d\n");
     fprintf(fp,"\t_false: dw 0d\n");
     fprintf(fp,"\t_arrayInputString: db \"Input: Enter %%d array elements of %%s type for range %%d to %%d\", 10, 0\n\n");
-    fprintf(fp,"SECTION .txt\n\t GLOBAL main \n\t extern printf \n\t extern scanf \n");
+    fprintf(fp,"SECTION .text\n\t global main\n");
 
 }
 
@@ -73,7 +73,7 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT, FILE * 
     // keep going till the end of the loop
     while(trav != NULL)
     {
-        if(!strcmp(trav->ele->op,"SCOPESTARTMODULE"))
+        if(!strcmp(trav->ele->op,"SCOPESTARTMODULE") || !strcmp(trav->ele->op,"SCOPESTARTDRIVER"))
         {
             newNode = (tableStackEle *)malloc(sizeof(tableStackEle));
             newNode->ele = tmp;
@@ -103,6 +103,15 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT, FILE * 
         {
             sympop(tbStack);
             sympop(tbStack);
+            return trav;
+        }
+        else if(!strcmp(trav->ele->op,"SCOPEENDDRIVER"))
+        {
+            sympop(tbStack);
+            sympop(tbStack);
+            fprintf(fp,"\tMOV EBX, 0\n");
+            fprintf(fp,"\tMOV EAX, 1\n");
+            fprintf(fp,"\tINT 80h\n");
             return trav;
         }
         else if(!strcmp(trav->ele->op,"SCOPEEND"))
@@ -1116,17 +1125,22 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT, FILE * 
             if(!strcmp(var->ele.data.id.type, "INTEGER"))
             {
                 // _integerMem dw ?
-                fprintf(fp,"\tPUSH _integerMem\n");
-                fprintf(fp,"\tPUSH _integerMsg\n");
-                fprintf(fp,"\tCALL scanf\n");
-                fprintf(fp,"\tMOV AX, [_integerMem]\n");
-
                 if(var->isParameter == 0)
                     fprintf(fp,"\tMOV [EBP-8-%d], AX\n", var->offset);
                 else
                     fprintf(fp,"\tMOV [EBP+%d], AX\n", var->offset);
+
+                fprintf(fp, "\tMOV ESP, EBP\n");
+                fprintf(fp, "\tPOP EBP\n");
                 
+                fprintf(fp,"\tPUSH dword dword _integerMem\n");
+                fprintf(fp,"\tPUSH dword dword _integerMsg\n");
+                fprintf(fp,"\tCALL scanf\n");
+                fprintf(fp,"\tMOV AX, [_integerMem]\n");
                 fprintf(fp,"\tADD ESP, 8d\n");
+                
+                fprintf(fp,"\tMOV ESP, EBP\n");
+                fprintf(fp,"\tPOP EBP\n");
             }
             else if(!strcmp(var->ele.data.id.type, "REAL"))
             {
@@ -1134,17 +1148,22 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT, FILE * 
             }
             else if(!strcmp(var->ele.data.id.type, "BOOL"))
             {
-                fprintf(fp,"\tPUSH _booleanMem\n");
-                fprintf(fp,"\tPUSH _booleanMsg\n");
-                fprintf(fp,"\tCALL scanf\n");
-                fprintf(fp,"\tMOV AL, [_booleanMem]\n");
-                
                 if(var->isParameter==0)
                     fprintf(fp,"\tMOV [EBP-8-%d], AL\n", var->offset);
                 else
                     fprintf(fp,"\tMOV [EBP+%d], AL\n", var->offset);
                 
+                fprintf(fp, "\tPUSH EBP\n");
+                fprintf(fp, "\tMOV EBP, ESP\n");
+        
+                fprintf(fp,"\tPUSH dword _booleanMem\n");
+                fprintf(fp,"\tPUSH dword _booleanMsg\n");
+                fprintf(fp,"\tCALL scanf\n");
+                fprintf(fp,"\tMOV AL, [_booleanMem]\n");
                 fprintf(fp,"\tADD ESP, 8d\n");
+
+                fprintf(fp,"\tMOV ESP, EBP\n");
+                fprintf(fp,"\tPOP EBP\n");
             }
         }
         else if(!strcmp(trav->ele->op, "scanf_array"))
@@ -1154,16 +1173,21 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT, FILE * 
             if(!strcmp(var->ele.data.id.type, "INTEGER"))
             {
                 // _integerMem dw ?
-                fprintf(fp,"\tPUSH _integerMem\n");
-                fprintf(fp,"\tCALL scanf\n");
-                fprintf(fp,"\tMOV AX, [_integerMem]\n");
-                
                 if(var->isParameter == 0)
                     fprintf(fp,"\tMOV [EBP-8-%d], AX\n", var->offset);
                 else
                     fprintf(fp,"\tMOV [EBP+%d], AX\n", var->offset);
                     
+                fprintf(fp, "\tMOV ESP, EBP\n");
+                fprintf(fp, "\tPOP EBP\n");
+                
+                fprintf(fp,"\tPUSH dword _integerMem\n");
+                fprintf(fp,"\tCALL scanf\n");
+                fprintf(fp,"\tMOV AX, [_integerMem]\n");
                 fprintf(fp,"\tADD ESP, 4d\n");
+                
+                fprintf(fp,"\tMOV ESP, EBP\n");
+                fprintf(fp,"\tPOP EBP\n");
             }
             else if(!strcmp(var->ele.data.id.type, "REAL"))
             {
@@ -1171,40 +1195,57 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT, FILE * 
             }
             else if(!strcmp(var->ele.data.id.type, "BOOL"))
             {
-                fprintf(fp,"\tPUSH _booleanMem\n");
-                fprintf(fp,"\tCALL scanf\n");
-                fprintf(fp,"\tMOV AL, [_booleanMem]\n");
-
+                
                 if(var->isParameter == 0)
                     fprintf(fp,"\tMOV [EBP-8-%d], AL\n", var->offset);
                 else
                     fprintf(fp,"\tMOV [EBP+%d], AL\n", var->offset);
-                    
+
+                fprintf(fp, "\tPUSH EBP\n");
+                fprintf(fp, "\tMOV EBP, ESP\n");
+
+                fprintf(fp,"\tPUSH dword _booleanMem\n");
+                fprintf(fp,"\tCALL scanf\n");
+                fprintf(fp,"\tMOV AL, [_booleanMem]\n");
                 fprintf(fp,"\tADD ESP, 4d\n");
+                
+                fprintf(fp,"\tMOV ESP, EBP\n");
+                fprintf(fp,"\tPOP EBP\n");
             }
         }
-        else if(!strcmp(trav->ele->op, "fprintf") || !strcmp(trav->ele->op, "fprintf_array"))
+        else if(!strcmp(trav->ele->op, "printf") || !strcmp(trav->ele->op, "printf_array"))
         {
             //print (A)
             // Output : 2 3 4 5
             //print (x)
             // Output : x
 
-            if(!strcmp(trav->ele->op, "fprintf"))
-                fprintf(fp,"\tPUSH _output\n");
-
+            if(!strcmp(trav->ele->op, "printf"))
+            {
+                //Output:
+                fprintf(fp, "\tPUSH EBP\n");
+                fprintf(fp, "\tMOV EBP, ESP\n");
+                fprintf(fp, "\tPUSH dword _output\n");
+                fprintf(fp, "\tCALL printf\n");
+                fprintf(fp, "\tADD ESP, 4d\n");
+                fprintf(fp, "\tMOV ESP, EBP\n");
+                fprintf(fp, "\tPOP EBP\n");
+            }
             if(trav->ele->tag1 == NUM)
             {
                 //fprintf(fp,"%d",);
+
+                fprintf(fp, "\tPUSH EBP\n");
+                fprintf(fp, "\tMOV EBP, ESP\n");
+
                 fprintf(fp,"\tMOV EAX, %sd\n", trav->ele->arg1);
                 fprintf(fp,"\tPUSH EAX\n");
-                fprintf(fp,"\tPUSH _percentD\n");
-                fprintf(fp,"\tCALL fprintf\n");
-
-                if(!strcmp(trav->ele->op, "fprintf"))
-                    fprintf(fp,"\tADD ESP, 10d\n");
-                else
-                    fprintf(fp,"\tADD ESP, 6d\n");
+                fprintf(fp,"\tPUSH dword _percentD\n");
+                fprintf(fp,"\tCALL printf\n");
+                
+                fprintf(fp,"\tADD ESP, 8d\n");
+                fprintf(fp, "\tMOV ESP, EBP\n");
+                fprintf(fp, "\tPOP EBP\n");
             }
             else if(trav->ele->tag1 == RNUM)
             {
@@ -1212,18 +1253,19 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT, FILE * 
             }
             else if(trav->ele->tag1 == BOOL)
             {
+                fprintf(fp, "\tPUSH EBP\n");
+                fprintf(fp, "\tMOV EBP, ESP\n"); 
+
                 if(!strcmp(trav->ele->arg1, "true"))
-                    fprintf(fp,"\tPUSH _true\n");
+                    fprintf(fp,"\tPUSH dword _true\n");
                 else
-                    fprintf(fp,"\tPUSH _false\n");
+                    fprintf(fp,"\tPUSH dword _false\n");
+                fprintf(fp,"\tPUSH dword _percentS\n");
+                fprintf(fp,"\tCALL printf\n");
+                fprintf(fp,"\tADD ESP, 8d\n");
 
-                fprintf(fp,"\tPUSH _percentS\n");
-                fprintf(fp,"\tCALL fprintf\n");
-
-                if(!strcmp(trav->ele->op, "fprintf"))
-                    fprintf(fp,"\tADD ESP, 12d\n");
-                else
-                    fprintf(fp,"\tADD ESP, 8d\n");
+                fprintf(fp, "\tMOV ESP, EBP\n");
+                fprintf(fp, "\tPOP EBP\n");
             }
             else
             {
@@ -1231,20 +1273,21 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT, FILE * 
                 if(!strcmp(id->ele.data.id.type, "INTEGER"))
                 {
                     //fprintf(fp,"%d", );
-
                     if(id->isParameter==0)
                         fprintf(fp,"\tMOV AX, [EBP-8-%d]\n", id->offset);
                     else
                         fprintf(fp,"\tMOV AX, [EBP+%d]\n", id->offset);
                     
+                    fprintf(fp, "\tPUSH EBP\n");
+                    fprintf(fp, "\tMOV EBP, ESP\n");
                     
                     fprintf(fp,"\tPUSH EAX\n");
-                    fprintf(fp,"\tPUSH _percentD\n");
-                    fprintf(fp,"\tCALL fprintf\n");
-                    if(!strcmp(trav->ele->op, "fprintf"))
-                        fprintf(fp,"\tADD ESP, 10d \n");
-                    else
-                        fprintf(fp,"\tADD ESP, 6d\n");
+                    fprintf(fp,"\tPUSH dword _percentD\n");
+                    fprintf(fp,"\tCALL printf\n");
+                    fprintf(fp,"\tADD ESP, 8d \n");
+
+                    fprintf(fp, "\tMOV ESP, EBP\n");
+                    fprintf(fp, "\tPOP EBP\n");
                 }
                 else if(!strcmp(id->ele.data.id.type, "REAL"))
                 {
@@ -1258,35 +1301,51 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT, FILE * 
                         fprintf(fp,"\tMOV AL, [EBP-8-%d]\n", id->offset);
                     else
                         fprintf(fp,"\tMOV AL, [EBP+%d]\n", id->offset);
-
+                    
                     char label1[21], label2[21];
                     getLabel(label1);
                     getLabel(label2);
                     fprintf(fp,"\tCMP AL, 1d\n");
                     fprintf(fp,"\tJE %s\n", label1);
                     fprintf(fp,"\tJMP %s\n", label2);
-                    fprintf(fp,"\t\t%s: PUSH _true\n", label1);
-                    fprintf(fp,"\t\t%s: PUSH _false\n", label2);
-                    fprintf(fp,"\tPUSH _percentS\n");
-                    fprintf(fp,"\tCALL fprintf\n");
-                    if(!strcmp(trav->ele->op, "fprintf"))
-                        fprintf(fp,"\tADD ESP, 12d\n");
-                    else
-                        fprintf(fp,"\tADD ESP, 8d\n");
+
+                    fprintf(fp, "\tPUSH EBP\n");
+                    fprintf(fp, "\tMOV EBP, ESP\n");
+                    
+                    fprintf(fp,"\t\t%s: PUSH dword _true\n", label1);
+                    fprintf(fp,"\t\t%s: PUSH dword _false\n", label2);
+                    fprintf(fp,"\tPUSH dword _percentS\n");
+                    fprintf(fp,"\tCALL printf\n");
+                    fprintf(fp,"\tADD ESP, 8d\n");
+                    
+                    fprintf(fp, "\tMOV ESP, EBP\n");
+                    fprintf(fp, "\tPOP EBP\n");
                 }       
             }
         }
-        else if(!strcmp(trav->ele->op, "fprintf_output"))
+        else if(!strcmp(trav->ele->op, "printf_output"))
         {
-            fprintf(fp,"\tPUSH _output\n");
-            fprintf(fp,"\tCALL fprintf\n");
+            fprintf(fp, "\tPUSH EBP\n");
+            fprintf(fp, "\tMOV EBP, ESP\n");
+
+            fprintf(fp,"\tPUSH dword _output\n");
+            fprintf(fp,"\tCALL printf\n");
             fprintf(fp,"\tADD ESP, 4d\n");
+
+            fprintf(fp, "\tMOV ESP, EBP\n");
+            fprintf(fp, "\tPOP EBP\n");
         }
-        else if(!strcmp(trav->ele->op, "fprintf_output_end"))
+        else if(!strcmp(trav->ele->op, "printf_output_end"))
         {
-            fprintf(fp,"\tPUSH _newline\n");
-            fprintf(fp,"\tCALL fprintf\n");
+            fprintf(fp, "\tPUSH EBP\n");
+            fprintf(fp, "\tMOV EBP, ESP\n");
+
+            fprintf(fp,"\tPUSH dword _newline\n");
+            fprintf(fp,"\tCALL printf\n");
             fprintf(fp,"\tADD ESP, 4d\n");
+
+            fprintf(fp, "\tMOV ESP, EBP\n");
+            fprintf(fp, "\tPOP EBP\n");
         }
         else if(!strcmp(trav->ele->op, "scanf_output"))
         {
@@ -1322,32 +1381,45 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT, FILE * 
                     fprintf(fp,"\tMOV AX, [EBP+%d]\n", upper->offset);
             }
 
+            fprintf(fp, "\tMOV ESP, EBP\n");
+            fprintf(fp, "\tPOP EBP\n");
+
             fprintf(fp,"\tPUSH EAX\n");
             fprintf(fp,"\tPUSH EBX\n");
-
             if(!strcmp(arr->ele.data.arr.type, "INTEGER"))
-                fprintf(fp,"\tPUSH _integerType\n");
+                fprintf(fp,"\tPUSH dword _integerType\n");
             else if(!strcmp(arr->ele.data.arr.type, "REAL"))
-                fprintf(fp,"\tPUSH _realType\n");
+                fprintf(fp,"\tPUSH dword _realType\n");
             else if(!strcmp(arr->ele.data.arr.type, "BOOLEAN"))
-                fprintf(fp,"\tPUSH _booleanType\n");
-        
+                fprintf(fp,"\tPUSH dword _booleanType\n");
             fprintf(fp,"\tINC AX\n");
             fprintf(fp,"\tSUB AX, BX\n");
             fprintf(fp,"\tPUSH EAX\n");
-            fprintf(fp,"\tPUSH _arrayInputString\n");
-            fprintf(fp,"\tCALL fprintf\n");
-            fprintf(fp,"\tMOV ESP, 14d\n");
+            fprintf(fp,"\tPUSH dword _arrayInputString\n");
+            fprintf(fp,"\tCALL printf\n");
+            fprintf(fp,"\tMOV ESP, 20d\n");
+
+            fprintf(fp, "\tMOV ESP, EBP\n");
+            fprintf(fp, "\tPOP EBP\n");
         }
         else if(!strcmp(trav->ele->op,":"))
         {
             fprintf(fp,"\n%s:\n",trav->ele->arg1);
-
             if(!strcmp(trav->ele->arg1, "main"))
             {
-                fprintf(fp,"\tMOV ESP, EBP\n");
+                fprintf(fp,"\tMOV EBP, ESP\n");
                 fprintf(fp,"\tPUSH EAX\n");
                 fprintf(fp,"\tPUSH EAX\n");
+                fprintf(fp, "\tSUB ESP, %dd\n", symT->currentOffset);
+            }
+            else
+            {
+                symbolTableNode * func = searchScopeIRcode(tbStack, trav->ele->arg1);
+                
+                if(func != NULL && func->ele.tag == Module)
+                {
+                    fprintf(fp, "\tSUB ESP, %dd\n", symT->currentOffset);
+                }
             }
         }
 
@@ -1384,6 +1456,7 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT, FILE * 
             {
                 fprintf(fp,"\tXOR EAX, EAX\n");
                 fprintf(fp,"\tXOR EBX, EBX\n");
+                
                 if(var->ele.data.id.type == "INTEGER")
                 {
                     // fprintf(fp,"MOV AX, 2d\n");
@@ -1431,10 +1504,14 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT, FILE * 
             // out x -> pop and populate
             // out y
 
-            fprintf(fp,"\tPUSH EBP\n");
-            // fprintf(fp,"MOV ECX,EBP\n");
-            fprintf(fp,"\tMOV EBP,ESP\n");
-            // fprintf(fp,"PUSH ECX\n");
+            // fprintf(fp,"\tPUSH EBP\n");
+            
+            //EIP
+            //EBP
+            //<-EBP
+            fprintf(fp,"\tMOV ECX,EBP\n"); 
+            fprintf(fp,"\tMOV EBP,ESP\n"); 
+            fprintf(fp,"\tPUSH ECX\n");
             fprintf(fp,"\tCALL %s\n",trav->ele->arg1);
         }
         else if(!strcmp(trav->ele->op,"inp"))
@@ -1497,14 +1574,17 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT, FILE * 
             // ....
             // ....
             // .... 
-            fprintf(fp,"\tMOV EAX, EBP\n");
-            fprintf(fp,"\tMOV ESP, [EBP-8]\n");
-            fprintf(fp,"\tMOV EBP, [EBP]\n");
+            // fprintf(fp,"\tMOV EAX, EBP\n");
+
+            fprintf(fp,"\tMOV ESP, EBP\n");
+            fprintf(fp,"\tSUB ESP, 8d\n");
+            // fprintf(fp,"\tMOV EBP, [EBP]\n");
             fprintf(fp,"\tRET\n");
         }
         else if(!strcmp(trav->ele->op, "trigger"))
         {
-            fprintf(fp,"\tMOV ESP, EAX\n");
+            fprintf(fp, "\tPOP EBP\n");
+            // fprintf(fp,"\tMOV ESP, EAX\n");
         }
         trav = trav->next;
     }

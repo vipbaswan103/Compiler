@@ -976,13 +976,13 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
         IRcode *scopeStart = (IRcode*)malloc(sizeof(IRcode));
         scopeStart->ele = (quad*)malloc(sizeof(quad));
         scopeStart->next = NULL;
-        strcpy(scopeStart->ele->op,"SCOPESTARTMODULE");
+        strcpy(scopeStart->ele->op,"SCOPESTARTDRIVER");
         initQuad(scopeStart->ele,"\0","\0","\0");
 
         IRcode *scopeEnd = (IRcode*)malloc(sizeof(IRcode));
         scopeEnd->ele = (quad*)malloc(sizeof(IRcode));
         scopeEnd->next = NULL;
-        strcpy(scopeEnd->ele->op,"SCOPEENDMODULE");
+        strcpy(scopeEnd->ele->op,"SCOPEENDDRIVER");
         initQuad(scopeEnd->ele,"\0","\0","\0");
 
         tableStackEle *newTable = (tableStackEle *)malloc(sizeof(tableStackEle));
@@ -1033,7 +1033,7 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
         mergeCode(&(scopeStart), finaldef);
         mergeCode(&(scopeStart), body->code);
         mergeCode(&(scopeStart), labelCode);
-        mergeCode(&(scopeStart), ret);
+        // mergeCode(&(scopeStart), ret);
         mergeCode(&(scopeStart), scopeEnd);
         
         body->code = scopeStart;
