@@ -8,6 +8,5 @@
 
 symbolTableNode *searchScopeIRcode(tableStack *tbStack, char *key);
 IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT);
-
-
+void pre_process();
 #endif

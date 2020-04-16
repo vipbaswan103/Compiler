@@ -4,7 +4,7 @@
 #define STR_SIZE 51
 extern int tmpNum;
 extern int labelNum;
-
+extern int currentOffset;
 typedef enum {ID = 4, NUM = 3, RNUM = 2, BOOL = 1, NONE = 0} argtype;
 
 typedef struct temporary

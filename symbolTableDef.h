@@ -12,7 +12,7 @@
 #define INTEGER_SIZE 2
 #define REAL_SIZE 4
 #define BOOLEAN_SIZE 1
-#define POINTER_SIZE 8
+#define POINTER_SIZE 4
 
 #include<stdio.h>
 #include<stdlib.h>
