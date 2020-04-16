@@ -817,6 +817,7 @@ void formulation(astNode *astRoot, symbolTable *current)
             if(ret!=NULL) free(ret);
         }
         
+        moduleST->currentOffset = currentOffset;
         currentOffset = 0;
         formulation(astRoot->child, moduleST);
         formulation(astRoot->child->sibling, moduleST);
@@ -845,16 +846,16 @@ void formulation(astNode *astRoot, symbolTable *current)
         sprintf(str, "%s",current->symLexeme);
         
         symbolTable* moduledefST = initializeSymbolTable(str,astRoot->node->ele.internalNode->lineNumStart, astRoot->node->ele.internalNode->lineNumEnd);
-
+        currentOffset = 0;
         //call the formulation on all children one by one
-        //children are pararllel statements
+        //children are parallel statements
         astNode* trav = astRoot->child;
         while(trav!=NULL)
         {
             formulation(trav,moduledefST);
             trav=trav->sibling;
         }
-
+        moduledefST->currentOffset = currentOffset;
         //linking of symbols tables
         symbolTable *tmp = current->child;
         if(tmp == NULL)
@@ -879,7 +880,6 @@ void formulation(astNode *astRoot, symbolTable *current)
         
         currentOffset = 0;
         formulation(astRoot->child,driverST);
-
         //linking of symbols tables
         symbolTable *tmp = current->child;
         if(tmp == NULL)
@@ -894,6 +894,7 @@ void formulation(astNode *astRoot, symbolTable *current)
             }
             tmp->sibling = driverST;
         }   
+
         currentOffset = 0; 
     }
     else if(!strcmp(astRoot->node->ele.internalNode->label, "WHILE"))

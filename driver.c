@@ -193,7 +193,7 @@ int main(int argc, char * argv[])
                     tbStack->bottom = NULL;
                     intermed * ircode = generateIRCode(ast, NULL, tbStack);
                     printCode(ircode->code);
-                    // printSymbolTable(symbolTableRoot);
+                    printSymbolTable(symbolTableRoot);
                     tbStack->top = NULL;
                     tbStack->size = 0;
                     tbStack->bottom = NULL;
@@ -202,9 +202,7 @@ int main(int argc, char * argv[])
                     newNode->next = NULL;
                     sympush(tbStack, newNode);
                     symbolTable * symT = symbolTableRoot;
-                    printf("\n\n--------------------------- \n");
-                    printf("NASM CODE\n");
-                    printf("--------------------------- \n");
+                    pre_process();
                     nasmRecur(ircode->code, tbStack, symT);
                     // freeing memory not needed anymore
                     // freeprasetree(parseTree);

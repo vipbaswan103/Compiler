@@ -6,7 +6,7 @@
 
 int tmpNum = 0;
 int labelNum = 0;
-
+int currentOffset = 0;
 void getOp(char * name, char * op)
 {
     if(!strcmp(name,"PLUS"))
@@ -64,8 +64,8 @@ void getTemporary(temporary * tmp, tableStack *tbStack, int temptype)
         strcpy(newNode->ele.data.id.type, "BOOLEAN\0");
         strcpy(tmp->type, "BOOLEAN\0");
     }
-    newNode->offset = tbStack->top->ele->currentOffset;
-    tbStack->top->ele->currentOffset += newNode->width;
+    newNode->offset = currentOffset;
+    currentOffset += newNode->width;
     
     newNode->lineNum  = -1;
     newNode->aux = -1;
@@ -113,7 +113,7 @@ void mergeCode(IRcode ** code1, IRcode * code2)
     IRcode * trav = *code1;
     while(trav->next != NULL)
     {
-        printf("%s %s %s %s\n", trav->ele->result, trav->ele->arg1, trav->ele->op, trav->ele->arg2);
+        // printf("%s %s %s %s\n", trav->ele->result, trav->ele->arg1, trav->ele->op, trav->ele->arg2);
         trav = trav->next;
     }
     trav->next = code2;
@@ -913,13 +913,13 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
         // module is one level inside (remember)
         // there is modules1 and modules2, inside which there is modules
         // inside that is moduledef 
+        currentOffset = tbStack->top->ele->currentOffset;
         tableStackEle *newTable = (tableStackEle *)malloc(sizeof(tableStackEle));
         newTable->ele = tbStack->top->ele->child;
         newTable->next = NULL;
 
         // Push the moduleDef's symbol table on the stack
         sympush(tbStack, newTable);
-
         // finalDef is just a label for the module
         IRcode* finaldef = (IRcode *)malloc(sizeof(IRcode)); 
         finaldef->next=NULL;   
@@ -959,9 +959,9 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
         mergeCode(&(finaldef), ret);
         
         body->code = finaldef;
-        
-        sympop(tbStack);
 
+        tbStack->top->ele->currentOffset = currentOffset;
+        sympop(tbStack);
         return body;
     }
     else if(!strcmp(currentNode->node->ele.internalNode->label, "DRIVER"))
@@ -1571,6 +1571,8 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
     {
         // Statements as Children - Sibling lists
         
+        currentOffset = tbStack->top->ele->currentOffset;
+
         quad* stmtsLabel = (quad *)malloc(sizeof(quad));
         strcpy(stmtsLabel->op, "\0");
         initQuad(stmtsLabel, labels->arg1, "\0", "\0");
@@ -1658,6 +1660,7 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
 
         intermed * final = (intermed *)malloc(sizeof(intermed));
         final->code = stmtsCode->code;
+        tbStack->top->ele->currentOffset = currentOffset;
         sympop(tbStack);
         return final;
     }
@@ -1827,16 +1830,30 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
                 
                 assignEle->ele->tag1 = ID;
                 assignEle->ele->tag2 = ID;
+                
+                //Code for
+                IRcode *pr = (IRcode *)malloc(sizeof(IRcode));
+                pr->ele = (quad *)malloc(sizeof(quad));
+                pr->next = NULL;
 
+                strcpy(pr->ele->op, "print_output\0");
+                
                 //Code for printf, print(_t0)
                 IRcode *print = (IRcode *)malloc(sizeof(IRcode));
                 print->ele = (quad *)malloc(sizeof(quad));
                 print->next = NULL;
 
-                strcpy(print->ele->op, "printf\0");
+                strcpy(print->ele->op, "printf_array\0");
                 initQuad(print->ele, assignEle->ele->result, "\0","\0");
                 print->ele->tag1 = ID;
                 print->ele->tag2 = NONE;
+
+                //Code for
+                IRcode *pr_end = (IRcode *)malloc(sizeof(IRcode));
+                pr_end->ele = (quad *)malloc(sizeof(quad));
+                pr_end->next = NULL;
+
+                strcpy(pr_end->ele->op, "print_output_end\0");
 
                 //Code for incrementation
                 IRcode *incr = (IRcode *)malloc(sizeof(IRcode));
@@ -1849,6 +1866,7 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
                 incr->ele->tag1 = ID;
                 incr->ele->tag2 = NUM;
             
+                mergeCode(&(final->code), pr);
                 mergeCode(&(final->code), assignCode);
                 mergeCode(&(final->code), label1);
                 mergeCode(&(final->code), ifcode);
@@ -1860,6 +1878,7 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
                 mergeCode(&(final->code), incr);
                 mergeCode(&(final->code), goto1);
                 mergeCode(&(final->code), label3);
+                mergeCode(&(final->code), pr_end);
                 return final;
             }
             else
@@ -2017,6 +2036,19 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
             incr->ele->tag1 = ID;
             incr->ele->tag2 = NUM;
             
+            //Code for scanf start
+            IRcode *sc = (IRcode *)malloc(sizeof(IRcode));
+            sc->ele = (quad *)malloc(sizeof(quad));
+            sc->next = NULL;
+            strcpy(sc->ele->op, "scanf_output\0");
+            strcpy(sc->ele->arg1, currentNode->child->node->ele.leafNode->lexeme);
+
+            //Code for scanf end
+            IRcode *sc_end = (IRcode *)malloc(sizeof(IRcode));
+            sc_end->ele = (quad *)malloc(sizeof(quad));
+            sc_end->next = NULL;
+            strcpy(sc_end->ele->op, "scanf_output_end\0");
+
             //Code for scanf
             IRcode *scan = (IRcode *)malloc(sizeof(IRcode));
             scan->ele = (quad *)malloc(sizeof(quad));
@@ -2033,7 +2065,7 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
             temporary tmp;
             getTemporary(&tmp, tbStack, tempType);
             initQuad(scan->ele, tmp.name, "\0", "\0");
-            strcpy(scan->ele->op, "scanf\0");
+            strcpy(scan->ele->op, "scanf_array\0");
 
             scan->ele->tag1 = ID;
             scan->ele->tag2 = NONE;
@@ -2050,7 +2082,7 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
             assignEle->ele->tag1 = ID;
             assignEle->ele->tag2 = ID;
 
-            
+            mergeCode(&(final->code), sc);
             mergeCode(&(final->code), assignCode); // assign the lower index
             mergeCode(&(final->code), label1); // start of the condition/loop
             mergeCode(&(final->code), ifcode); // check the condition
@@ -2062,7 +2094,7 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
             mergeCode(&(final->code), incr);
             mergeCode(&(final->code), goto1);
             mergeCode(&(final->code), label3);
-
+            mergeCode(&(final->code), sc_end);
             return final;
         }
         else
@@ -2348,13 +2380,39 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
     }
     else if(!strcmp(currentNode->node->ele.internalNode->label, "MODULECALL"))
     {
-        // set trav to be id_list for input to the function
-        astNode * trav = currentNode->child->child;
-
+        astNode * trav = NULL;
         intermed * final = (intermed *)malloc(sizeof(intermed));
         final->code = NULL;
 
         int paramCount = 0;
+
+        trav = currentNode->child->sibling->sibling->child;
+        IRcode * inp_populate = NULL;
+        while(trav != NULL)
+        {
+            IRcode * param = (IRcode *)malloc(sizeof(IRcode));
+            param->ele = (quad *)malloc(sizeof(quad));
+            param->next = NULL;
+            strcpy(param->ele->op, "param\0");
+            initQuad(param->ele, trav->node->ele.leafNode->lexeme, "\0", "\0");
+
+            mergeCode(&param, final->code);
+            final->code = param;
+
+            IRcode * param2 = (IRcode *)malloc(sizeof(IRcode));
+            param2->ele = (quad *)malloc(sizeof(quad));
+            param2->next = NULL;
+            
+            strcpy(param2->ele->op, "inp\0");
+            initQuad(param2->ele, trav->node->ele.leafNode->lexeme, "\0", "\0");
+            mergeCode(&(inp_populate), param2);
+            paramCount++;
+            trav = trav->sibling;
+        }
+
+        IRcode * out_populate = NULL;
+        // set trav to be id_list for input to the function
+        trav = currentNode->child->child;
         while(trav != NULL)
         {
             IRcode * param = (IRcode *)malloc(sizeof(IRcode));
@@ -2367,35 +2425,35 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
             // reverse order of param
             mergeCode(&param, final->code);
             final->code = param;
-            paramCount++;
-            trav = trav->sibling;
-        }
 
-        trav = currentNode->child->sibling->sibling->child;
-        while(trav != NULL)
-        {
-            IRcode * param = (IRcode *)malloc(sizeof(IRcode));
-            param->ele = (quad *)malloc(sizeof(quad));
-            param->next = NULL;
-            strcpy(param->ele->op, "param\0");
-            initQuad(param->ele, trav->node->ele.leafNode->lexeme, "\0", "\0");
-
-            mergeCode(&param, final->code);
-            final->code = param;
+            IRcode * param2 = (IRcode *)malloc(sizeof(IRcode));
+            param2->ele = (quad *)malloc(sizeof(quad));
+            param2->next = NULL;
+            
+            strcpy(param2->ele->op, "out\0");
+            initQuad(param2->ele, trav->node->ele.leafNode->lexeme, "\0", "\0");
+            
+            mergeCode(&(out_populate), param2);
             paramCount++;
             trav = trav->sibling;
         }
         
+        IRcode * trigger = (IRcode *)malloc(sizeof(IRcode));
+        trigger->ele = (quad *)malloc(sizeof(quad));
+        trigger->next = NULL;
+        strcpy(trigger->ele->op, "trigger\0");
         // mergeCode(&(final->code), tmpCode);
 
         IRcode * call = (IRcode *)malloc(sizeof(IRcode));
         call->ele = (quad *)malloc(sizeof(quad));
         call->next = NULL;
-        strcpy(call->ele->op, "\0");
-        initQuad(call->ele, currentNode->child->sibling->node->ele.leafNode->lexeme, "\0", "call\0");
+        strcpy(call->ele->op, "call\0");
+        initQuad(call->ele, currentNode->child->sibling->node->ele.leafNode->lexeme, "\0", "\0");
         sprintf(call->ele->arg2, "%d", paramCount);
-
         mergeCode(&(final->code), call);
+        mergeCode(&(final->code), trigger);
+        mergeCode(&(final->code), inp_populate);
+        mergeCode(&(final->code), out_populate);
         return final;
     }
 
