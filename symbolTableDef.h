@@ -110,6 +110,7 @@ typedef struct symbolTable{
     int lineNumEnd;
     hashSym hashtb;
     int currentOffset;
+    // int sizeActivationRecord;
     struct symbolTable *child;
     struct symbolTable *sibling;
 }symbolTable;
