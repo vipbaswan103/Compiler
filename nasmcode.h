@@ -7,6 +7,6 @@
 #include "semanticsDef.h"
 
 symbolTableNode *searchScopeIRcode(tableStack *tbStack, char *key);
-IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT);
-void pre_process();
+IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT, FILE *fp);
+void pre_process(FILE * fp);
 #endif
