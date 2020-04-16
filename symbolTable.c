@@ -336,6 +336,7 @@ void formulation(astNode *astRoot, symbolTable *current)
                     newNode->width = tmp * size + POINTER_SIZE;
                     currentOffset += newNode->width;
                 }
+                newNode->isParameter = 0;   //Its a local var, not an I/O parameter
                 newNode->next = NULL;
             }
             //Its an ID
@@ -355,9 +356,10 @@ void formulation(astNode *astRoot, symbolTable *current)
                 else if(!strcmp(type->node->ele.leafNode->type,"BOOLEAN"))
                     newNode->width = BOOLEAN_SIZE;
                     
-                newNode->next = NULL;
                 newNode->offset = currentOffset;
                 currentOffset += newNode->width;
+                newNode->isParameter = 0;   //Its a local var, not an I/O parameter
+                newNode->next = NULL;
             }
             symbolTableNode *ret = sym_hash_insert(newNode, &(current->hashtb));
             if(ret != NULL) //redeclaration of an ID within the same scope
@@ -453,6 +455,7 @@ void formulation(astNode *astRoot, symbolTable *current)
             newNode->ele.data.mod.outputcount = 0;
             newNode->ele.data.mod.inputList = NULL;
             newNode->ele.data.mod.outputList = NULL;
+            newNode->isParameter = 0;   //Its a module name, not a variable
             newNode->lineNum = trav->node->ele.leafNode->lineNum;
             newNode->next = NULL; 
 
@@ -523,12 +526,15 @@ void formulation(astNode *astRoot, symbolTable *current)
         // Child 3 = ret
         // Child 4 = modDef_node
 
+        //This newNode will be inserted in the Program (the root) symbol table
         symbolTableNode *newNode = (symbolTableNode*)malloc(sizeof(symbolTableNode));
         newNode->aux = 0;
         newNode->ele.tag = Module;
         newNode->ele.data.mod.lexeme = astRoot->child->node->ele.leafNode->lexeme;
         newNode->ele.data.mod.inputcount = 0;
         newNode->ele.data.mod.outputcount = 0;
+        newNode->isParameter = 1;   
+
         //head of the input list
         astNode *traveller = astRoot->child->sibling->child;
         while(traveller!=NULL)
@@ -553,12 +559,17 @@ void formulation(astNode *astRoot, symbolTable *current)
         //Put the variables in input list inside its hashTable
         traveller = astRoot->child->sibling->child;
         int i = 0;
+        int makeUnique = 1;
         while(traveller!=NULL)
         {
             symbolTableNode *node = (symbolTableNode*)malloc(sizeof(symbolTableNode));
             node->aux = 0;
             if(traveller->sibling->node->tag == Internal)
             {
+                //traveller->sibling is an internal node with label "ARRAY"
+                //Its children are:
+                    //1) RangeNode
+                    //2) BasicDataType Node
                 node->ele.tag = Array;
                 node->ele.data.arr.lexeme = traveller->node->ele.leafNode->lexeme;
                 node->ele.data.arr.type = traveller->sibling->child->sibling->node->ele.leafNode->type;
@@ -575,7 +586,6 @@ void formulation(astNode *astRoot, symbolTable *current)
 
                 node->lineNum = traveller->node->ele.leafNode->lineNum;
                 
-                
                 node->offset = currentOffset;
                 int tmp=0;
                 if(!strcmp(traveller->sibling->child->sibling->node->ele.leafNode->type,"INTEGER"))
@@ -585,26 +595,78 @@ void formulation(astNode *astRoot, symbolTable *current)
                 else if(!strcmp(traveller->sibling->child->sibling->node->ele.leafNode->type,"BOOLEAN"))
                     tmp = BOOLEAN_SIZE;
 
-               if( (!strcmp(node->ele.data.arr.lowerIndex->type,"ID")) 
-               || (!strcmp(node->ele.data.arr.upperIndex->type,"ID")) )
+                char * lexeme = (char *)malloc(sizeof(char)*11);
+                symbolTableNode *lowerIndexNode = (symbolTableNode*)malloc(sizeof(symbolTableNode));
+                lowerIndexNode->ele.tag = Identifier;
+
+                if(!strcmp(traveller->sibling->child->child->node->ele.leafNode->type, "NUM"))
+                {
+                    sprintf("%d_%d", traveller->sibling->child->child->node->ele.leafNode->lexeme, makeUnique);
+                    makeUnique++;
+                    lowerIndexNode->ele.data.id.lexeme = lexeme;
+                    lowerIndexNode->ele.data.id.value = traveller->sibling->child->child->node->ele.leafNode->value;
+                }
+                else
+                {
+                    lowerIndexNode->ele.data.id.lexeme = traveller->sibling->child->child->node->ele.leafNode->lexeme;
+                    lowerIndexNode->ele.data.id.value = traveller->sibling->child->child->node->ele.leafNode->value;
+                }
+                lowerIndexNode->ele.data.id.type = (char *)malloc(sizeof(char)*11);
+                strcpy(lowerIndexNode->ele.data.id.type, "INTEGER\0");
+                lowerIndexNode->aux = 0;
+                lowerIndexNode->lineNum = traveller->sibling->child->child->node->ele.leafNode->lineNum;
+                lowerIndexNode->next = NULL;
+
+                lexeme = (char *)malloc(sizeof(char)*11);
+                symbolTableNode *upperIndexNode = (symbolTableNode*)malloc(sizeof(symbolTableNode));
+                upperIndexNode->ele.tag = Identifier;
+                if(!strcmp(traveller->sibling->child->child->sibling->node->ele.leafNode->type, "NUM"))
+                {
+                    sprintf("%d_%d", traveller->sibling->child->child->sibling->node->ele.leafNode->lexeme, makeUnique);
+                    makeUnique++;
+                    lowerIndexNode->ele.data.id.lexeme = lexeme;
+                    lowerIndexNode->ele.data.id.value = traveller->sibling->child->child->sibling->node->ele.leafNode->value;
+                }
+                else
+                {
+                    upperIndexNode->ele.data.id.lexeme = traveller->sibling->child->child->sibling->node->ele.leafNode->lexeme;
+                    upperIndexNode->ele.data.id.value = traveller->sibling->child->child->sibling->node->ele.leafNode->value;
+                }
+                upperIndexNode->ele.data.id.type = (char *)malloc(sizeof(char)*11);
+                strcpy(upperIndexNode->ele.data.id.type, "INTEGER\0");
+                upperIndexNode->aux = 0;
+                upperIndexNode->lineNum = traveller->sibling->child->child->sibling->node->ele.leafNode->lineNum;
+                upperIndexNode->next = NULL;
+
+                if( (!strcmp(node->ele.data.arr.lowerIndex->type,"ID")) 
+                || (!strcmp(node->ele.data.arr.upperIndex->type,"ID")) )
                 {
                     //dynamic array
-                    node->width = POINTER_SIZE;
-                    node->offset = currentOffset;
-                    currentOffset += POINTER_SIZE;
                     node->ele.data.arr.isDynamic = 1;   
                 }
                 else    
-                {
+                {                   
                     //static array
                     node->ele.data.arr.isDynamic = 0;
-                    int size = *(int *)node->ele.data.arr.upperIndex->value - *(int*)node->ele.data.arr.lowerIndex->value + 1;
-                    node->offset = currentOffset;
-                    node->width = tmp * size + POINTER_SIZE;
-                    currentOffset += node->width;
                 }
+                node->offset = currentOffset;
+                node->width = POINTER_SIZE;
+                currentOffset += node->width;
 
+                lowerIndexNode->offset = currentOffset;
+                lowerIndexNode->width = INTEGER_SIZE;
+                currentOffset += lowerIndexNode->width;
+
+                upperIndexNode->offset = currentOffset;
+                upperIndexNode->width = INTEGER_SIZE;
+                currentOffset += upperIndexNode->width;
+
+                lowerIndexNode->isParameter = 2;
+                upperIndexNode->isParameter = 2;
+                node->isParameter = 1;
                 node->next = NULL;
+                sym_hash_insert(lowerIndexNode, &(moduleST->hashtb));
+                sym_hash_insert(upperIndexNode, &(moduleST->hashtb));
             }
             //Its an ID
             else
@@ -625,6 +687,7 @@ void formulation(astNode *astRoot, symbolTable *current)
                 node->next = NULL;
                 node->offset = currentOffset;
                 currentOffset += node->width;
+                node->isParameter = 1;
             }
             newNode->ele.data.mod.inputList[i] = node->ele;
             symbolTableNode *ret = sym_hash_insert(node, &(moduleST->hashtb));
@@ -689,6 +752,49 @@ void formulation(astNode *astRoot, symbolTable *current)
                 node->ele.data.arr.upperIndex->value = traveller->sibling->child->child->sibling->node->ele.leafNode->value;
 
                 node->lineNum = traveller->node->ele.leafNode->lineNum;
+                
+                char * lexeme = (char *)malloc(sizeof(char)*11);
+                symbolTableNode *lowerIndexNode = (symbolTableNode*)malloc(sizeof(symbolTableNode));
+                lowerIndexNode->ele.tag = Identifier;
+
+                if(!strcmp(traveller->sibling->child->child->node->ele.leafNode->type, "NUM"))
+                {
+                    sprintf("%d_%d", traveller->sibling->child->child->node->ele.leafNode->lexeme, makeUnique);
+                    makeUnique++;
+                    lowerIndexNode->ele.data.id.lexeme = lexeme;
+                    lowerIndexNode->ele.data.id.value = traveller->sibling->child->child->node->ele.leafNode->value;
+                }
+                else
+                {
+                    lowerIndexNode->ele.data.id.lexeme = traveller->sibling->child->child->node->ele.leafNode->lexeme;
+                    lowerIndexNode->ele.data.id.value = traveller->sibling->child->child->node->ele.leafNode->value;
+                }
+                lowerIndexNode->ele.data.id.type = (char *)malloc(sizeof(char)*11);
+                strcpy(lowerIndexNode->ele.data.id.type, "INTEGER\0");
+                lowerIndexNode->aux = 0;
+                lowerIndexNode->lineNum = traveller->sibling->child->child->node->ele.leafNode->lineNum;
+                lowerIndexNode->next = NULL;
+
+                lexeme = (char *)malloc(sizeof(char)*11);
+                symbolTableNode *upperIndexNode = (symbolTableNode*)malloc(sizeof(symbolTableNode));
+                upperIndexNode->ele.tag = Identifier;
+                if(!strcmp(traveller->sibling->child->child->sibling->node->ele.leafNode->type, "NUM"))
+                {
+                    sprintf("%d_%d", traveller->sibling->child->child->sibling->node->ele.leafNode->lexeme, makeUnique);
+                    makeUnique++;
+                    lowerIndexNode->ele.data.id.lexeme = lexeme;
+                    lowerIndexNode->ele.data.id.value = traveller->sibling->child->child->sibling->node->ele.leafNode->value;
+                }
+                else
+                {
+                    upperIndexNode->ele.data.id.lexeme = traveller->sibling->child->child->sibling->node->ele.leafNode->lexeme;
+                    upperIndexNode->ele.data.id.value = traveller->sibling->child->child->sibling->node->ele.leafNode->value;
+                }
+                upperIndexNode->ele.data.id.type = (char *)malloc(sizeof(char)*11);
+                strcpy(upperIndexNode->ele.data.id.type, "INTEGER\0");
+                upperIndexNode->aux = 0;
+                upperIndexNode->lineNum = traveller->sibling->child->child->sibling->node->ele.leafNode->lineNum;
+                upperIndexNode->next = NULL;
 
                 int tmp=0;
                 if(!strcmp(traveller->sibling->child->sibling->node->ele.leafNode->type,"INTEGER"))
@@ -702,22 +808,31 @@ void formulation(astNode *astRoot, symbolTable *current)
                || (!strcmp(node->ele.data.arr.upperIndex->type,"ID")) )
                 {
                     //dynamic array
-                    node->width = POINTER_SIZE;
-                    node->offset = currentOffset;
-                    currentOffset += POINTER_SIZE;
                     node->ele.data.arr.isDynamic = 1;   
                 }
                 else    
                 {
                     //static array
                     node->ele.data.arr.isDynamic = 0;
-                    int size = *(int *)node->ele.data.arr.upperIndex->value - *(int*)node->ele.data.arr.lowerIndex->value + 1;
-                    node->offset = currentOffset;
-                    node->width = tmp * size + POINTER_SIZE;
-                    currentOffset += node->width;
                 }
+                node->width = POINTER_SIZE;
+                node->offset = currentOffset;
+                currentOffset += POINTER_SIZE;
 
-                node->next = NULL;    
+                lowerIndexNode->offset = currentOffset;
+                lowerIndexNode->width = INTEGER_SIZE;
+                currentOffset += lowerIndexNode->width;
+
+                upperIndexNode->offset = currentOffset;
+                upperIndexNode->width = INTEGER_SIZE;
+                currentOffset += upperIndexNode->width;
+
+                lowerIndexNode->isParameter = 2;
+                upperIndexNode->isParameter = 2;
+                node->isParameter = 1;
+                node->next = NULL;
+                sym_hash_insert(lowerIndexNode, &(moduleST->hashtb));
+                sym_hash_insert(upperIndexNode, &(moduleST->hashtb));
             }
             //Its an ID
             else
@@ -738,6 +853,7 @@ void formulation(astNode *astRoot, symbolTable *current)
                 node->next = NULL;
                 node->offset = currentOffset;
                 currentOffset += node->offset;
+                node->isParameter = 1;
             }
             newNode->ele.data.mod.outputList[i] = node->ele;
             symbolTableNode *ret = sym_hash_insert(node, &(moduleST->hashtb));
@@ -782,6 +898,7 @@ void formulation(astNode *astRoot, symbolTable *current)
         newNode->lineNum = astRoot->child->node->ele.leafNode->lineNum;
         newNode->next = NULL;
         
+        //current is actually the Program symbol table
         symbolTableNode * ret = sym_hash_insert(newNode, &(current->hashtb));
         if(ret != NULL)
         {

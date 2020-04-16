@@ -9,10 +9,10 @@
 #ifndef SYMBOLTABLEDEF_H_
 #define SYMBOLTABLEDEF_H_
 
-#define INTEGER_SIZE 2
-#define REAL_SIZE 4
-#define BOOLEAN_SIZE 1
-#define POINTER_SIZE 4
+#define INTEGER_SIZE 4
+#define REAL_SIZE 8
+#define BOOLEAN_SIZE 2
+#define POINTER_SIZE 8
 
 #include<stdio.h>
 #include<stdlib.h>
@@ -78,10 +78,11 @@ typedef struct symbolTableNode
 {
     elementSym ele;
     int aux;
-    int scope;
+    int scope;      //Depicts the nesting level, TODO (yet to be populated)
     int lineNum;
     int offset;
     int width;
+    int isParameter;    //Set when ele is actually an input or output parameter
     struct symbolTableNode * next;
 }symbolTableNode;
 
