@@ -458,7 +458,7 @@ void formulation(astNode *astRoot, symbolTable *current)
             newNode->isParameter = 0;   //Its a module name, not a variable
             newNode->lineNum = trav->node->ele.leafNode->lineNum;
             newNode->next = NULL; 
-
+            currentOffset = 0;
             symbolTableNode* ret = sym_hash_insert(newNode, &(moduleDecST->hashtb));
             if(ret != NULL)
             {
@@ -534,7 +534,7 @@ void formulation(astNode *astRoot, symbolTable *current)
         newNode->ele.data.mod.inputcount = 0;
         newNode->ele.data.mod.outputcount = 0;
         newNode->isParameter = 1;   
-
+        currentOffset = 0;
         //head of the input list
         astNode *traveller = astRoot->child->sibling->child;
         while(traveller!=NULL)
@@ -587,13 +587,13 @@ void formulation(astNode *astRoot, symbolTable *current)
                 node->lineNum = traveller->node->ele.leafNode->lineNum;
                 
                 node->offset = currentOffset;
-                int tmp=0;
-                if(!strcmp(traveller->sibling->child->sibling->node->ele.leafNode->type,"INTEGER"))
-                    tmp = INTEGER_SIZE;
-                else if(!strcmp(traveller->sibling->child->sibling->node->ele.leafNode->type,"REAL"))
-                    tmp = REAL_SIZE;
-                else if(!strcmp(traveller->sibling->child->sibling->node->ele.leafNode->type,"BOOLEAN"))
-                    tmp = BOOLEAN_SIZE;
+                // int tmp=0;
+                // if(!strcmp(traveller->sibling->child->sibling->node->ele.leafNode->type,"INTEGER"))
+                //     tmp = INTEGER_SIZE;
+                // else if(!strcmp(traveller->sibling->child->sibling->node->ele.leafNode->type,"REAL"))
+                //     tmp = REAL_SIZE;
+                // else if(!strcmp(traveller->sibling->child->sibling->node->ele.leafNode->type,"BOOLEAN"))
+                //     tmp = BOOLEAN_SIZE;
 
                 char * lexeme = (char *)malloc(sizeof(char)*11);
                 symbolTableNode *lowerIndexNode = (symbolTableNode*)malloc(sizeof(symbolTableNode));
@@ -661,8 +661,8 @@ void formulation(astNode *astRoot, symbolTable *current)
                 upperIndexNode->width = INTEGER_SIZE;
                 currentOffset += upperIndexNode->width;
 
-                lowerIndexNode->isParameter = 2;
-                upperIndexNode->isParameter = 2;
+                lowerIndexNode->isParameter = 1;
+                upperIndexNode->isParameter = 1;
                 node->isParameter = 1;
                 node->next = NULL;
                 sym_hash_insert(lowerIndexNode, &(moduleST->hashtb));
@@ -678,11 +678,11 @@ void formulation(astNode *astRoot, symbolTable *current)
                 node->lineNum = traveller->node->ele.leafNode->lineNum;
                 
                 if(!strcmp(traveller->sibling->node->ele.leafNode->type,"INTEGER"))
-                    node->width = 2;
+                    node->width = INTEGER_SIZE;
                 else if(!strcmp(traveller->sibling->node->ele.leafNode->type,"REAL"))
-                    node->width = 4;
+                    node->width = REAL_SIZE;
                 else if(!strcmp(traveller->sibling->node->ele.leafNode->type,"BOOLEAN"))
-                    node->width = 1;
+                    node->width = BOOLEAN_SIZE;
                     
                 node->next = NULL;
                 node->offset = currentOffset;
@@ -852,7 +852,7 @@ void formulation(astNode *astRoot, symbolTable *current)
                     
                 node->next = NULL;
                 node->offset = currentOffset;
-                currentOffset += node->offset;
+                currentOffset += node->width;
                 node->isParameter = 1;
             }
             newNode->ele.data.mod.outputList[i] = node->ele;
