@@ -47,6 +47,79 @@ void seeTokenization()
     printf("%s\n", tkn->token);
 }
 
+
+int parsememorycount(TreeNode * p)
+{
+    int sum = 0;
+    
+    if(p==NULL)
+    return sum;
+    
+    TreeNode * temp = p->child;
+
+    while(temp!=NULL)
+    {
+        sum = sum + parsememorycount(temp);
+        temp=temp->sibling;
+    }    
+    sum = sum + sizeof(TreeNode);
+    return sum;
+}
+
+int parsecount(TreeNode * p)
+{
+    int sum = 0;
+    
+    if(p==NULL)
+    return sum;
+    
+    TreeNode * temp = p->child;
+    sum = sum + 1;
+    while(temp!=NULL)
+    {
+        parsecount(temp);
+        temp=temp->sibling;
+    }    
+    
+    return sum;
+}
+
+int astmemorycount(astNode * a)
+{
+    int sum = 0;
+    
+    if(a==NULL)
+    return sum;
+    
+    astNode * temp = a->child;
+
+    while(temp!=NULL)
+    {
+        sum = sum + astmemorycount(temp);
+        temp=temp->sibling;
+    }    
+    sum = sum + sizeof(astNode);
+    return sum;
+}
+
+int astcount(astNode * a)
+{
+    int sum = 0;
+    
+    if(a==NULL)
+    return sum;
+    
+    astNode * temp = a->child;
+
+    while(temp!=NULL)
+    {
+        astmemorycount(temp);
+        temp=temp->sibling;
+    }    
+    sum = sum + 1;
+    return sum;
+}
+
 /*******************************************************************/
 int main(int argc, char * argv[])
 {
@@ -216,7 +289,7 @@ int main(int argc, char * argv[])
                     fclose(fp);
                     astNode * ast = createAST(parseTree, NULL, NULL);
                     fp = fopen(argv[3], "w");
-                    // printAST(ast, fp);
+                    printAST(ast, fp);
                     initializeErrorList();
                     symbolTable *table = NULL;
                     formulation(ast, table);
@@ -281,19 +354,81 @@ int main(int argc, char * argv[])
                     printf("Total CPU Time in Seconds: %lf \n", total_CPU_time_in_seconds);
 
                     break;
+                
+            // case 5: // MEMORY ANALYSIS 
                     
+            //         populate_keyhash();
+            //         initializeLexer(argv[1]);
+            //         initializeParser();
+
+            //         grammar = read_grammar("grammar.txt");
+            //         map(grammar);
+
+            //         firstSet = initializeFirst();
+            //         followSet = initializeFollow();
+            //         calculateFirstEquations(grammar, firstSet, firstEquations);
+            //         calculateFirstSet(grammar, firstSet, firstEquations);
+
+            //         calculateFollowEquations(grammar, followSet, firstSet, followEquations);
+            //         calculateFollowSet(grammar, followSet, followEquations);
+                    
+            //         parseTable = intializeParseTable();
+            //         createParseTable(grammar,parseTable,firstSet,followSet);
+            //         parseTree = parser(grammar, parseTable);
+            //         printf("%15s %10s %15s %15s %20s %10s %20s\n", "LEXEME", "LINENO", "TOKEN", "VALUE", "PARENT_NODE", "IS_LEAF", "CURR_NODE");
+            //         printf("%s\n","--------------------------------------------------------------------------------------------------------------------------------");
+            //         inOrder(parseTree, NULL);
+            //         printf("%s\n","--------------------------------------------------------------------------------------------------------------------------------");
+            //         printf("%s\n","--------------------------------------------------------------------------------------------------------------------------------");
+            //         printf("\n\n");
+
+            //         if(LexHead != NULL)
+            //         {
+            //             printf("Lexical Errors:\n");
+            //             printErrorList(1);
+            //         }
+            //         else
+            //         {
+            //             printf("No lexical errors!\n");
+            //         }
+                    
+            //         if(SynHead != NULL)
+            //         {
+            //             printf("Syntax Errors:\n");
+            //             printErrorList(2);
+            //         }
+            //         else
+            //         {
+            //             printf("Parsing was successfull......!\n");
+            //         }
+            //         fclose(fp);
+            //         astNode * ast = createAST(parseTree, NULL, NULL);
+            
+            //         int pm = parsememorycount(parseTree);
+            //         int pc = parsecount(parseTree);
+            //         int am = astmemorycount(ast);
+            //         int ac = astcount(ast);
+            //         int compression_ratio = ((pm-am)/pm)*100;
+
+            //         printf("Parse Tree number of allocated nodes are: %d \n ", pc);
+            //         printf("Parse Tree allocated memory: %d \n ", pm);
+            //         printf("AST number of allocated nodes are: %d \n ", ac);
+            //         printf("AST allocated memory: %d \n ", am);
+            //         printf("Compression ratio: %d \n", compression_ratio);
+
             default: 
             		printf("Wrong Option entered \n ");
         }
 
+        printf("----------------------------------------------------------------------------------------------\n");
         printf("\nOptions:\n");
         printf("Press 0 : Exit \n");
-        printf("Press 1 : Removal of comments and display \n");
-        printf("Press 2 : Tokens of lexeme are displayed \n");
+        printf("Press 1 : LEXER \n");
+        printf("Press 2 : PARSER \n");
         printf("Press 3 : Parsing tree generation and error correction \n");
         printf("Press 4 : Time Analysis of the lexer \n");
         printf("What would you like to do? Option: ");
         scanf("%d",&option);
+        printf("----------------------------------------------------------------------------------------------\n");
     }
-    printf("\n ---------  END  ----------\n");
 }
