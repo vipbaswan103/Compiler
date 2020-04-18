@@ -1173,24 +1173,43 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
 
 //Function to print the AST
 
-void printAST(astNode * ast, FILE * fp)
+void printAST(astNode * ast)
 {
     if(ast == NULL)
         return;
+    
+    char label[30];
+    char node[30];
+    char linenumber[30];
+    char type[30];
+    char value[30];
+
     if(ast->node->tag == Leaf)
     {
-        printf("%s %d\n", ast->node->ele.leafNode->type, ast->node->ele.leafNode->lineNum);
-        fprintf(fp, "%s %d\n", ast->node->ele.leafNode->type, ast->node->ele.leafNode->lineNum);
-    }
+        strcpy(label,ast->node->ele.leafNode->lexeme);
+        strcpy(node,"LEAF\0 ");
+        sprintf(linenumber,"%d ",ast->node->ele.leafNode->lineNum);
+        strcpy(type,ast->node->ele.leafNode->type);
+        if(!strcmp(ast->node->ele.leafNode->type,"NUM") || !strcmp(ast->node->ele.leafNode->type,"RNUM"))
+            strcpy(value,ast->node->ele.leafNode->lexeme);
+        else 
+            strcpy(value," -------  ");
+    }    
     else
     {
-        printf("%s %d %d\n", ast->node->ele.internalNode->label, ast->node->ele.internalNode->lineNumStart, ast->node->ele.internalNode->lineNumEnd);
-        fprintf(fp, "%s %d %d\n", ast->node->ele.internalNode->label, ast->node->ele.internalNode->lineNumStart, ast->node->ele.internalNode->lineNumEnd);
-    }
+        strcpy(label,ast->node->ele.internalNode->label);
+        strcpy(node,"INTERNAL\0 ");
+        sprintf(linenumber,"%d to %d ",ast->node->ele.internalNode->lineNumStart, ast->node->ele.internalNode->lineNumEnd);
+        strcpy(type," ------- ");
+        strcpy(value," ------- ");
+    }    
+    
+    printf("|| %20s || %20s || %20s || %20s || %20s || \n", label, node, linenumber, type, value);
+
     astNode * tmp = ast->child;
     while(tmp != NULL)
     {
-        printAST(tmp, fp);
+        printAST(tmp);
         tmp = tmp->sibling;
     }
 }

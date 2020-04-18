@@ -597,6 +597,7 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 	
 	//NOTE: Combination of reading and ptr together defines the buffer
 	int ptr = *startptr; 
+	char errorchar;
 	char *lexeme = NULL;
 	char *tokenName = NULL;
 	Token *tkn = (Token*) malloc(sizeof(Token));
@@ -690,6 +691,7 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 						else
 						{
 							state=-1;
+							errorchar =  buffer[ptr];
 						}
 						break;
 				}
@@ -697,12 +699,13 @@ Token * nextToken(FILE * fp, char *buffer, char * buffer1, char * buffer2, int *
 			
 			case -1: 
 				//ERROR
+				// decrementPointer(fp, &buffer, buffer1, buffer2, reading, &ptr);
 				tkn = (Token*) malloc(sizeof(Token));
 				tokenName = (char *)malloc(sizeof(char)*4);
 				tokenName[0] = 'E'; tokenName[1] = 'R'; tokenName[2] = 'R'; tokenName[3] = '\0';
 				char * lexeme = (char *)malloc(sizeof(char)*70);
 				memset(lexeme, '\0', sizeof(char)*70);
-				sprintf(tkn->lexeme, "%c is not a valid language alphabet", buffer[ptr]);
+				sprintf(lexeme, "%c is not a valid language alphabet", errorchar);
 				tkn->lexeme = lexeme; tkn->lineNum = lineNum; tkn->token = tokenName;
 				tkn->value = (void *) NULL;
 				*toRead = *reading;

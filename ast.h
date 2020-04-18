@@ -18,6 +18,6 @@ astNode* makeLeafNode(TreeNode * leaf);
 astNode * concatenate(astNode * head, astNode * newNode);
 astNode * makeListNode(char * label, astNode * list);
 astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn);
-void printAST(astNode * ast, FILE * fp);
+void printAST(astNode * ast);
 
 #endif

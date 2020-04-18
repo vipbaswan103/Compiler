@@ -35,7 +35,7 @@ void createParseTable(Grammar *grammar, int **parseTable, int **firstSet, int **
 void printParseTable(Grammar *grammar,int ** parseTable);
 TreeNode * siblingInsert(TreeNode * head, TreeNode * node);
 void insert(TreeNode * parent, TreeNode * newNode);
-void inOrder(FILE * fp, TreeNode * root, TreeNode * parent);
+void inOrder(TreeNode * root, TreeNode * parent);
 void printTokenStream(TreeNode * root);
 TreeNode * pop(Stack * st);
 Stack * push(Stack * st, TreeNode * trNode);
