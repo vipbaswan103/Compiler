@@ -596,12 +596,13 @@ void formulation(astNode *astRoot, symbolTable *current)
                 //     tmp = BOOLEAN_SIZE;
 
                 char * lexeme = (char *)malloc(sizeof(char)*11);
+                memset(lexeme, '\0', sizeof(char)*11);
                 symbolTableNode *lowerIndexNode = (symbolTableNode*)malloc(sizeof(symbolTableNode));
                 lowerIndexNode->ele.tag = Identifier;
 
                 if(!strcmp(traveller->sibling->child->child->node->ele.leafNode->type, "NUM"))
                 {
-                    sprintf("%d_%d", traveller->sibling->child->child->node->ele.leafNode->lexeme, makeUnique);
+                    sprintf(lexeme, "%s_%d", traveller->sibling->child->child->node->ele.leafNode->lexeme, makeUnique);
                     makeUnique++;
                     lowerIndexNode->ele.data.id.lexeme = lexeme;
                     lowerIndexNode->ele.data.id.value = traveller->sibling->child->child->node->ele.leafNode->value;
@@ -618,14 +619,15 @@ void formulation(astNode *astRoot, symbolTable *current)
                 lowerIndexNode->next = NULL;
 
                 lexeme = (char *)malloc(sizeof(char)*11);
+                memset(lexeme, '\0', sizeof(char)*11);
                 symbolTableNode *upperIndexNode = (symbolTableNode*)malloc(sizeof(symbolTableNode));
                 upperIndexNode->ele.tag = Identifier;
                 if(!strcmp(traveller->sibling->child->child->sibling->node->ele.leafNode->type, "NUM"))
                 {
-                    sprintf("%d_%d", traveller->sibling->child->child->sibling->node->ele.leafNode->lexeme, makeUnique);
+                    sprintf(lexeme, "%s_%d", traveller->sibling->child->child->sibling->node->ele.leafNode->lexeme, makeUnique);
                     makeUnique++;
-                    lowerIndexNode->ele.data.id.lexeme = lexeme;
-                    lowerIndexNode->ele.data.id.value = traveller->sibling->child->child->sibling->node->ele.leafNode->value;
+                    upperIndexNode->ele.data.id.lexeme = lexeme;
+                    upperIndexNode->ele.data.id.value = traveller->sibling->child->child->sibling->node->ele.leafNode->value;
                 }
                 else
                 {
@@ -656,7 +658,7 @@ void formulation(astNode *astRoot, symbolTable *current)
                 lowerIndexNode->offset = currentOffset;
                 lowerIndexNode->width = INTEGER_SIZE;
                 currentOffset += lowerIndexNode->width;
-
+                        
                 upperIndexNode->offset = currentOffset;
                 upperIndexNode->width = INTEGER_SIZE;
                 currentOffset += upperIndexNode->width;
@@ -754,12 +756,13 @@ void formulation(astNode *astRoot, symbolTable *current)
                 node->lineNum = traveller->node->ele.leafNode->lineNum;
                 
                 char * lexeme = (char *)malloc(sizeof(char)*11);
+                memset(lexeme, '\0', sizeof(char)*11);
                 symbolTableNode *lowerIndexNode = (symbolTableNode*)malloc(sizeof(symbolTableNode));
                 lowerIndexNode->ele.tag = Identifier;
 
                 if(!strcmp(traveller->sibling->child->child->node->ele.leafNode->type, "NUM"))
                 {
-                    sprintf("%d_%d", traveller->sibling->child->child->node->ele.leafNode->lexeme, makeUnique);
+                    sprintf(lexeme, "%s_%d", traveller->sibling->child->child->node->ele.leafNode->lexeme, makeUnique);
                     makeUnique++;
                     lowerIndexNode->ele.data.id.lexeme = lexeme;
                     lowerIndexNode->ele.data.id.value = traveller->sibling->child->child->node->ele.leafNode->value;
@@ -776,14 +779,15 @@ void formulation(astNode *astRoot, symbolTable *current)
                 lowerIndexNode->next = NULL;
 
                 lexeme = (char *)malloc(sizeof(char)*11);
+                memset(lexeme, '\0', sizeof(char)*11);
                 symbolTableNode *upperIndexNode = (symbolTableNode*)malloc(sizeof(symbolTableNode));
                 upperIndexNode->ele.tag = Identifier;
                 if(!strcmp(traveller->sibling->child->child->sibling->node->ele.leafNode->type, "NUM"))
                 {
-                    sprintf("%d_%d", traveller->sibling->child->child->sibling->node->ele.leafNode->lexeme, makeUnique);
+                    sprintf(lexeme, "%s_%d", traveller->sibling->child->child->sibling->node->ele.leafNode->lexeme, makeUnique);
                     makeUnique++;
-                    lowerIndexNode->ele.data.id.lexeme = lexeme;
-                    lowerIndexNode->ele.data.id.value = traveller->sibling->child->child->sibling->node->ele.leafNode->value;
+                    upperIndexNode->ele.data.id.lexeme = lexeme;
+                    upperIndexNode->ele.data.id.value = traveller->sibling->child->child->sibling->node->ele.leafNode->value;
                 }
                 else
                 {
