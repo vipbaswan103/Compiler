@@ -310,13 +310,22 @@ void formulation(astNode *astRoot, symbolTable *current)
                 
                 newNode->lineNum = idlist->node->ele.leafNode->lineNum;
 
-                int tmp = 0;
+                int tmp = 0, dummyTmp = 0;
                 if(!strcmp(type->child->sibling->node->ele.leafNode->type,"INTEGER"))
+                {
                     tmp = INTEGER_SIZE;
+                    dummyTmp = DUMMY_INTEGER_SIZE;
+                }
                 else if(!strcmp(type->child->sibling->node->ele.leafNode->type,"REAL"))
+                {                
                     tmp = REAL_SIZE;
+                    dummyTmp = DUMMY_REAL_SIZE;
+                }
                 else if(!strcmp(type->child->sibling->node->ele.leafNode->type,"BOOLEAN"))
+                {
                     tmp = BOOLEAN_SIZE;
+                    dummyTmp = DUMMY_BOOLEAN_SIZE;
+                }
                 
                 if( (!strcmp(newNode->ele.data.arr.lowerIndex->type,"ID")) 
                 || (!strcmp(newNode->ele.data.arr.upperIndex->type,"ID")) )
@@ -325,7 +334,10 @@ void formulation(astNode *astRoot, symbolTable *current)
                     newNode->width = POINTER_SIZE;
                     newNode->offset = currentOffset;
                     currentOffset += POINTER_SIZE;
-                    newNode->ele.data.arr.isDynamic = 1;   
+                    newNode->ele.data.arr.isDynamic = 1;  
+                    newNode->dummyOffset = dummyCurrentOffset;
+                    newNode->dummyWidth = DUMMY_POINTER_SIZE;
+                    dummyCurrentOffset += newNode->dummyWidth; 
                 }
                 else    
                 {
@@ -335,6 +347,9 @@ void formulation(astNode *astRoot, symbolTable *current)
                     newNode->offset = currentOffset;
                     newNode->width = tmp * size + POINTER_SIZE;
                     currentOffset += newNode->width;
+                    newNode->dummyOffset = dummyCurrentOffset;
+                    newNode->dummyWidth = dummyTmp*size + DUMMY_POINTER_SIZE;
+                    dummyCurrentOffset += newNode->dummyWidth;
                 }
                 newNode->isParameter = 0;   //Its a local var, not an I/O parameter
                 newNode->next = NULL;
@@ -350,14 +365,25 @@ void formulation(astNode *astRoot, symbolTable *current)
                 newNode->lineNum = idlist->node->ele.leafNode->lineNum;
                 
                 if(!strcmp(type->node->ele.leafNode->type,"INTEGER"))
+                {
                     newNode->width = INTEGER_SIZE;
+                    newNode->dummyWidth = DUMMY_INTEGER_SIZE;
+                }
                 else if(!strcmp(type->node->ele.leafNode->type,"REAL"))
+                {
                     newNode->width = REAL_SIZE;
+                    newNode->dummyWidth = DUMMY_REAL_SIZE;
+                }
                 else if(!strcmp(type->node->ele.leafNode->type,"BOOLEAN"))
+                {
                     newNode->width = BOOLEAN_SIZE;
+                    newNode->dummyWidth = DUMMY_BOOLEAN_SIZE;
+                }
                     
                 newNode->offset = currentOffset;
                 currentOffset += newNode->width;
+                newNode->dummyOffset = dummyCurrentOffset;
+                dummyCurrentOffset += newNode->dummyWidth;
                 newNode->isParameter = 0;   //Its a local var, not an I/O parameter
                 newNode->next = NULL;
             }
@@ -458,6 +484,7 @@ void formulation(astNode *astRoot, symbolTable *current)
             newNode->isParameter = 0;   //Its a module name, not a variable
             newNode->lineNum = trav->node->ele.leafNode->lineNum;
             newNode->next = NULL; 
+            dummyCurrentOffset = 0;
             currentOffset = 0;
             symbolTableNode* ret = sym_hash_insert(newNode, &(moduleDecST->hashtb));
             if(ret != NULL)
@@ -535,6 +562,7 @@ void formulation(astNode *astRoot, symbolTable *current)
         newNode->ele.data.mod.outputcount = 0;
         newNode->isParameter = 1;   
         currentOffset = 0;
+        dummyCurrentOffset = 0;
         //head of the input list
         astNode *traveller = astRoot->child->sibling->child;
         while(traveller!=NULL)
@@ -663,10 +691,14 @@ void formulation(astNode *astRoot, symbolTable *current)
                 upperIndexNode->width = INTEGER_SIZE;
                 currentOffset += upperIndexNode->width;
 
-                lowerIndexNode->isParameter = 1;
-                upperIndexNode->isParameter = 1;
+                lowerIndexNode->isParameter = 2;
+                upperIndexNode->isParameter = 2;
                 node->isParameter = 1;
                 node->next = NULL;
+
+                node->dummyOffset = dummyCurrentOffset;
+                node->dummyWidth = (2*DUMMY_INTEGER_SIZE) + DUMMY_POINTER_SIZE;
+                dummyCurrentOffset += node->dummyWidth;
                 sym_hash_insert(lowerIndexNode, &(moduleST->hashtb));
                 sym_hash_insert(upperIndexNode, &(moduleST->hashtb));
             }
@@ -680,16 +712,27 @@ void formulation(astNode *astRoot, symbolTable *current)
                 node->lineNum = traveller->node->ele.leafNode->lineNum;
                 
                 if(!strcmp(traveller->sibling->node->ele.leafNode->type,"INTEGER"))
+                {
                     node->width = INTEGER_SIZE;
+                    node->dummyWidth = DUMMY_INTEGER_SIZE;
+                }
                 else if(!strcmp(traveller->sibling->node->ele.leafNode->type,"REAL"))
+                {
                     node->width = REAL_SIZE;
+                    node->dummyWidth = DUMMY_REAL_SIZE;
+                }
                 else if(!strcmp(traveller->sibling->node->ele.leafNode->type,"BOOLEAN"))
+                {
                     node->width = BOOLEAN_SIZE;
-                    
+                    node->dummyWidth = DUMMY_BOOLEAN_SIZE;
+                }
                 node->next = NULL;
                 node->offset = currentOffset;
                 currentOffset += node->width;
                 node->isParameter = 1;
+
+                node->dummyOffset = dummyCurrentOffset;
+                dummyCurrentOffset += node->dummyWidth;
             }
             newNode->ele.data.mod.inputList[i] = node->ele;
             symbolTableNode *ret = sym_hash_insert(node, &(moduleST->hashtb));
@@ -835,6 +878,10 @@ void formulation(astNode *astRoot, symbolTable *current)
                 upperIndexNode->isParameter = 2;
                 node->isParameter = 1;
                 node->next = NULL;
+
+                node->offset = dummyCurrentOffset;
+                node->dummyWidth = (2*DUMMY_INTEGER_SIZE) + DUMMY_POINTER_SIZE;
+                dummyCurrentOffset += node->dummyWidth;
                 sym_hash_insert(lowerIndexNode, &(moduleST->hashtb));
                 sym_hash_insert(upperIndexNode, &(moduleST->hashtb));
             }
@@ -848,16 +895,28 @@ void formulation(astNode *astRoot, symbolTable *current)
                 node->lineNum = traveller->node->ele.leafNode->lineNum;
                 
                 if(!strcmp(traveller->sibling->node->ele.leafNode->type,"INTEGER"))
+                {
                     node->width = INTEGER_SIZE;
+                    node->dummyWidth = DUMMY_INTEGER_SIZE;
+                }
                 else if(!strcmp(traveller->sibling->node->ele.leafNode->type,"REAL"))
+                {
                     node->width = REAL_SIZE;
+                    node->dummyWidth = DUMMY_REAL_SIZE;
+                }
                 else if(!strcmp(traveller->sibling->node->ele.leafNode->type,"BOOLEAN"))
+                {
                     node->width = BOOLEAN_SIZE;
+                    node->dummyWidth = DUMMY_REAL_SIZE;
+                }
                     
                 node->next = NULL;
                 node->offset = currentOffset;
                 currentOffset += node->width;
                 node->isParameter = 1;
+
+                node->dummyOffset = dummyCurrentOffset;
+                dummyCurrentOffset += node->dummyWidth;
             }
             newNode->ele.data.mod.outputList[i] = node->ele;
             symbolTableNode *ret = sym_hash_insert(node, &(moduleST->hashtb));
@@ -940,6 +999,7 @@ void formulation(astNode *astRoot, symbolTable *current)
         
         moduleST->currentOffset = currentOffset;
         currentOffset = 0;
+        dummyCurrentOffset = 0;
         formulation(astRoot->child, moduleST);
         formulation(astRoot->child->sibling, moduleST);
         formulation(astRoot->child->sibling->sibling, moduleST);
@@ -968,6 +1028,7 @@ void formulation(astNode *astRoot, symbolTable *current)
         
         symbolTable* moduledefST = initializeSymbolTable(str,astRoot->node->ele.internalNode->lineNumStart, astRoot->node->ele.internalNode->lineNumEnd);
         currentOffset = 0;
+        dummyCurrentOffset = 0;
         //call the formulation on all children one by one
         //children are parallel statements
         astNode* trav = astRoot->child;
@@ -1000,6 +1061,7 @@ void formulation(astNode *astRoot, symbolTable *current)
         symbolTable * driverST = initializeSymbolTable(str,astRoot->node->ele.internalNode->lineNumStart, astRoot->node->ele.internalNode->lineNumEnd);
         
         currentOffset = 0;
+        dummyCurrentOffset = 0;
         formulation(astRoot->child,driverST);
         //linking of symbols tables
         symbolTable *tmp = current->child;
@@ -1160,7 +1222,12 @@ void printHashTable(hashSym hashtb)
         symbolTableNode *temp = trav->head;
         while(temp!=NULL)
         {
-            printf(" %-10d | %-10d | %-10d | %-10d |", temp->scope, temp->lineNum, temp->offset, temp->width);
+            if(temp->isParameter == 2)
+            {
+                temp = temp->next;
+                continue;
+            }
+            printf(" %-10d | %-10d | %-10d | %-10d |", temp->scope, temp->lineNum, temp->dummyOffset, temp->dummyWidth);
             
             if(temp->ele.tag==Identifier)
             {
@@ -1260,52 +1327,4 @@ void printSemanticErrors()
         printf("%s\n",trav->errorMessage);
         trav = trav->next;
     }
-}
-
-int gimme_module(char*str, char *name)
-{
-    name = (char*)malloc(sizeof(char)*25);
-    int length=0,underscore=-1,index=0;
-    
-    while(str[length]!='\0')
-    {
-        if(str[length]=='_' && underscore<0)
-            underscore=length;
-        length++;
-    }
-
-    // printf("\n String given to me is %s",str);
-    // getchar();    
-    
-    if(length<11)
-        return 0;
-        
-    while(index<underscore)
-    {
-        name[index] = str[index];
-        index++;
-    }
-    name[index]='\0';
-
-    if(strcmp(name,"moduledef")!=0)
-        return 0;
-
-    // printf("\n Confirmed that it is moduledef type");
-    // getchar();  
-
-    int index2=0;
-    index=underscore+1;
-    while(index<length)
-    {
-        name[index2] = str[index];
-        index++;
-        index2++;
-    }
-    name[index2]='\0';
-
-    printf("\n String I am giving out is %s",name);
-    getchar();  
-    
-    
-    return 1;
 }
