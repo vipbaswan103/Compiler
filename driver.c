@@ -300,6 +300,7 @@ int main(int argc, char * argv[])
                     tbStack->bottom = NULL;
                     typeChecker(ast, tbStack);
                     printSemanticErrors();
+                    
                     // quad * labels = (quad *)malloc(sizeof(quad));
                     tbStack->top = NULL;
                     tbStack->size = 0;

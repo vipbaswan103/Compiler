@@ -1898,7 +1898,7 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
         //printing an array element
         else
         {
-            intermed * final = NULL;
+            intermed * final = (intermed *)malloc(sizeof(intermed));
             final->code = NULL;
 
             intermed *child = generateIRCode(currentNode->child, labels, tbStack);
@@ -2391,39 +2391,50 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
 
             if(ret->ele.tag == Array)
             {
-                IRcode * upperIndex = (IRcode *)malloc(sizeof(IRcode));
-                upperIndex->ele = (quad *)malloc(sizeof(quad));
-                upperIndex->next = NULL;
-                strcpy(upperIndex->ele->op, "param\0");
-                initQuad(upperIndex->ele, ret->ele.data.arr.upperIndex->lexeme, "\0", "\0");
-
-                mergeCode(&upperIndex, final->code);
-                final->code = upperIndex;
+                IRcode * param1 = (IRcode *)malloc(sizeof(IRcode));
+                param1->ele = (quad *)malloc(sizeof(quad));
+                param1->next = NULL;
+                strcpy(param1->ele->op, "param\0");
+                initQuad(param1->ele, trav->node->ele.leafNode->lexeme, "\0", "\0");
+                param1->ele->tag1 = ID;
+                param1->ele->tag2 = NONE;
+                mergeCode(&param1, final->code);
+                final->code = param1;
 
                 IRcode * lowerIndex = (IRcode *)malloc(sizeof(IRcode));
                 lowerIndex->ele = (quad *)malloc(sizeof(quad));
                 lowerIndex->next = NULL;
                 strcpy(lowerIndex->ele->op, "param\0");
                 initQuad(lowerIndex->ele, ret->ele.data.arr.lowerIndex->lexeme, "\0", "\0");
-
+                if(!strcmp(ret->ele.data.arr.lowerIndex->type, "NUM"))
+                    lowerIndex->ele->tag1 = NUM;
+                else
+                    lowerIndex->ele->tag1 = ID;
+                lowerIndex->ele->tag2 = NONE;
                 mergeCode(&lowerIndex, final->code);
                 final->code = lowerIndex;
+                
+                IRcode * upperIndex = (IRcode *)malloc(sizeof(IRcode));
+                upperIndex->ele = (quad *)malloc(sizeof(quad));
+                upperIndex->next = NULL;
+                strcpy(upperIndex->ele->op, "param\0");
+                initQuad(upperIndex->ele, ret->ele.data.arr.upperIndex->lexeme, "\0", "\0");
+                if(!strcmp(ret->ele.data.arr.upperIndex->type, "NUM"))
+                    upperIndex->ele->tag1 = NUM;
+                else
+                    upperIndex->ele->tag1 = ID;
+                upperIndex->ele->tag2 = NONE;
+                mergeCode(&upperIndex, final->code);
+                final->code = upperIndex;
 
-                IRcode * param1 = (IRcode *)malloc(sizeof(IRcode));
-                param1->ele = (quad *)malloc(sizeof(quad));
-                param1->next = NULL;
-                strcpy(param1->ele->op, "param\0");
-                initQuad(param1->ele, trav->node->ele.leafNode->lexeme, "\0", "\0");
-
-                mergeCode(&param1, final->code);
-                final->code = param1;
 
                 IRcode * param2 = (IRcode *)malloc(sizeof(IRcode));
                 param2->ele = (quad *)malloc(sizeof(quad));
                 param2->next = NULL;
-                
                 strcpy(param2->ele->op, "inp\0");
                 initQuad(param2->ele, trav->node->ele.leafNode->lexeme, "\0", "\0");
+                param2->ele->tag1 = ID;
+                param2->ele->tag2 = NONE;
                 mergeCode(&(inp_populate), param2);
 
                 IRcode * lowerIndex2 = (IRcode *)malloc(sizeof(IRcode));
@@ -2431,7 +2442,11 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
                 lowerIndex2->next = NULL;
                 strcpy(lowerIndex2->ele->op, "inp\0");
                 initQuad(lowerIndex2->ele, ret->ele.data.arr.lowerIndex->lexeme, "\0", "\0");
-
+                if(!strcmp(ret->ele.data.arr.lowerIndex->type, "NUM"))
+                    lowerIndex2->ele->tag1 = NUM;
+                else
+                    lowerIndex2->ele->tag1 = ID;
+                lowerIndex2->ele->tag2 = NONE;
                 mergeCode(&(inp_populate), lowerIndex2);
 
                 IRcode * upperIndex2 = (IRcode *)malloc(sizeof(IRcode));
@@ -2439,7 +2454,11 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
                 upperIndex2->next = NULL;
                 strcpy(upperIndex2->ele->op, "inp\0");
                 initQuad(upperIndex2->ele, ret->ele.data.arr.upperIndex->lexeme, "\0", "\0");
-
+                if(!strcmp(ret->ele.data.arr.upperIndex->type, "NUM"))
+                    upperIndex2->ele->tag1 = NUM;
+                else
+                    upperIndex2->ele->tag1 = ID;
+                upperIndex2->ele->tag2 = NONE;
                 mergeCode(&(inp_populate), upperIndex2);
             }
             else
