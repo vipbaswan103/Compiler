@@ -14,6 +14,11 @@
 #define BOOLEAN_SIZE 4
 #define POINTER_SIZE 8
 
+#define DUMMY_INTEGER_SIZE 2
+#define DUMMY_REAL_SIZE 4
+#define DUMMY_BOOLEAN_SIZE 1
+#define DUMMY_POINTER_SIZE 1
+
 #include<stdio.h>
 #include<stdlib.h>
 
@@ -24,6 +29,7 @@ typedef enum {Identifier = 2, Array = 1, Module = 0} entryType;
 typedef enum {Declaration = 2, Type = 1, Others = 0} errorType;
 
 int currentOffset;
+int dummyCurrentOffset;
 
 //primitive data type 1
 typedef struct identifier
@@ -83,6 +89,8 @@ typedef struct symbolTableNode
     int offset;
     int width;
     int isParameter;    //Set when ele is actually an input or output parameter
+    int dummyOffset;
+    int dummyWidth;
     struct symbolTableNode * next;
 }symbolTableNode;
 
