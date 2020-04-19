@@ -798,27 +798,32 @@ void inOrder(TreeNode * root, TreeNode * parent)
         if(strcmp(root->ele.leaf.tkn.token, "NUM") == 0 && (root->ele.leaf.tkn.value != NULL))
         {
             int *x = (int *)root->ele.leaf.tkn.value;
-            printf("|| %15s || %10d || %15s || %15d || %20s || %10s || %20s ||", root->ele.leaf.tkn.lexeme, root->ele.leaf.tkn.lineNum, root->ele.leaf.tkn.token, *x, parent->ele.nonleaf.nt.str, "YES", "----");
+            printf("|| %10s || %10d || %15s || %10d || %20s || %8s || %20s ||", 
+            root->ele.leaf.tkn.lexeme, root->ele.leaf.tkn.lineNum, root->ele.leaf.tkn.token, *x, parent->ele.nonleaf.nt.str, "YES", "----");
         }
         else if(strcmp(root->ele.leaf.tkn.token, "RNUM") == 0 && (root->ele.leaf.tkn.value != NULL))
         {
             float *x = (float *)root->ele.leaf.tkn.value;
-            printf("|| %15s || %10d || %15s || %15lf || %20s || %10s || %20s ||", root->ele.leaf.tkn.lexeme, root->ele.leaf.tkn.lineNum, root->ele.leaf.tkn.token, *x, parent->ele.nonleaf.nt.str, "YES", "----");
+            printf("|| %10s || %10d || %15s || %10lf || %20s || %8s || %20s ||", 
+            root->ele.leaf.tkn.lexeme, root->ele.leaf.tkn.lineNum, root->ele.leaf.tkn.token, *x, parent->ele.nonleaf.nt.str, "YES", "----");
         }
         else
         {
-            printf("|| %15s || %10d || %15s || %15s || %20s || %10s || %20s ||", root->ele.leaf.tkn.lexeme, root->ele.leaf.tkn.lineNum, root->ele.leaf.tkn.token,"----",parent->ele.nonleaf.nt.str,"YES","----");
+            printf("|| %10s || %10d || %15s || %10s || %20s || %8s || %20s ||", 
+            root->ele.leaf.tkn.lexeme, root->ele.leaf.tkn.lineNum, root->ele.leaf.tkn.token,"----",parent->ele.nonleaf.nt.str,"YES","----");
         }
     }
     else    //It's an internal node
     {
         if(parent == NULL)  //If root is the ROOT node
         {
-            printf("|| %15s || %10s || %15s || %15s || %20s || %10s || %20s ||", "----","----","----","----","ROOT","NO",root->ele.nonleaf.nt.str);
+            printf("|| %10s || %10s || %15s || %10s || %20s || %8s || %20s ||", 
+            "----","----","----","----","ROOT","NO",root->ele.nonleaf.nt.str);
         }
         else    //If root is not the ROOT node
         {
-            printf("|| %15s || %10s || %15s || %15s || %20s || %10s || %20s ||", "----","----","----","----",parent->ele.nonleaf.nt.str, "NO", root->ele.nonleaf.nt.str);   
+            printf("|| %10s || %10s || %15s || %10s || %20s || %8s || %20s ||", 
+            "----","----","----","----",parent->ele.nonleaf.nt.str, "NO", root->ele.nonleaf.nt.str);   
         }
     }
     printf("\n");
@@ -858,6 +863,35 @@ void printTokenStream(TreeNode * root)
         printTokenStream(trav);
     }
 }
+
+// void printTokenStream(TreeNode * root)
+// {
+//     if(root == NULL)
+//     {
+//         return;
+//     }
+
+//     if(root->tag == 2)  //Its a leaf
+//     {
+//         if(strcmp(root->ele.leaf.tkn.token,"EPSILON")!=0)
+//             printf("%s (%d)  ", root->ele.leaf.tkn.token, root->ele.leaf.tkn.lineNum);
+//     }
+    
+//     // TreeNode * trav = root;
+//     // inOrder(trav->child);
+
+//     // trav = trav->sibling;
+//     // inOrder(trav);    
+
+//     TreeNode * trav = root->child;
+//     printTokenStream(trav);
+
+//     while(trav != NULL)
+//     {
+//         trav = trav->sibling;
+//         printTokenStream(trav);
+//     }
+// }
 
 TreeNode * pop(Stack * st)
 {

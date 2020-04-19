@@ -1,51 +1,16 @@
-/*Check for cases where we need to search in a different scope (not in the current scope)*/
-/*Testing for error conditions (when returned type is NULL)*/
-/*Checking line numbers for declaration errors (everything in the same line)*/
+/* 
+	GROUP 33
+	Aryan Mehra 2017A7PS0077P
+	Akshit Khanna 2017A7PS0023P
+   	Vipin Baswan 2017A7PS0429P
+   	Swadesh Vaibhav 2017A7PS0030P
+*/
 
-/*  AST Node to be used for type checking/semantic rule verification
-    
-    ASSIGNOP
-        - if left side is some var from output_list, update isassigned
-        - especifically handle if both operands are arrays
-
-    GET_VAL 
-        - if the var is some var from output_list, update isassigned
-
-    ASSIGNOPARR 
-        - type, lower, uppper
-
-    MODULEASSIGNOP and MODULECALL
-        - left side matches with the output_list (type, number)
-        - is the function declared/defined above the use
-
-    FOR 
-        - flag with the index variable
-
-    WHILE
-        - expression must be boolean type
-
-    PLUS, MINUS, MUL, DIV, AND, OR, LT, LE, GT, GE, EQ, NE
-        - Type checking (Both operands must be same)
-        - No operand can be array
-    
-    SWITCH 
-        - the switch var can't be real
-        - check the default clause (shouldn't exist for boolean switch var, must exist for integer switch var)
-
-    Stack updates in scope !
-        PROGRAM
-        MODULE
-        MODULEDEF
-        MODULEDEC
-        DRIVER
-        WHILE
-        SWITCH
-        FOR
-*/    
 #include "semanticsDef.h"
 #include "ast.h"
 #include "symbolTable.h"
 #include "semantics.h"
+
 /*Gives the count of elements in the list pointed by head*/
 int listCount(astNode* head)
 {
@@ -65,9 +30,64 @@ void pushSemanticError(char *str)
     strcpy(err,str);
     errNode->errorMessage = err;
     errNode->next = NULL;
-    insertSemError(errNode);
+    // insertSemError(errNode);
+
+    semanticErrorNode * trav = semErrorList->head, *prev = NULL;
+
+    int curNum = getLineNumErr(errNode);
+    int cmpNum = -1;
+    while(trav != NULL)
+    {
+        cmpNum = getLineNumErr(trav);
+
+        if(curNum < cmpNum)
+        {
+            if(prev == NULL)
+            {
+                errNode->next = semErrorList->head;
+                semErrorList->head = errNode;
+                semErrorList->numErrors++;
+                return;
+            }
+            else
+            {
+                prev->next = errNode;
+                errNode->next = trav;
+                semErrorList->numErrors++;
+                return;
+            }
+        }
+        prev = trav;
+        trav = trav->next;
+    }
+
+    if(trav == NULL)
+    {
+        //Case when there are no redeclaration errors and current linenum is the largest
+        if(prev == NULL)
+        {
+            semErrorList->head = errNode;
+            semErrorList->numErrors++;
+            return;
+        }
+        prev->next = errNode;
+        semErrorList->numErrors++;
+    }
 }
 
+
+int getLineNumErr(semanticErrorNode * err)
+{
+    int i = 5;
+    int num = 0;
+
+    while(err->errorMessage[i] != ':')
+    {
+        num = (num*10) + (int)((err->errorMessage[i])-'0');
+        i++;
+    }
+    return num;
+}
 ///only searches for variables/identifiers in the stack of scopes
 //does not examine module declarations or programs
 symbolTableNode *searchScope(tableStack *tbStack, astNode *key)
@@ -379,8 +399,9 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             if(tmp->ele.data.id.isAssigned == 0)
             {
                 //Some var in O/P is unassigned, ERROR.
+                // symbolTableNode *ret = sym_hash_find(tbStack->top->ele->symLexeme, &(symbolTableRoot->hashtb), 0, NULL);
                 sprintf(err,"Line %d: %s (returned) variable not assigned in module %s", 
-                tmp->lineNum, tmp->ele.data.id.lexeme, currentNode->child->node->ele.leafNode->lexeme);
+                tbStack->top->ele->lineNumEnd, tmp->ele.data.id.lexeme, currentNode->child->node->ele.leafNode->lexeme);
                 pushSemanticError(err);
                 // newTable = sympop(tbStack);
                 // free(newTable);
@@ -652,8 +673,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         /*2 children:
             1) ID_node
             2) expression
-        */ 
-
+        */
         //Search for ID_node in the symbol table tree
         symbolTableNode *ret = searchScope(tbStack, currentNode->child);
 
@@ -751,7 +771,20 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                 return NULL;
             }
         }
-        if(strcmp(ret->ele.data.id.type, rightType->tp.type))
+        if(ret->ele.tag == Array)
+        {
+            if(rightType->tag != ArrayType)
+            {
+                //Type mismatch, ERROR
+                sprintf(err,"Line %d: '%s' variable's type (Array) does not match the expression type (%s).", 
+                currentNode->child->node->ele.leafNode->lineNum,ret->ele.data.arr.lexeme, rightType->tp.type);
+                pushSemanticError(err);
+                // if(rightType!=NULL) free(rightType);
+                // if(err!=NULL) free(err);
+                return NULL;    
+            }
+        }
+        else if(strcmp(ret->ele.data.id.type, rightType->tp.type))
         {
             //Type mismatch, ERROR
             sprintf(err,"Line %d: '%s' variable's type (%s) does not match the expression type (%s).", 
@@ -1026,9 +1059,10 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             {
                 if(!ret->aux)
                 {
+                    symbolTableNode * getLine = sym_hash_find(currentNode->child->sibling->node->ele.leafNode->lexeme, &(symbolTableRoot->hashtb), 0, NULL);
                     // ERROR (Redundant Declaration) : Declaration not used for module
-                    sprintf(err,"Line %d: %s module has redundant declaration.", 
-                    ret->lineNum,currentNode->child->sibling->node->ele.leafNode->lexeme);
+                    sprintf(err,"Line %d: %s module has redundant declaration at line %d", 
+                    getLine->lineNum, currentNode->child->sibling->node->ele.leafNode->lexeme, ret->lineNum);
                     pushSemanticError(err);
                     // free(err); 
                     // return NULL;
@@ -1055,9 +1089,6 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             // if(err!=NULL) free(err);
             inputCountError = 1;
         }
-
-        
-
         //trav is pointing to head of the input ID list
         astNode * trav = currentNode->child->sibling->sibling->child;
 
@@ -1079,6 +1110,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                 {
                     //Not declared, ERROR
                     //searchscope has already inserted not found errors!
+                    trav = trav->sibling;
                     continue; 
                     // return NULL;
                 }
@@ -1208,7 +1240,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         int outputsize = listCount(currentNode->child->child);
         if(outputsize != ret->ele.data.mod.outputcount)
         {
-            //No of input parameters mismatch, ERROR
+            //No of output parameters mismatch, ERROR
             sprintf(err,"Line %d: %s module call has output parameters mismatch (Number of parameters are different).", 
             currentNode->child->sibling->sibling->node->ele.internalNode->lineNumStart, ret->ele.data.mod.lexeme);
             pushSemanticError(err);
@@ -1226,6 +1258,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             if(id_arr == NULL)
             {
                 //Not declared, ERROR
+                trav = trav->sibling;
                 continue;
                 // return NULL;
             }
@@ -1443,26 +1476,26 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             // return NULL;
         }
         //Mark all vars in the Expr_node as unassigned
-        int size = 100, index = 0, isConst = 1;
+        int size = 100, index = 0;
         // checkConstant(currentNode->child, isConst);
         int *prevValues = (int *)malloc(sizeof(int)*size);
-        traverseAndMark(currentNode->child, tbStack, prevValues, &size, &index, &isConst);
+        traverseAndMark(currentNode->child, tbStack, prevValues, &size, &index);
 
-        if(isConst == 1)
-        {
-            if(currentNode->child->node->tag == Leaf)
-            {
-                sprintf(err, "Line %d: The while condition has no varible. Possibly infinite loop.",
-                currentNode->child->node->ele.leafNode->lineNum);
-            }
-            else
-            {
-                sprintf(err, "Line %d: The while condition has no varible. Possibly infinite loop.",
-                currentNode->child->node->ele.internalNode->lineNumStart);
-            } 
-            pushSemanticError(err);
-            // if(free != NULL)    free(err);
-        }
+        // if(isConst == 1)
+        // {
+        //     if(currentNode->child->node->tag == Leaf)
+        //     {
+        //         sprintf(err, "Line %d: The while condition has no varible. Possibly infinite loop.",
+        //         currentNode->child->node->ele.leafNode->lineNum);
+        //     }
+        //     else
+        //     {
+        //         sprintf(err, "Line %d: The while condition has no varible. Possibly infinite loop.",
+        //         currentNode->child->node->ele.internalNode->lineNumStart);
+        //     } 
+        //     pushSemanticError(err);
+        //     // if(free != NULL)    free(err);
+        // }
 
         astNode *trav = currentNode->child->sibling;
         while(trav != NULL)
@@ -1488,31 +1521,19 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
 
         //If some var in Expr_node is assigned, error = 0
         index = 0;
-
-        if(isConst == 1)
-        {
-            error = 0;
-        }
-        else
-        {
-            checkAssignment(currentNode->child, tbStack, &error, prevValues, &index);
-            // if(prevValues!=NULL) free(prevValues);
-        }
+        checkAssignment(currentNode->child, tbStack, &error, prevValues, &index);
 
         //No variable in Expr_node has been assigned in the body of while
         if(error == 1)
         {
             //Error
-            if(currentNode->child->node->tag == Leaf)
-            {
-                sprintf(err,"Line %d: No variable in while's condition changes inside the loop.", 
-                currentNode->child->node->ele.leafNode->lineNum);
-            }
-            else
-            {
-                sprintf(err,"Line %d: No variable in while's condition changes inside the loop.", 
-                currentNode->child->node->ele.internalNode->lineNumStart);
-            }
+            
+            sprintf(err,"Line %d: No variable in while's condition changes inside the loop (Scope of while is line %d to line %d).", 
+            currentNode->node->ele.internalNode->lineNumEnd,
+            currentNode->node->ele.internalNode->lineNumStart,
+            currentNode->node->ele.internalNode->lineNumEnd
+            );
+            
             // if(isNull == 0)
                 // free(exprType);
             pushSemanticError(err);
@@ -1567,10 +1588,15 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         else if(isNull == 0 && !strcmp(id->ele.data.id.type,"REAL"))
         {
             //Type invalid, ERROR
-            sprintf(err,"Line %d: %s variable is of invalid type (REAL).", 
+            sprintf(err,"Line %d: %s variable is of invalid type (REAL) in SWITCH construct [NOTE: Further subtree inside switch is not checked for errors].", 
             currentNode->child->node->ele.leafNode->lineNum, 
             currentNode->child->node->ele.leafNode->lexeme);
+            
             pushSemanticError(err);
+            sympop(tbStack);
+            return NULL;
+            
+            
             // free(sympop(tbStack));
             // return NULL;
         }
@@ -1589,7 +1615,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             {
                 //error DEFAULT IS MISSING
                 sprintf(err, "Line %d: Default is missing though switch variable %s is of type %s.",
-                currentNode->child->node->ele.leafNode->lineNum, 
+                currentNode->node->ele.internalNode->lineNumEnd, 
                 currentNode->child->node->ele.leafNode->lexeme, 
                 id->ele.data.id.type);
                 pushSemanticError(err);
@@ -1684,7 +1710,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             {
                 //error DEFAULT IS PRESENT
                 sprintf(err, "Line %d: Default is present though switch variable %s is of type %s.",
-                currentNode->child->node->ele.leafNode->lineNum, 
+                findDefault->node->ele.internalNode->lineNumStart, 
                 currentNode->child->node->ele.leafNode->lexeme, 
                 id->ele.data.id.type);
                 pushSemanticError(err);
@@ -1772,7 +1798,8 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         // free(sympop(tbStack));
         return NULL;   
     }
-    else if (!strcmp(currentNode->node->ele.internalNode->label, "CASE"))
+    else if (!strcmp(currentNode->node->ele.internalNode->label, "CASE")
+    || !strcmp(currentNode->node->ele.internalNode->label, "DEFAULT"))
     {
         /* 
             Structure of CASE
@@ -2345,7 +2372,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
     }     
 }
 
-void traverseAndMark(astNode * root, tableStack * tbStack, int * prevValues, int *size, int *index, int *isConst)
+void traverseAndMark(astNode * root, tableStack * tbStack, int * prevValues, int *size, int *index)
 {
     // if(root == NULL)
     // {
@@ -2360,10 +2387,10 @@ void traverseAndMark(astNode * root, tableStack * tbStack, int * prevValues, int
 
     if(root->node->tag == Leaf)
     {
-        if(strcmp(root->node->ele.leafNode->type, "TRUE") && strcmp(root->node->ele.leafNode->type, "FALSE"))
-        {
-            *isConst = 0;
-        }
+        // if(strcmp(root->node->ele.leafNode->type, "TRUE") && strcmp(root->node->ele.leafNode->type, "FALSE"))
+        // {
+        //     *isConst = 0;
+        // }
         if(!strcmp(root->node->ele.leafNode->type, "ID"))
         {
             symbolTableNode *st = searchScope(tbStack, root);
@@ -2388,7 +2415,7 @@ void traverseAndMark(astNode * root, tableStack * tbStack, int * prevValues, int
 
     while(trav != NULL)
     {
-        traverseAndMark(trav, tbStack, prevValues, size, index, isConst);
+        traverseAndMark(trav, tbStack, prevValues, size, index);
         trav = trav->sibling;
     }
 }

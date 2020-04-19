@@ -1,5 +1,10 @@
-//TODO: Runtime Error Code 
-//TODO: Update AST
+/* 
+	GROUP 33
+	Aryan Mehra 2017A7PS0077P
+	Akshit Khanna 2017A7PS0023P
+   	Vipin Baswan 2017A7PS0429P
+   	Swadesh Vaibhav 2017A7PS0030P
+*/
 
 #include "codegenDef.h"
 #include "symbolTableDef.h"
@@ -49,6 +54,9 @@ void pre_process(FILE * fp)
     fprintf(fp,"\t_inpPercentD: db \"%%d\", 0\n");
     fprintf(fp,"\t_error1: db \"RUNTIME ERROR: Array index out of bounds, exiting ...\", 10, 0\n");
     fprintf(fp,"\t_error2: db \"RUNTIME ERROR: Bounds mismatch, exiting ...\", 10, 0\n");
+    fprintf(fp,"\t_error3: db \"RUNTIME ERROR: Lower index of array variable is greater than upper index, exiting ...\", 10, 0\n");
+    fprintf(fp,"\t_error4: db \"RUNTIME ERROR: Lower index of array variable is negative, exiting ...\", 10, 0\n");
+    fprintf(fp,"\t_error5: db \"RUNTIME ERROR: Upper index of array variable is negative, exiting ...\", 10, 0\n");
     fprintf(fp,"\t_output: db \"Output: \", 0\n");
     fprintf(fp,"\t_percentD: db \"%%d\", 10, 0\n");
     fprintf(fp,"\t_percentS: db \"%%s\", 10, 0\n");
@@ -61,6 +69,7 @@ void pre_process(FILE * fp)
     fprintf(fp, "\t_newline: db \"\", 10, 0\n");
     fprintf(fp,"\t_arrayInputString: db \"Input: Enter %%d array elements of %%s type for range %%d to %%d\", 10, 0\n\n");
     fprintf(fp,"SECTION .text\n\tglobal main\n\n");
+
     fprintf(fp,"RUNTIME_ERROR:\n");
     fprintf(fp,"\tPUSH dword _error1\n");
     fprintf(fp,"\tCALL printf\n");
@@ -68,8 +77,33 @@ void pre_process(FILE * fp)
     fprintf(fp,"\tMOV EBX, 0\n");
     fprintf(fp,"\tMOV EAX, 1\n");
     fprintf(fp,"\tINT 80h\n\n");
+
     fprintf(fp,"RUNTIME_ERROR_2:\n");
     fprintf(fp,"\tPUSH dword _error2\n");
+    fprintf(fp,"\tCALL printf\n");
+    fprintf(fp,"\tADD ESP, 4d\n");
+    fprintf(fp,"\tMOV EBX, 0\n");
+    fprintf(fp,"\tMOV EAX, 1\n");
+    fprintf(fp,"\tINT 80h\n\n");
+
+    fprintf(fp,"RUNTIME_ERROR_3:\n");
+    fprintf(fp,"\tPUSH dword _error3\n");
+    fprintf(fp,"\tCALL printf\n");
+    fprintf(fp,"\tADD ESP, 4d\n");
+    fprintf(fp,"\tMOV EBX, 0\n");
+    fprintf(fp,"\tMOV EAX, 1\n");
+    fprintf(fp,"\tINT 80h\n\n");
+
+    fprintf(fp,"RUNTIME_ERROR_4:\n");
+    fprintf(fp,"\tPUSH dword _error4\n");
+    fprintf(fp,"\tCALL printf\n");
+    fprintf(fp,"\tADD ESP, 4d\n");
+    fprintf(fp,"\tMOV EBX, 0\n");
+    fprintf(fp,"\tMOV EAX, 1\n");
+    fprintf(fp,"\tINT 80h\n\n");
+
+    fprintf(fp,"RUNTIME_ERROR_5:\n");
+    fprintf(fp,"\tPUSH dword _error5\n");
     fprintf(fp,"\tCALL printf\n");
     fprintf(fp,"\tADD ESP, 4d\n");
     fprintf(fp,"\tMOV EBX, 0\n");
