@@ -334,7 +334,6 @@ int setOR(int * arr1, int * arr2)
 // for the first time through some other NT's rule
 
 /*For a NT, we have following cases:
-
     1) It's follow has been calculated.     
     followSet[NT][enumTerminal+1] = 1
     followSet[NT][enumTerminal+2] = 1

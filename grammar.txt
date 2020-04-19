@@ -55,18 +55,19 @@ idList2 COMMA ID idList2
 idList2 EPSILON
 expression expression2
 expression unaryExprArithmetic 
-expression2 logicalExpr expression3 
-expression2 boolConst expression3
-expression3 logicalOp expression2
+expression2 myChoice expression3
+myChoice boolConst
+myChoice logicalExpr
+expression3 logicalOp myChoice expression3
 expression3 EPSILON
 logicalExpr arithmeticExpr logicalExpr2
 logicalExpr2 relationalOp arithmeticExpr
 logicalExpr2 EPSILON
 arithmeticExpr term arithmeticExpr2
-arithmeticExpr2 op1 arithmeticExpr 
+arithmeticExpr2 op1 term arithmeticExpr2 
 arithmeticExpr2 EPSILON
 term factor term2
-term2 op2 term
+term2 op2 factor term2
 term2 EPSILON
 factor BO expression2 BC 
 factor var
@@ -74,10 +75,10 @@ unaryExprArithmetic op1 myOptions
 myOptions var 
 myOptions BO arithmeticExprBoolnt BC
 arithmeticExprBoolnt termBoolnt arithmeticExpr2Boolnt
-arithmeticExpr2Boolnt op1 arithmeticExprBoolnt
+arithmeticExpr2Boolnt op1 termBoolnt arithmeticExpr2Boolnt
 arithmeticExpr2Boolnt EPSILON
 termBoolnt factorBoolnt term2Boolnt
-term2Boolnt op2 factorBoolnt 
+term2Boolnt op2 factorBoolnt term2Boolnt
 term2Boolnt EPSILON
 factorBoolnt BO arithmeticExprBoolnt BC 
 factorBoolnt var
