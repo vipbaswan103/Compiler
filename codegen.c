@@ -7,6 +7,7 @@
 int tmpNum = 0;
 int labelNum = 0;
 int currentOffset = 0;
+int dummyCurrentOffset = 0;
 void getOp(char * name, char * op)
 {
     if(!strcmp(name,"PLUS"))
@@ -47,6 +48,7 @@ void getTemporary(temporary * tmp, tableStack *tbStack, int temptype)
     if(temptype == 0)
     {
         newNode->width = INTEGER_SIZE;
+        newNode->dummyWidth = DUMMY_INTEGER_SIZE;
         strcpy(newNode->ele.data.id.type, "INTEGER\0");
         strcpy(tmp->type, "INTEGER\0");
     }
@@ -54,6 +56,7 @@ void getTemporary(temporary * tmp, tableStack *tbStack, int temptype)
     else if(temptype==1)
     {
         newNode->width = REAL_SIZE;
+        newNode->dummyWidth = DUMMY_REAL_SIZE;
         strcpy(newNode->ele.data.id.type, "REAL\0");
         strcpy(tmp->type, "REAL\0");
     }
@@ -61,12 +64,15 @@ void getTemporary(temporary * tmp, tableStack *tbStack, int temptype)
     else if(temptype==2)
     {
         newNode->width = BOOLEAN_SIZE;
+        newNode->dummyWidth = DUMMY_BOOLEAN_SIZE;
         strcpy(newNode->ele.data.id.type, "BOOLEAN\0");
         strcpy(tmp->type, "BOOLEAN\0");
     }
     newNode->offset = currentOffset;
     currentOffset += newNode->width;
-    
+    newNode->dummyOffset = dummyCurrentOffset;
+    dummyCurrentOffset += newNode->dummyWidth;
+
     newNode->lineNum  = -1;
     newNode->aux = -1;
     newNode->next = NULL;
@@ -985,6 +991,7 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
         // there is modules1 and modules2, inside which there is modules
         // inside that is moduledef 
         currentOffset = tbStack->top->ele->currentOffset;
+        dummyCurrentOffset = tbStack->top->ele->dummyCurrentOffset;
         tableStackEle *newTable = (tableStackEle *)malloc(sizeof(tableStackEle));
         newTable->ele = tbStack->top->ele->child;
         newTable->next = NULL;
@@ -1032,6 +1039,7 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
         body->code = finaldef;
 
         tbStack->top->ele->currentOffset = currentOffset;
+        tbStack->top->ele->dummyCurrentOffset = dummyCurrentOffset;
         sympop(tbStack);
         return body;
     }
@@ -1643,6 +1651,7 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
         // Statements as Children - Sibling lists
         
         currentOffset = tbStack->top->ele->currentOffset;
+        dummyCurrentOffset = tbStack->top->ele->dummyCurrentOffset;
 
         quad* stmtsLabel = (quad *)malloc(sizeof(quad));
         strcpy(stmtsLabel->op, "\0");
@@ -1732,6 +1741,7 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
         intermed * final = (intermed *)malloc(sizeof(intermed));
         final->code = stmtsCode->code;
         tbStack->top->ele->currentOffset = currentOffset;
+        tbStack->top->ele->dummyCurrentOffset = dummyCurrentOffset;
         sympop(tbStack);
         return final;
     }
