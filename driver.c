@@ -16,6 +16,11 @@
 #include "codegen.h"
 #include "nasmcode.h"
 
+
+
+
+
+
 void seeTokenization()
 {
     Token * tkn = NULL;
@@ -156,7 +161,10 @@ void printArrays(symbolTable *root)
             char range[20];
             
         
-            sprintf(scopeline,"%d to %d",root->lineNumStart, root->lineNumEnd);
+            if(temp->isParameter==1 || temp->isParameter==2)
+                sprintf(scopeline,"%d to %d",root->child->lineNumStart, root->child->lineNumEnd);
+            else 
+                sprintf(scopeline,"%d to %d",root->lineNumStart, root->lineNumEnd);
 
             if(temp->ele.data.arr.isDynamic==0)
                 strcpy(static_dynamic," Static ");
@@ -195,19 +203,6 @@ int main(int argc, char * argv[])
         return 0;
         
     }
-    Grammar * grammar = NULL;
-    int ** parseTable = NULL;
-    TreeNode * parseTree = NULL;
-    int ** firstSet = NULL;
-    int ** followSet = NULL;
-    FILE * fp;
-    astNode* ast = NULL;
-    intermed * ircode = NULL;
-    FILE * fpx=NULL;
-    symbolTable* symT = NULL;
-    tableStackEle* newNode = NULL;
-    tableStack* tbStack = NULL;
-
 
     initializeKeyHash();
 
@@ -239,14 +234,26 @@ int main(int argc, char * argv[])
     scanf("%d",&option);
     printf("----------------------------------------------------------------------------------------------\n");
     
-    
     //For time analysis of stage 1
     clock_t start_time, end_time;               
     double total_CPU_time, total_CPU_time_in_seconds;
     
     while(option!=0)
     {
-               
+
+        Grammar * grammar = NULL;
+        int ** parseTable = NULL;
+        TreeNode * parseTree = NULL;
+        int ** firstSet = NULL;
+        int ** followSet = NULL;
+        FILE * fp;
+        astNode* ast = NULL;
+        intermed * ircode = NULL;
+        FILE * fpx=NULL;
+        symbolTable* symT = NULL;
+        tableStackEle* newNode = NULL;
+        tableStack* tbStack = NULL;
+
         switch(option)
         {
             case 1: //LEXER FINAL
@@ -655,8 +662,27 @@ int main(int argc, char * argv[])
                     tbStack->bottom = NULL;
                     typeChecker(ast, tbStack);
 
-                    if(semErrorList!=NULL) printf("Semantic Errors:\n");
-                    printSemanticErrors();
+                    if(semErrorList->head!=NULL) 
+                    {
+                        printf("\nWe found %d Semantic Errors:\n", semErrorList->numErrors);
+                        printSemanticErrors();
+                        printf("----------------------------------------------------------------------------------------------\n");
+                        printf("\nOptions:\n");
+                        printf("Press 0 : Exit \n");
+                        printf("Press 1 : LEXER \n");
+                        printf("Press 2 : PARSER \n");
+                        printf("Press 3 : AST PREORDER TRAVERSAL\n");
+                        printf("Press 4 : Memory \n");
+                        printf("Press 5 : Symbol Table\n");
+                        printf("Press 6 : Activation Record Size\n");
+                        printf("Press 7 : Static and Dynamic Arrays\n");
+                        printf("Press 8 : Error Reporting and total compile time\n");
+                        printf("Press 9 : Code Generation\n");   
+                        printf("What would you like to do? Option: ");
+                        scanf("%d",&option);
+                        printf("----------------------------------------------------------------------------------------------\n");
+                        continue;
+                    }
 
                     tbStack->top = NULL; tbStack->size = 0; tbStack->bottom = NULL;
                     ircode = generateIRCode(ast, NULL, tbStack);
@@ -705,9 +731,11 @@ int main(int argc, char * argv[])
 
                     if(LexHead != NULL || SynHead!=NULL)
                     {
-                        printf("Syntactical Errors (lexical and syntax related):\n");
+                        printf("Syntactic Errors (lexical and syntax related):\n");
                         printErrorList(1);
                         printErrorList(2);
+
+                        printf("\nNOTE: Since there are lexical/syntactic errors, no code generation or semantic checks take place.\n");
                         printf("----------------------------------------------------------------------------------------------\n");
                         printf("\nOptions:\n");
                         printf("Press 0 : Exit \n");
@@ -736,8 +764,28 @@ int main(int argc, char * argv[])
                     tbStack->bottom = NULL;
                     typeChecker(ast, tbStack);
                     
-                    if(semErrorList!=NULL) printf("\nSemantic Errors:\n");
-                    printSemanticErrors();
+                    if(semErrorList->head!=NULL) 
+                    {
+                        printf("\nWe found %d Semantic Errors:\n", semErrorList->numErrors);
+                        printSemanticErrors();
+                        printf("\nNOTE: Since there are semantic errors, no code generation takes place.\n");
+                        printf("----------------------------------------------------------------------------------------------\n");
+                        printf("\nOptions:\n");
+                        printf("Press 0 : Exit \n");
+                        printf("Press 1 : LEXER \n");
+                        printf("Press 2 : PARSER \n");
+                        printf("Press 3 : AST PREORDER TRAVERSAL\n");
+                        printf("Press 4 : Memory \n");
+                        printf("Press 5 : Symbol Table\n");
+                        printf("Press 6 : Activation Record Size\n");
+                        printf("Press 7 : Static and Dynamic Arrays\n");
+                        printf("Press 8 : Error Reporting and total compile time\n");
+                        printf("Press 9 : Code Generation\n");   
+                        printf("What would you like to do? Option: ");
+                        scanf("%d",&option);
+                        printf("----------------------------------------------------------------------------------------------\n");
+                        continue;
+                    }
                     
                     tbStack->top = NULL; tbStack->size = 0; tbStack->bottom = NULL;
                     ircode = generateIRCode(ast, NULL, tbStack);

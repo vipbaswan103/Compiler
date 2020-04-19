@@ -1,3 +1,11 @@
+/* 
+	GROUP 33
+	Aryan Mehra 2017A7PS0077P
+	Akshit Khanna 2017A7PS0023P
+   	Vipin Baswan 2017A7PS0429P
+   	Swadesh Vaibhav 2017A7PS0030P
+*/
+
 #include "codegenDef.h"
 #include "ast.h"
 #include "symbolTableDef.h"
@@ -2776,16 +2784,150 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
         {
             //head of idList
             astNode* temp = currentNode->child->child;
-            
             while(temp!=NULL)
             {
+                symbolTableNode * ret = searchScope(tbStack, temp);
+                IRcode * code = NULL;
+                if(ret->ele.data.arr.isDynamic == 1)
+                {
+                    //Checking that lower index is >= 0
+                    IRcode * ifcode1 = (IRcode *)malloc(sizeof(IRcode));
+                    ifcode1->ele = (quad *)malloc(sizeof(quad));
+                    ifcode1->next = NULL;
+
+                    strcpy(ifcode1->ele->op, ">=\0");
+                    initQuad(ifcode1->ele, ret->ele.data.arr.lowerIndex->lexeme, 
+                    "0\0", "if\0");
+
+                    if(!strcmp(ret->ele.data.arr.lowerIndex->type, "NUM"))
+                        ifcode1->ele->tag1 = NUM;
+                    else
+                        ifcode1->ele->tag1 = ID;
+                    
+                    ifcode1->ele->tag2 = NUM;
+
+                    IRcode * goto1 = (IRcode *)malloc(sizeof(IRcode));
+                    goto1->ele = (quad *)malloc(sizeof(quad));
+                    goto1->next = NULL;
+
+                    strcpy(goto1->ele->op, "goto\0");
+                    initQuad(goto1->ele, "\0", "\0", "\0");
+                    getLabel(goto1->ele->arg1);
+
+                    IRcode * goto2 = (IRcode *)malloc(sizeof(IRcode));
+                    goto2->ele = (quad *)malloc(sizeof(quad));
+                    goto2->next = NULL;
+
+                    strcpy(goto2->ele->op, "goto\0");
+                    initQuad(goto2->ele, "RUNTIME_ERROR_4\0", "\0", "if\0");
+                    
+                    IRcode * label1 = (IRcode *)malloc(sizeof(IRcode));
+                    label1->ele = (quad *)malloc(sizeof(quad));
+                    label1->next = NULL;
+
+                    strcpy(label1->ele->op, ":\0");
+                    initQuad(label1->ele, goto1->ele->arg1, "\0", "if\0");
+
+                    //Checking that upper index is >=0
+                    IRcode * ifcode2 = (IRcode *)malloc(sizeof(IRcode));
+                    ifcode2->ele = (quad *)malloc(sizeof(quad));
+                    ifcode2->next = NULL;
+
+                    strcpy(ifcode2->ele->op, ">=\0");
+                    initQuad(ifcode2->ele, ret->ele.data.arr.upperIndex->lexeme, 
+                    "0\0", "if\0");
+
+                    if(!strcmp(ret->ele.data.arr.upperIndex->type, "NUM"))
+                        ifcode2->ele->tag1 = NUM;
+                    else
+                        ifcode2->ele->tag1 = ID;
+                    
+                    ifcode2->ele->tag2 = NUM;
+
+                    IRcode * goto3 = (IRcode *)malloc(sizeof(IRcode));
+                    goto3->ele = (quad *)malloc(sizeof(quad));
+                    goto3->next = NULL;
+
+                    strcpy(goto3->ele->op, "goto\0");
+                    initQuad(goto3->ele, "\0", "\0", "\0");
+                    getLabel(goto3->ele->arg1);
+
+                    IRcode * goto4 = (IRcode *)malloc(sizeof(IRcode));
+                    goto4->ele = (quad *)malloc(sizeof(quad));
+                    goto4->next = NULL;
+
+                    strcpy(goto4->ele->op, "goto\0");
+                    initQuad(goto4->ele, "RUNTIME_ERROR_5\0", "\0", "if\0");
+                    
+                    IRcode * label2 = (IRcode *)malloc(sizeof(IRcode));
+                    label2->ele = (quad *)malloc(sizeof(quad));
+                    label2->next = NULL;
+                    
+                    strcpy(label2->ele->op, ":\0");
+                    initQuad(label2->ele, goto3->ele->arg1, "\0", "if\0");
+
+                    //Checking that lower index <= upper index
+                    IRcode * ifcode = (IRcode *)malloc(sizeof(IRcode));
+                    ifcode->ele = (quad *)malloc(sizeof(quad));
+                    ifcode->next = NULL;
+
+                    strcpy(ifcode->ele->op, "<=\0");
+                    initQuad(ifcode->ele, ret->ele.data.arr.lowerIndex->lexeme, 
+                    ret->ele.data.arr.upperIndex->lexeme, "if\0");
+
+                    if(!strcmp(ret->ele.data.arr.lowerIndex->type, "NUM"))
+                        ifcode->ele->tag1 = NUM;
+                    else
+                        ifcode->ele->tag1 = ID;
+                    
+                    if(!strcmp(ret->ele.data.arr.upperIndex->type, "NUM"))
+                        ifcode->ele->tag2 = NUM;
+                    else
+                        ifcode->ele->tag2 = ID;
+
+                    IRcode * goto5 = (IRcode *)malloc(sizeof(IRcode));
+                    goto5->ele = (quad *)malloc(sizeof(quad));
+                    goto5->next = NULL;
+
+                    strcpy(goto5->ele->op, "goto\0");
+                    initQuad(goto5->ele, "\0", "\0", "\0");
+                    getLabel(goto5->ele->arg1);
+
+                    IRcode * goto6 = (IRcode *)malloc(sizeof(IRcode));
+                    goto6->ele = (quad *)malloc(sizeof(quad));
+                    goto6->next = NULL;
+
+                    strcpy(goto6->ele->op, "goto\0");
+                    initQuad(goto6->ele, "RUNTIME_ERROR_3\0", "\0", "if\0");
+                    
+                    IRcode * label3 = (IRcode *)malloc(sizeof(IRcode));
+                    label3->ele = (quad *)malloc(sizeof(quad));
+                    label3->next = NULL;
+
+                    strcpy(label3->ele->op, ":\0");
+                    initQuad(label3->ele, goto5->ele->arg1, "\0", "if\0");
+                    
+                    mergeCode(&(code), ifcode1);
+                    mergeCode(&(code), goto1);
+                    mergeCode(&(code), goto2);
+                    mergeCode(&(code), label1);
+                    mergeCode(&(code), ifcode2);
+                    mergeCode(&(code), goto3);
+                    mergeCode(&(code), goto4);
+                    mergeCode(&(code), label2);
+                    mergeCode(&(code), ifcode);
+                    mergeCode(&(code), goto5);
+                    mergeCode(&(code), goto6);
+                    mergeCode(&(code), label3);
+                }
                 IRcode * dec = malloc(sizeof(IRcode));
                 dec->ele = (quad *)malloc(sizeof(quad));
                 dec->next=NULL;
                 strcpy(dec->ele->op,"declare");
                 initQuad(dec->ele, "\0", "\0", "\0");
                 strcpy(dec->ele->arg1, temp->node->ele.leafNode->lexeme);
-                mergeCode(&(final->code),dec);
+                mergeCode(&(final->code), code);
+                mergeCode(&(final->code), dec);
                 temp = temp->sibling;
             }
         }

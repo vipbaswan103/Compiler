@@ -1052,7 +1052,7 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
             arrASTnodes[1] = caseStmt_node;    
             arrASTnodes[2] = default_node;   
             astNode * condNode = makeASTnode("SWITCH", arrASTnodes, 3);
-            condNode->node->ele.internalNode->lineNumStart = parseNode->child->ele.leaf.tkn.lineNum;
+            condNode->node->ele.internalNode->lineNumStart = parseNode->child->sibling->sibling->sibling->sibling->ele.leaf.tkn.lineNum;
             condNode->node->ele.internalNode->lineNumEnd = parseNode->child->sibling->sibling->sibling->sibling->sibling->sibling->sibling->ele.leaf.tkn.lineNum;
             return condNode;
         }
@@ -1140,7 +1140,7 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
                 arrASTnodes[2] = stmts_syn;
 
                 astNode *itrNode = makeASTnode("FOR", arrASTnodes, 3);
-                itrNode->node->ele.internalNode->lineNumStart = parseNode->child->ele.leaf.tkn.lineNum;
+                itrNode->node->ele.internalNode->lineNumStart = parseNode->child->sibling->sibling->sibling->sibling->sibling->sibling->ele.leaf.tkn.lineNum;
                 itrNode->node->ele.internalNode->lineNumEnd = parseNode->child->sibling->sibling->sibling->sibling->sibling->sibling->sibling->sibling->ele.leaf.tkn.lineNum;
                 return itrNode;
             }
@@ -1157,7 +1157,7 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
                 arrASTnodes[1] = stmts_syn;
 
                 astNode *whileNode = makeASTnode("WHILE", arrASTnodes, 2);
-                whileNode->node->ele.internalNode->lineNumStart = parseNode->child->ele.leaf.tkn.lineNum;
+                whileNode->node->ele.internalNode->lineNumStart = parseNode->child->sibling->sibling->sibling->sibling->ele.leaf.tkn.lineNum;
                 whileNode->node->ele.internalNode->lineNumEnd = parseNode->child->sibling->sibling->sibling->sibling->sibling->sibling->ele.leaf.tkn.lineNum;
                 return whileNode;
             }
@@ -1214,7 +1214,6 @@ astNode * createAST(TreeNode *parseNode, astNode *inh, astNode **syn)
 }
 
 //Function to print the AST
-
 void printAST(astNode * ast)
 {
     if(ast == NULL)
@@ -1246,7 +1245,7 @@ void printAST(astNode * ast)
         strcpy(value," ------- ");
     }    
     
-    printf("|| %20s || %20s || %20s || %20s || %20s || \n", label, node, linenumber, type, value);
+    printf("|| %20s || %10s || %10s || %10s || %10s || \n", label, node, linenumber, type, value);
 
     astNode * tmp = ast->child;
     while(tmp != NULL)
