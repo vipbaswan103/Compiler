@@ -126,6 +126,64 @@ int astcount(astNode * a)
     return sum;
 }
 
+void printArrays(symbolTable *root)
+{
+    if(root == NULL)
+        return;
+
+    // printf("***********************************************************************************************************************************\n");
+    
+    int index = 0;
+
+    hashSym hashtb = root->hashtb;
+    
+    while(index<=hashtb.hashtbSize)
+    {        
+        linkedListSym* trav = &(hashtb.arr[index]);
+        symbolTableNode *temp = trav->head;
+        while(temp!=NULL)
+        {
+            
+            if(temp->isParameter == 2 || temp->ele.tag==Module || temp->ele.tag==Identifier)
+            {
+                temp = temp->next;
+                
+                continue;
+            }
+
+            char scopeline[20];
+            char static_dynamic[20];
+            char range[20];
+            
+        
+            sprintf(scopeline,"%d to %d",root->lineNumStart, root->lineNumEnd);
+
+            if(temp->ele.data.arr.isDynamic==0)
+                strcpy(static_dynamic," Static ");
+            else 
+                strcpy(static_dynamic," Dynamic ");
+
+            sprintf(range,"[%s - %s]", temp->ele.data.arr.lowerIndex->lexeme, temp->ele.data.arr.upperIndex->lexeme);
+            
+
+            printf("|| %-20s || %-10s || %-20s || %-20s || %-20s || %-10s ||\n", 
+            root->symLexeme, scopeline,temp->ele.data.arr.lexeme, static_dynamic, range, temp->ele.data.arr.type);
+
+            temp = temp->next;
+        }
+        index++;
+    }
+    
+    
+    // printf("***********************************************************************************************************************************\n\n");
+    symbolTable * tmp = root->child;
+    while(tmp != NULL)
+    {
+        printArrays(tmp);
+        tmp = tmp->sibling;
+    }
+}
+
 
 
 /*******************************************************************/
@@ -133,7 +191,7 @@ int main(int argc, char * argv[])
 {
     if(argc != 3)
     {
-        printf("Wrong number of args. Please give 2 file names. \n The first one should be the program and the other should be where you want to write the syntax tree output\n"); 
+        printf("Wrong number of args. Please give 2 file names. \n The first one should be the program and the other should be where you want to write the ASM code\n"); 
         return 0;
         
     }
@@ -144,6 +202,12 @@ int main(int argc, char * argv[])
     int ** followSet = NULL;
     FILE * fp;
     astNode* ast = NULL;
+    intermed * ircode = NULL;
+    FILE * fpx=NULL;
+    symbolTable* symT = NULL;
+    tableStackEle* newNode = NULL;
+    tableStack* tbStack = NULL;
+
 
     initializeKeyHash();
 
@@ -151,6 +215,9 @@ int main(int argc, char * argv[])
     printf("Hello! Welcome to Compiler CSF363. This is the compiler of group 33. \n");
     printf("We are Akshit Khanna, Aryan Mehra, Vipin Baswan and Swadesh Vaibhav.\n");
     printf("Our group has successfully COMPLETED ALL REQUIRED FEATURES \n");
+    printf("----------------------------------------------------------------------------------------------\n\n");
+    printf("       LEVEL 4 \n");
+    
     printf("----------------------------------------------------------------------------------------------\n");
     
     int option=(-1);
@@ -221,31 +288,34 @@ int main(int argc, char * argv[])
                     parseTable = intializeParseTable();
                     createParseTable(grammar,parseTable,firstSet,followSet);
                     parseTree = parser(grammar, parseTable);
-                    printf("|| %15s || %10s || %15s || %15s || %20s || %10s || %20s || \n", "LEXEME", "LINENO", "TOKEN", "VALUE", "PARENT_NODE", "IS_LEAF", "CURR_NODE");
-                    printf("%s\n","--------------------------------------------------------------------------------------------------------------------------------");
+                    printf("|| %10s || %10s || %15s || %10s || %20s || %8s || %20s || \n", "LEXEME", "LINENO", "TOKEN", "VALUE", "PARENT_NODE", "IS_LEAF", "CURR_NODE");
+                    printf("\n%s\n","--------------------------------------------------------------------------------------------------------------------------------");
                     inOrder(parseTree, NULL);
                     printf("%s\n","--------------------------------------------------------------------------------------------------------------------------------");
                     printf("%s\n","--------------------------------------------------------------------------------------------------------------------------------");
                     printf("\n\n");
 
-                    if(LexHead != NULL)
+                    if(LexHead != NULL || SynHead!=NULL)
                     {
-                        printf("Lexical Errors:\n");
+                        printf("Syntactical Errors (lexical and syntax related):\n");
                         printErrorList(1);
-                    }
-                    else
-                    {
-                        printf("No lexical errors!\n");
-                    }
-                    
-                    if(SynHead != NULL)
-                    {
-                        printf("Syntax Errors:\n");
                         printErrorList(2);
-                    }
-                    else
-                    {
-                        printf("Parsing was successfull......!\n");
+                        printf("----------------------------------------------------------------------------------------------\n");
+                        printf("\nOptions:\n");
+                        printf("Press 0 : Exit \n");
+                        printf("Press 1 : LEXER \n");
+                        printf("Press 2 : PARSER \n");
+                        printf("Press 3 : AST PREORDER TRAVERSAL\n");
+                        printf("Press 4 : Memory \n");
+                        printf("Press 5 : Symbol Table\n");
+                        printf("Press 6 : Activation Record Size\n");
+                        printf("Press 7 : Static and Dynamic Arrays\n");
+                        printf("Press 8 : Error Reporting and total compile time\n");
+                        printf("Press 9 : Code Generation\n");   
+                        printf("What would you like to do? Option: ");
+                        scanf("%d",&option);
+                        printf("----------------------------------------------------------------------------------------------\n");
+                        continue;
                     }
                     break;
                     
@@ -269,30 +339,33 @@ int main(int argc, char * argv[])
                     createParseTable(grammar,parseTable,firstSet,followSet);
                     parseTree = parser(grammar, parseTable);
                     
-                    if(LexHead != NULL)
+                    if(LexHead != NULL || SynHead!=NULL)
                     {
-                        printf("Lexical Errors:\n");
+                        printf("Syntactical Errors (lexical and syntax related):\n");
                         printErrorList(1);
-                    }
-                    else
-                    {
-                        printf("No lexical errors!\n");
-                    }
-                    
-                    if(SynHead != NULL)
-                    {
-                        printf("Syntax Errors:\n");
                         printErrorList(2);
-                    }
-                    else
-                    {
-                        printf("Parsing was successfull......!\n");
+                        printf("----------------------------------------------------------------------------------------------\n");
+                        printf("\nOptions:\n");
+                        printf("Press 0 : Exit \n");
+                        printf("Press 1 : LEXER \n");
+                        printf("Press 2 : PARSER \n");
+                        printf("Press 3 : AST PREORDER TRAVERSAL\n");
+                        printf("Press 4 : Memory \n");
+                        printf("Press 5 : Symbol Table\n");
+                        printf("Press 6 : Activation Record Size\n");
+                        printf("Press 7 : Static and Dynamic Arrays\n");
+                        printf("Press 8 : Error Reporting and total compile time\n");
+                        printf("Press 9 : Code Generation\n");   
+                        printf("What would you like to do? Option: ");
+                        scanf("%d",&option);
+                        printf("----------------------------------------------------------------------------------------------\n");
+                        continue;
                     }
 
                     ast = createAST(parseTree, NULL, NULL);
                     
                     printf("The traversal is PREORDER.\n");
-                    printf("|| %20s || %20s || %20s || %20s || %20s || \n", "LABEL/LEXEME", "NODE", "LINENO", "TYPE", "VALUE");
+                    printf("|| %20s || %10s || %10s || %10s || %10s || \n", "LABEL/LEXEME", "NODE", "LINENO", "TYPE", "VALUE");
                     printf("%s\n","--------------------------------------------------------------------------------------------------------------------------------");
                     printAST(ast);
                     printf("%s\n","--------------------------------------------------------------------------------------------------------------------------------");
@@ -323,24 +396,27 @@ int main(int argc, char * argv[])
                     createParseTable(grammar,parseTable,firstSet,followSet);
                     parseTree = parser(grammar, parseTable);
 
-                    if(LexHead != NULL)
+                    if(LexHead != NULL || SynHead!=NULL)
                     {
-                        printf("Lexical Errors:\n");
+                        printf("Syntactical Errors (lexical and syntax related):\n");
                         printErrorList(1);
-                    }
-                    else
-                    {
-                        printf("No lexical errors!\n");
-                    }
-                    
-                    if(SynHead != NULL)
-                    {
-                        printf("Syntax Errors:\n");
                         printErrorList(2);
-                    }
-                    else
-                    {
-                        printf("Parsing was successfull......!\n");
+                        printf("----------------------------------------------------------------------------------------------\n");
+                        printf("\nOptions:\n");
+                        printf("Press 0 : Exit \n");
+                        printf("Press 1 : LEXER \n");
+                        printf("Press 2 : PARSER \n");
+                        printf("Press 3 : AST PREORDER TRAVERSAL\n");
+                        printf("Press 4 : Memory \n");
+                        printf("Press 5 : Symbol Table\n");
+                        printf("Press 6 : Activation Record Size\n");
+                        printf("Press 7 : Static and Dynamic Arrays\n");
+                        printf("Press 8 : Error Reporting and total compile time\n");
+                        printf("Press 9 : Code Generation\n");   
+                        printf("What would you like to do? Option: ");
+                        scanf("%d",&option);
+                        printf("----------------------------------------------------------------------------------------------\n");
+                        continue;
                     }
                     
                     ast = createAST(parseTree, NULL, NULL);
@@ -380,33 +456,41 @@ int main(int argc, char * argv[])
                     createParseTable(grammar,parseTable,firstSet,followSet);
                     parseTree = parser(grammar, parseTable);
                     
-                    if(LexHead != NULL)
+                    if(LexHead != NULL || SynHead!=NULL)
                     {
-                        printf("Lexical Errors:\n");
+                        printf("Syntactical Errors (lexical and syntax related):\n");
                         printErrorList(1);
-                    }
-                    else
-                    {
-                        printf("No lexical errors!\n");
-                    }
-                    
-                    if(SynHead != NULL)
-                    {
-                        printf("Syntax Errors:\n");
                         printErrorList(2);
-                    }
-                    else
-                    {
-                        printf("Parsing was successfull......!\n");
+                        printf("----------------------------------------------------------------------------------------------\n");
+                        printf("\nOptions:\n");
+                        printf("Press 0 : Exit \n");
+                        printf("Press 1 : LEXER \n");
+                        printf("Press 2 : PARSER \n");
+                        printf("Press 3 : AST PREORDER TRAVERSAL\n");
+                        printf("Press 4 : Memory \n");
+                        printf("Press 5 : Symbol Table\n");
+                        printf("Press 6 : Activation Record Size\n");
+                        printf("Press 7 : Static and Dynamic Arrays\n");
+                        printf("Press 8 : Error Reporting and total compile time\n");
+                        printf("Press 9 : Code Generation\n");   
+                        printf("What would you like to do? Option: ");
+                        scanf("%d",&option);
+                        printf("----------------------------------------------------------------------------------------------\n");
+                        continue;
                     }
                     
                     ast = createAST(parseTree, NULL, NULL);
                     
                     initializeErrorList();
                     formulation(ast, NULL);
+                    printf("|| %-20s | %-20s | %-15s | %-8s | %-8s | %-15s | %-15s | %-10s | %-8s | %-10s ||\n", 
+                    "Variable", "Scope","Scope Lines", "Width", "Is Array", "Static/Dynamic", "Range", "Type", "Offset", "Nest Level");
+                    printf("-----------------------------------------------------------------------------------------------------------------------------------\n");
+    
                     printSymbolTable(symbolTableRoot,-1);
                     
                     break;
+            
 
             case 6: //Activation Record Size
                     
@@ -429,124 +513,95 @@ int main(int argc, char * argv[])
                     createParseTable(grammar,parseTable,firstSet,followSet);
                     parseTree = parser(grammar, parseTable);
                     
-                    if(LexHead != NULL)
+                    if(LexHead != NULL || SynHead!=NULL)
                     {
-                        printf("Lexical Errors:\n");
+                        printf("Syntactical Errors (lexical and syntax related):\n");
                         printErrorList(1);
-                    }
-                    else
-                    {
-                        printf("No lexical errors!\n");
-                    }
-                    
-                    if(SynHead != NULL)
-                    {
-                        printf("Syntax Errors:\n");
                         printErrorList(2);
-                    }
-                    else
-                    {
-                        printf("Parsing was successfull......!\n");
+                        printf("----------------------------------------------------------------------------------------------\n");
+                        printf("\nOptions:\n");
+                        printf("Press 0 : Exit \n");
+                        printf("Press 1 : LEXER \n");
+                        printf("Press 2 : PARSER \n");
+                        printf("Press 3 : AST PREORDER TRAVERSAL\n");
+                        printf("Press 4 : Memory \n");
+                        printf("Press 5 : Symbol Table\n");
+                        printf("Press 6 : Activation Record Size\n");
+                        printf("Press 7 : Static and Dynamic Arrays\n");
+                        printf("Press 8 : Error Reporting and total compile time\n");
+                        printf("Press 9 : Code Generation\n");   
+                        printf("What would you like to do? Option: ");
+                        scanf("%d",&option);
+                        printf("----------------------------------------------------------------------------------------------\n");
+                        continue;
                     }
                     
                     ast = createAST(parseTree, NULL, NULL);
-                    
                     initializeErrorList();
-                    
                     formulation(ast, NULL);
-                    // activationRecordSize(symbolTableRoot,0);
-
-                    //TO DO Activation Record Size from current offset 
+                    activationRecordSize(symbolTableRoot,0);
 
                     break;
 
-            // case 3: //Parsing Tree and Output
-            //         fp = fopen(argv[2],"w");
-            //         if(fp == NULL)
-            //         {
-            //             printf("Error: Not able to open the file");
-            //             exit(-1);
-            //         }
-            //         populate_keyhash();
-            //         initializeLexer(argv[1]);
-            //         initializeParser();
+            case 7: //Array Printing
                     
-            //         grammar = read_grammar("grammar.txt");
-            //         map(grammar);
+                    populate_keyhash();
+                    initializeLexer(argv[1]);
+                    initializeParser();
+                    
+                    grammar = read_grammar("grammar.txt");
+                    map(grammar);
 
-            //         firstSet = initializeFirst();
-            //         followSet = initializeFollow();
-            //         calculateFirstEquations(grammar, firstSet, firstEquations);
-            //         calculateFirstSet(grammar, firstSet, firstEquations);
+                    firstSet = initializeFirst();
+                    followSet = initializeFollow();
+                    calculateFirstEquations(grammar, firstSet, firstEquations);
+                    calculateFirstSet(grammar, firstSet, firstEquations);
 
-            //         calculateFollowEquations(grammar, followSet, firstSet, followEquations);
-            //         calculateFollowSet(grammar, followSet, followEquations);
+                    calculateFollowEquations(grammar, followSet, firstSet, followEquations);
+                    calculateFollowSet(grammar, followSet, followEquations);
                     
-            //         parseTable = intializeParseTable();
-            //         createParseTable(grammar,parseTable,firstSet,followSet);
-            //         parseTree = parser(grammar, parseTable);
-            //         fprintf(fp,"%15s %10s %15s %15s %20s %10s %20s\n", "LEXEME", "LINENO", "TOKEN", "VALUE", "PARENT_NODE", "IS_LEAF", "CURR_NODE");
-            //         fprintf(fp,"%s\n","--------------------------------------------------------------------------------------------------------------------------------");
-            //         inOrder(fp, parseTree, NULL);
-            //         printf("\n\n");
-            //         if(LexHead != NULL)
-            //         {
-            //             printf("Lexical Errors:\n");
-            //             printErrorList(1);
-            //         }
-            //         else
-            //         {
-            //             printf("No lexical errors!\n");
-            //         }
+                    parseTable = intializeParseTable();
+                    createParseTable(grammar,parseTable,firstSet,followSet);
+                    parseTree = parser(grammar, parseTable);
                     
-            //         if(SynHead != NULL)
-            //         {
-            //             printf("Syntax Errors:\n");
-            //             printErrorList(2);
-            //         }
-            //         else
-            //         {
-            //             printf("Parsing was successfull......!\n");
-            //         }
-            //         fclose(fp);
-            //         astNode * ast = createAST(parseTree, NULL, NULL);
-            //         fp = fopen(argv[3], "w");
-            //         printAST(ast, fp);
-            //         initializeErrorList();
-            //         symbolTable *table = NULL;
-            //         formulation(ast, table);
-            //         printSymbolTable(symbolTableRoot);
-            //         tableStack *tbStack= (tableStack*)malloc(sizeof(tableStack));
-            //         tbStack->top = NULL;
-            //         tbStack->size = 0;
-            //         tbStack->bottom = NULL;
-            //         typeChecker(ast, tbStack);
-            //         printSemanticErrors();
+                    if(LexHead != NULL || SynHead!=NULL)
+                    {
+                        printf("Syntactical Errors (lexical and syntax related):\n");
+                        printErrorList(1);
+                        printErrorList(2);
+                        printf("----------------------------------------------------------------------------------------------\n");
+                        printf("\nOptions:\n");
+                        printf("Press 0 : Exit \n");
+                        printf("Press 1 : LEXER \n");
+                        printf("Press 2 : PARSER \n");
+                        printf("Press 3 : AST PREORDER TRAVERSAL\n");
+                        printf("Press 4 : Memory \n");
+                        printf("Press 5 : Symbol Table\n");
+                        printf("Press 6 : Activation Record Size\n");
+                        printf("Press 7 : Static and Dynamic Arrays\n");
+                        printf("Press 8 : Error Reporting and total compile time\n");
+                        printf("Press 9 : Code Generation\n");   
+                        printf("What would you like to do? Option: ");
+                        scanf("%d",&option);
+                        printf("----------------------------------------------------------------------------------------------\n");
+                        continue;
+                    }
                     
-            //         // quad * labels = (quad *)malloc(sizeof(quad));
-            //         tbStack->top = NULL;
-            //         tbStack->size = 0;
-            //         tbStack->bottom = NULL;
-            //         intermed * ircode = generateIRCode(ast, NULL, tbStack);
-            //         printCode(ircode->code);
-            //         printSymbolTable(symbolTableRoot);
-            //         tbStack->top = NULL;
-            //         tbStack->size = 0;
-            //         tbStack->bottom = NULL;
-            //         tableStackEle * newNode = (tableStackEle *)malloc(sizeof(tableStackEle));
-            //         newNode->ele = symbolTableRoot;
-            //         newNode->next = NULL;
-            //         sympush(tbStack, newNode);
-            //         symbolTable * symT = symbolTableRoot;
-            //         FILE * fpx = fopen("code.asm", "w");
-            //         pre_process(fpx);
-            //         nasmRecur(ircode->code, tbStack, symT, fpx);
-            //         // freeing memory not needed anymore
-            //         // freeprasetree(parseTree);
-            //         // freegrammar(grammar);
-            //         break;
+                    ast = createAST(parseTree, NULL, NULL);
+                    initializeErrorList();
+                    formulation(ast, NULL);
+                    
+                    printf("|| %-20s || %-10s || %-20s || %-20s || %-20s || %-10s ||\n",
+                    "Scope", "Scope Lines", "Variable", "Static/Dynamic","Range", "Type");
+                    printf("---------------------------------------------------------------------------------------------------------------------------------------\n");
+                    printArrays(symbolTableRoot);
 
-            case 8: //Time analysis
+                    break;
+
+            
+
+            case 8: 
+                    //Errors and Time Analysis // Time Analysis
                     start_time= clock();
                     //invoke lexer and parser here
                     populate_keyhash();
@@ -567,15 +622,135 @@ int main(int argc, char * argv[])
                     createParseTable(grammar,parseTable,firstSet,followSet);
                     parseTree = parser(grammar, parseTable);
 
+                    if(LexHead != NULL || SynHead!=NULL)
+                    {
+                        printf("Syntactical Errors (lexical and syntax related):\n");
+                        printErrorList(1);
+                        printErrorList(2);
+                        printf("----------------------------------------------------------------------------------------------\n");
+                        printf("\nOptions:\n");
+                        printf("Press 0 : Exit \n");
+                        printf("Press 1 : LEXER \n");
+                        printf("Press 2 : PARSER \n");
+                        printf("Press 3 : AST PREORDER TRAVERSAL\n");
+                        printf("Press 4 : Memory \n");
+                        printf("Press 5 : Symbol Table\n");
+                        printf("Press 6 : Activation Record Size\n");
+                        printf("Press 7 : Static and Dynamic Arrays\n");
+                        printf("Press 8 : Error Reporting and total compile time\n");
+                        printf("Press 9 : Code Generation\n");   
+                        printf("What would you like to do? Option: ");
+                        scanf("%d",&option);
+                        printf("----------------------------------------------------------------------------------------------\n");
+                        continue;
+                    }
+                    
+                    ast = createAST(parseTree, NULL, NULL);
+                    initializeErrorList();
+                    formulation(ast, NULL);
+
+                    tbStack= (tableStack*)malloc(sizeof(tableStack));
+                    tbStack->top = NULL;
+                    tbStack->size = 0;
+                    tbStack->bottom = NULL;
+                    typeChecker(ast, tbStack);
+
+                    if(semErrorList!=NULL) printf("Semantic Errors:\n");
+                    printSemanticErrors();
+
+                    tbStack->top = NULL; tbStack->size = 0; tbStack->bottom = NULL;
+                    ircode = generateIRCode(ast, NULL, tbStack);
+                    tbStack->top = NULL; tbStack->size = 0; tbStack->bottom = NULL;
+                    newNode = (tableStackEle *)malloc(sizeof(tableStackEle));
+                    newNode->ele = symbolTableRoot;
+                    newNode->next = NULL;
+                    sympush(tbStack, newNode);
+                    symT = symbolTableRoot;
+                    fpx = fopen(argv[2], "w");
+                    pre_process(fpx);
+                    nasmRecur(ircode->code, tbStack, symT, fpx);
+
                     end_time= clock();
                     total_CPU_time= (end_time-start_time);
                     
                     //time we get is in milliseconds
                     total_CPU_time_in_seconds = total_CPU_time/CLOCKS_PER_SEC;
                     
-                    printf("Total CPU Time taken by Lexer and Parser : %lf \n", total_CPU_time);
-                    printf("Total CPU Time in Seconds: %lf \n", total_CPU_time_in_seconds);
+                    printf("Total CPU Time taken by integrated compiler : %lf \n", total_CPU_time);
+                    printf("Total CPU Time for integrated compilation in seconds: %lf \n", total_CPU_time_in_seconds);
 
+                    break;
+            
+            case 9: //Code Generation
+                    
+                    populate_keyhash();
+                    initializeLexer(argv[1]);
+                    initializeParser();
+                    
+                    grammar = read_grammar("grammar.txt");
+                    map(grammar);
+
+                    firstSet = initializeFirst();
+                    followSet = initializeFollow();
+                    calculateFirstEquations(grammar, firstSet, firstEquations);
+                    calculateFirstSet(grammar, firstSet, firstEquations);
+
+                    calculateFollowEquations(grammar, followSet, firstSet, followEquations);
+                    calculateFollowSet(grammar, followSet, followEquations);
+                    
+                    parseTable = intializeParseTable();
+                    createParseTable(grammar,parseTable,firstSet,followSet);
+                    parseTree = parser(grammar, parseTable);
+                    
+
+                    if(LexHead != NULL || SynHead!=NULL)
+                    {
+                        printf("Syntactical Errors (lexical and syntax related):\n");
+                        printErrorList(1);
+                        printErrorList(2);
+                        printf("----------------------------------------------------------------------------------------------\n");
+                        printf("\nOptions:\n");
+                        printf("Press 0 : Exit \n");
+                        printf("Press 1 : LEXER \n");
+                        printf("Press 2 : PARSER \n");
+                        printf("Press 3 : AST PREORDER TRAVERSAL\n");
+                        printf("Press 4 : Memory \n");
+                        printf("Press 5 : Symbol Table\n");
+                        printf("Press 6 : Activation Record Size\n");
+                        printf("Press 7 : Static and Dynamic Arrays\n");
+                        printf("Press 8 : Error Reporting and total compile time\n");
+                        printf("Press 9 : Code Generation\n");   
+                        printf("What would you like to do? Option: ");
+                        scanf("%d",&option);
+                        printf("----------------------------------------------------------------------------------------------\n");
+                        continue;
+                    }
+                    
+                    ast = createAST(parseTree, NULL, NULL);
+                    initializeErrorList();
+                    formulation(ast, NULL);
+                    
+                    tbStack= (tableStack*)malloc(sizeof(tableStack));
+                    tbStack->top = NULL;
+                    tbStack->size = 0;
+                    tbStack->bottom = NULL;
+                    typeChecker(ast, tbStack);
+                    
+                    if(semErrorList!=NULL) printf("\nSemantic Errors:\n");
+                    printSemanticErrors();
+                    
+                    tbStack->top = NULL; tbStack->size = 0; tbStack->bottom = NULL;
+                    ircode = generateIRCode(ast, NULL, tbStack);
+                    tbStack->top = NULL; tbStack->size = 0; tbStack->bottom = NULL;
+                    newNode = (tableStackEle *)malloc(sizeof(tableStackEle));
+                    newNode->ele = symbolTableRoot;
+                    newNode->next = NULL;
+                    sympush(tbStack, newNode);
+                    symT = symbolTableRoot;
+                    fpx = fopen(argv[2], "w");
+                    pre_process(fpx);
+                    nasmRecur(ircode->code, tbStack, symT, fpx);
+                    
                     break;
                 
             
