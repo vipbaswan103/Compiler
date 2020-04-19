@@ -43,22 +43,38 @@ void pre_process(FILE * fp)
     fprintf(fp,"\tscanmessage: db \"Enter the number:\", 0\n");
     fprintf(fp,"\t_booleanMem: dd 1d\n");
     fprintf(fp,"\t_integerMem: dd 24d\n");
-    fprintf(fp,"\t_integerMsg: db \"Enter an integer value:\", 0\n");
-    fprintf(fp,"\t_booleanMsg: db \"Enter a boolean value:\", 0\n");
-    fprintf(fp,"\t_realMsg: db \"Enter a real value:\", 10, 0\n");
+    fprintf(fp,"\t_integerMsg: db \"Input: Enter an integer value \", 10, 0\n");
+    fprintf(fp,"\t_booleanMsg: db \"Input: Enter a boolean value \", 10, 0\n");
+    fprintf(fp,"\t_realMsg: db \"Input: Enter a real value \", 10, 0\n");
     fprintf(fp,"\t_inpPercentD: db \"%%d\", 0\n");
-
-    fprintf(fp,"\t_output: db \"Output:\", 0\n");
+    fprintf(fp,"\t_error1: db \"RUNTIME ERROR: Array index out of bounds, exiting ...\", 10, 0\n");
+    fprintf(fp,"\t_error2: db \"RUNTIME ERROR: Bounds mismatch, exiting ...\", 10, 0\n");
+    fprintf(fp,"\t_output: db \"Output: \", 0\n");
     fprintf(fp,"\t_percentD: db \"%%d\", 10, 0\n");
     fprintf(fp,"\t_percentS: db \"%%s\", 10, 0\n");
+    fprintf(fp,"\t_percentD_array: db \"%%d \", 0\n");
+    fprintf(fp,"\t_percentS_array: db \"%%s \", 0\n");
     fprintf(fp,"\t_true: db \"true\", 10, 0\n");
     fprintf(fp,"\t_false: db \"false\", 10, 0\n");
     fprintf(fp, "\t_integerType: db \"integer\", 0\n");
     fprintf(fp, "\t_booleanType: db \"boolean\", 0\n");
     fprintf(fp, "\t_newline: db \"\", 10, 0\n");
     fprintf(fp,"\t_arrayInputString: db \"Input: Enter %%d array elements of %%s type for range %%d to %%d\", 10, 0\n\n");
-    fprintf(fp,"SECTION .text\n\tglobal main\n");
-
+    fprintf(fp,"SECTION .text\n\tglobal main\n\n");
+    fprintf(fp,"RUNTIME_ERROR:\n");
+    fprintf(fp,"\tPUSH dword _error1\n");
+    fprintf(fp,"\tCALL printf\n");
+    fprintf(fp,"\tADD ESP, 4d\n");
+    fprintf(fp,"\tMOV EBX, 0\n");
+    fprintf(fp,"\tMOV EAX, 1\n");
+    fprintf(fp,"\tINT 80h\n\n");
+    fprintf(fp,"RUNTIME_ERROR_2:\n");
+    fprintf(fp,"\tPUSH dword _error2\n");
+    fprintf(fp,"\tCALL printf\n");
+    fprintf(fp,"\tADD ESP, 4d\n");
+    fprintf(fp,"\tMOV EBX, 0\n");
+    fprintf(fp,"\tMOV EAX, 1\n");
+    fprintf(fp,"\tINT 80h\n\n");
 }
 
 IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT, FILE * fp)
@@ -946,74 +962,90 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT, FILE * 
                 // the result was not a temporary, and arg2 was empty
 
                 symbolTableNode *result =  searchScopeIRcode(tbStack, trav->ele->result);
-                if(!strcmp(result->ele.data.id.type,"INTEGER"))
+
+                if(result->ele.tag == Array)
                 {
-                    if(trav->ele->tag1 == NUM)
-                    {
-                        fprintf(fp,"\tMOV EAX, %sd\n", trav->ele->arg1);
-                        if(result->isParameter == 0)
-                            fprintf(fp,"\tMOV [EBP-8-%d], EAX\n", result->offset);
-                        else
-                            fprintf(fp,"\tMOV [EBP+4+%d], EAX\n", result->offset);
-                    }
+                    symbolTableNode * right = searchScopeIRcode(tbStack, trav->ele->arg1);
+                    if(right->isParameter == 0)
+                        fprintf(fp, "\tMOV EAX, [EBP-8-%d]\n", right->offset);
                     else
+                        fprintf(fp, "\tMOV EAX, [EBP+4+%d]\n", right->offset);
+                    
+                    if(result->isParameter == 0)
+                        fprintf(fp, "\tMOV [EBP-8-%d], EAX\n", result->offset);
+                    else
+                        fprintf(fp, "\tMOV [EBP+4+%d], EAX\n", result->offset);
+                }
+                else
+                {
+                    if(!strcmp(result->ele.data.id.type,"INTEGER"))
                     {
-                        // it is an ID
-                        symbolTableNode *ret = searchScopeIRcode(tbStack, trav->ele->arg1);
-
-                        if(ret->isParameter == 0)
-                            fprintf(fp,"\tMOV EAX, [EBP-8-%d]\n", ret->offset);
+                        if(trav->ele->tag1 == NUM)
+                        {
+                            fprintf(fp,"\tMOV EAX, %sd\n", trav->ele->arg1);
+                            if(result->isParameter == 0)
+                                fprintf(fp,"\tMOV [EBP-8-%d], EAX\n", result->offset);
+                            else
+                                fprintf(fp,"\tMOV [EBP+4+%d], EAX\n", result->offset);
+                        }
                         else
-                            fprintf(fp,"\tMOV EAX, [EBP-8-%d]\n", ret->offset);
+                        {
+                            // it is an ID
+                            symbolTableNode *ret = searchScopeIRcode(tbStack, trav->ele->arg1);
 
-                        if(result->isParameter == 0)
-                            fprintf(fp,"\tMOV [EBP-8-%d], EAX\n", result->offset);
+                            if(ret->isParameter == 0)
+                                fprintf(fp,"\tMOV EAX, [EBP-8-%d]\n", ret->offset);
+                            else
+                                fprintf(fp,"\tMOV EAX, [EBP-8-%d]\n", ret->offset);
+
+                            if(result->isParameter == 0)
+                                fprintf(fp,"\tMOV [EBP-8-%d], EAX\n", result->offset);
+                            else
+                                fprintf(fp,"\tMOV [EBP+4+%d], EAX\n", result->offset);
+                        }
+                    }
+                    else if(!strcmp(result->ele.data.id.type,"REAL"))
+                    {
+                        if(trav->ele->tag1 == RNUM)
+                        {
+                            // unknown instructions
+                        }
                         else
-                            fprintf(fp,"\tMOV [EBP+4+%d], EAX\n", result->offset);
+                        {
+                            // symbolTableNode *ret = searchScopeIRcode(tbStack, trav->ele->arg1);
+        
+                        }
+                    }
+                    else if(!strcmp(result->ele.data.id.type,"BOOLEAN"))
+                    {
+                        if(trav->ele->tag1 == BOOL)
+                        {
+                            if(!strcmp(trav->ele->arg1, "true"))
+                                fprintf(fp,"\tMOV EAX, 1b\n");
+                            else
+                                fprintf(fp,"\tMOV EAX, 0b\n");
+                            
+                            if(result->isParameter == 0)
+                                fprintf(fp,"\tMOV [EBP-8-%d], EAX\n", result->offset);
+                            else
+                                fprintf(fp,"\tMOV [EBP+4+%d], EAX\n", result->offset);
+                        }
+                        else
+                        {
+                            symbolTableNode *ret = searchScopeIRcode(tbStack, trav->ele->arg1);
+
+                            if(ret->isParameter == 0)
+                                fprintf(fp,"\tMOV EAX, [EBP-8-%d]\n", ret->offset);
+                            else
+                                fprintf(fp,"\tMOV EAX, [EBP+4+%d]\n", ret->offset);
+
+                            if(result->isParameter==0)
+                                fprintf(fp,"\tMOV [EBP-8-%d], EAX\n", result->offset);
+                            else 
+                                fprintf(fp,"\tMOV [EBP+4+%d], EAX\n", result->offset);
+                        }
                     }
                 }
-                else if(!strcmp(result->ele.data.id.type,"REAL"))
-                {
-                    if(trav->ele->tag1 == RNUM)
-                    {
-                        // unknown instructions
-                    }
-                    else
-                    {
-                        // symbolTableNode *ret = searchScopeIRcode(tbStack, trav->ele->arg1);
-    
-                    }
-                }
-                else if(!strcmp(result->ele.data.id.type,"BOOLEAN"))
-                {
-                    if(trav->ele->tag1 == BOOL)
-                    {
-                        if(!strcmp(trav->ele->arg1, "true"))
-                            fprintf(fp,"\tMOV EAX, 1b\n");
-                        else
-                            fprintf(fp,"\tMOV EAX, 0b\n");
-                        
-                        if(result->isParameter == 0)
-                            fprintf(fp,"\tMOV [EBP-8-%d], EAX\n", result->offset);
-                        else
-                            fprintf(fp,"\tMOV [EBP+4+%d], EAX\n", result->offset);
-                    }
-                    else
-                    {
-                        symbolTableNode *ret = searchScopeIRcode(tbStack, trav->ele->arg1);
-
-                        if(ret->isParameter == 0)
-                            fprintf(fp,"\tMOV EAX, [EBP-8-%d]\n", ret->offset);
-                        else
-                            fprintf(fp,"\tMOV EAX, [EBP+4+%d]\n", ret->offset);
-
-                        if(result->isParameter==0)
-                            fprintf(fp,"\tMOV [EBP-8-%d], EAX\n", result->offset);
-                        else 
-                            fprintf(fp,"\tMOV [EBP+4+%d], EAX\n", result->offset);
-                    }
-                }
-                
             }
             
             else
@@ -1296,24 +1328,118 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT, FILE * 
                     fprintf(fp,"\tMOV [EBP+4+%d], EAX\n", var->offset);
             }
         }
-        else if(!strcmp(trav->ele->op, "printf") || !strcmp(trav->ele->op, "printf_array"))
+        else if(!strcmp(trav->ele->op, "printf_array"))
         {
             //print (A)
             // Output : 2 3 4 5
             //print (x)
             // Output : x
 
-            if(!strcmp(trav->ele->op, "printf"))
+            if(trav->ele->tag1 == NUM)
             {
-                //Output:
+                //fprintf(fp,"%d",);
+
                 // fprintf(fp, "\tPUSH EBP\n");
                 // fprintf(fp, "\tMOV EBP, ESP\n");
-                fprintf(fp, "\tPUSH dword _output\n");
-                fprintf(fp, "\tCALL printf\n");
-                fprintf(fp, "\tADD ESP, 4d\n");
+
+                fprintf(fp,"\tMOV EAX, %sd\n", trav->ele->arg1);
+                fprintf(fp,"\tPUSH EAX\n");
+                fprintf(fp,"\tPUSH dword _percentD_array\n");
+                fprintf(fp,"\tCALL printf\n");
+                
+                fprintf(fp,"\tADD ESP, 8d\n");
                 // fprintf(fp, "\tMOV ESP, EBP\n");
                 // fprintf(fp, "\tPOP EBP\n");
             }
+            else if(trav->ele->tag1 == RNUM)
+            {
+
+            }
+            else if(trav->ele->tag1 == BOOL)
+            {
+                // fprintf(fp, "\tPUSH EBP\n");
+                // fprintf(fp, "\tMOV EBP, ESP\n"); 
+
+                if(!strcmp(trav->ele->arg1, "true"))
+                    fprintf(fp,"\tPUSH dword _true\n");
+                else
+                    fprintf(fp,"\tPUSH dword _false\n");
+                fprintf(fp,"\tPUSH dword _percentS_array\n");
+                fprintf(fp,"\tCALL printf\n");
+                fprintf(fp,"\tADD ESP, 8d\n");
+
+                // fprintf(fp, "\tMOV ESP, EBP\n");
+                // fprintf(fp, "\tPOP EBP\n");
+            }
+            else
+            {
+                symbolTableNode *id =  searchScopeIRcode(tbStack, trav->ele->arg1);
+                if(!strcmp(id->ele.data.id.type, "INTEGER"))
+                {
+                    //fprintf(fp,"%d", );
+                    if(id->isParameter==0)
+                        fprintf(fp,"\tMOV EAX, [EBP-8-%d]\n", id->offset);
+                    else
+                        fprintf(fp,"\tMOV EAX, [EBP+4+%d]\n", id->offset);
+                    
+                    // fprintf(fp, "\tPUSH EBP\n");
+                    // fprintf(fp, "\tMOV EBP, ESP\n");
+                    
+                    fprintf(fp,"\tPUSH EAX\n");
+                    fprintf(fp,"\tPUSH dword _percentD_array\n");
+                    fprintf(fp,"\tCALL printf\n");
+                    fprintf(fp,"\tADD ESP, 8d \n");
+
+                    // fprintf(fp, "\tMOV ESP, EBP\n");
+                    // fprintf(fp, "\tPOP EBP\n");
+                }
+                else if(!strcmp(id->ele.data.id.type, "REAL"))
+                {
+                    //fprintf(fp,"%f", );
+                }
+                else if(!strcmp(id->ele.data.id.type, "BOOLEAN"))
+                {
+                    //fprintf(fp,"%s", );
+                    
+                    if(id->isParameter == 0)
+                        fprintf(fp,"\tMOV EAX, [EBP-8-%d]\n", id->offset);
+                    else
+                        fprintf(fp,"\tMOV EAX, [EBP+4+%d]\n", id->offset);
+                    
+                    char label1[21], label2[21], label3[21];
+                    getLabel(label1);
+                    getLabel(label2);
+                    getLabel(label3);
+                    fprintf(fp,"\tCMP EAX, 1d\n");
+                    fprintf(fp,"\tJE %s\n", label1);
+                    fprintf(fp,"\tJMP %s\n", label2);
+
+                    // fprintf(fp, "\tPUSH EBP\n");
+                    // fprintf(fp, "\tMOV EBP, ESP\n");
+                    
+                    fprintf(fp,"\t\t%s: PUSH dword _true\n\t\t\tJMP %s\n", label1, label3);
+                    fprintf(fp,"\t\t%s: PUSH dword _false\n", label2);
+                    fprintf(fp,"\t%s:\n", label3);
+                    fprintf(fp,"\tPUSH dword _percentS_array\n");
+                    fprintf(fp,"\tCALL printf\n");
+                    fprintf(fp,"\tADD ESP, 8d\n");
+                    
+                    // fprintf(fp, "\tMOV ESP, EBP\n");
+                    // fprintf(fp, "\tPOP EBP\n");
+                }       
+            }
+        }
+        else if(!strcmp(trav->ele->op, "printf"))
+        {
+            //print (A)
+            // Output : 2 3 4 5
+            //print (x)
+            // Output : x
+
+            fprintf(fp, "\tPUSH dword _output\n");
+            fprintf(fp, "\tCALL printf\n");
+            fprintf(fp, "\tADD ESP, 4d\n");
+            
             if(trav->ele->tag1 == NUM)
             {
                 //fprintf(fp,"%d",);
@@ -1537,29 +1663,29 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT, FILE * 
                     // fprintf(fp,"SUB ESP, 4d\n");
                     //A[m..n]
                     
-                    if(!strcmp(var->ele.data.arr.upperIndex->type, "NUM"))
-                    {
-                        fprintf(fp,"\tMOV EAX, %dd\n", *(int *)var->ele.data.arr.upperIndex->value);
-                        fprintf(fp,"\tPUSH EAX\n");
-                    }
-                    else
-                    {
-                        symbolTableNode* index = searchScopeIRcode(tbStack, var->ele.data.arr.upperIndex->lexeme);
-                        fprintf(fp, "\tMOV EAX, [EBP-8-%d]\n", index->offset);
-                        fprintf(fp, "\tPUSH EAX\n");
-                    }
+                    // if(!strcmp(var->ele.data.arr.upperIndex->type, "NUM"))
+                    // {
+                    //     fprintf(fp,"\tMOV EAX, %dd\n", *(int *)var->ele.data.arr.upperIndex->value);
+                    //     fprintf(fp,"\tPUSH EAX\n");
+                    // }
+                    // else
+                    // {
+                    //     symbolTableNode* index = searchScopeIRcode(tbStack, var->ele.data.arr.upperIndex->lexeme);
+                    //     fprintf(fp, "\tMOV EAX, [EBP-8-%d]\n", index->offset);
+                    //     fprintf(fp, "\tPUSH EAX\n");
+                    // }
 
-                    if(!strcmp(var->ele.data.arr.lowerIndex->type, "NUM"))
-                    {
-                        fprintf(fp,"\tMOV EAX, %dd\n", *(int *)var->ele.data.arr.lowerIndex->value);
-                        fprintf(fp,"\tPUSH EAX\n");
-                    }
-                    else
-                    {
-                        symbolTableNode* index = searchScopeIRcode(tbStack, var->ele.data.arr.lowerIndex->lexeme);
-                        fprintf(fp, "\tMOV EAX, [EBP-8-%d]\n", index->offset);
-                        fprintf(fp, "\tPUSH EAX\n");
-                    }
+                    // if(!strcmp(var->ele.data.arr.lowerIndex->type, "NUM"))
+                    // {
+                    //     fprintf(fp,"\tMOV EAX, %dd\n", *(int *)var->ele.data.arr.lowerIndex->value);
+                    //     fprintf(fp,"\tPUSH EAX\n");
+                    // }
+                    // else
+                    // {
+                    //     symbolTableNode* index = searchScopeIRcode(tbStack, var->ele.data.arr.lowerIndex->lexeme);
+                    //     fprintf(fp, "\tMOV EAX, [EBP-8-%d]\n", index->offset);
+                    //     fprintf(fp, "\tPUSH EAX\n");
+                    // }
 
                     
                     if(var->isParameter == 0)
@@ -1567,9 +1693,9 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT, FILE * 
                     else
                         fprintf(fp,"\tMOV EAX, [EBP+4+%d]\n", var->offset);
 
-                    fprintf(fp,"\tPUSH EAX\n");
                     fprintf(fp,"\tXOR EBX, EBX\n");
-                    fprintf(fp,"\tPUSH EBX\n");                
+                    fprintf(fp,"\tPUSH EBX\n");
+                    fprintf(fp,"\tPUSH EAX\n");                
                 }
                 else if(var->ele.tag == Identifier)
                 {
@@ -1650,8 +1776,8 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT, FILE * 
                 {
                     fprintf(fp,"\tPOP EAX\n");
                     fprintf(fp,"\tPOP EAX\n");
-                    fprintf(fp,"\tPOP EAX\n");
-                    fprintf(fp,"\tPOP EAX\n");       
+                    // fprintf(fp,"\tPOP EAX\n");
+                    // fprintf(fp,"\tPOP EAX\n");
                 }
                 else if(var->ele.tag==Identifier)
                 {

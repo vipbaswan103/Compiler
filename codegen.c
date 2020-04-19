@@ -625,6 +625,76 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
         
         final->code->next = NULL;
 
+        symbolTableNode *searchArr = searchScope(tbStack, currentNode->child);
+        IRcode * check = NULL;
+        if(searchArr->ele.tag == Array)
+        {
+            symbolTableNode *arr2 = searchScope(tbStack, currentNode->child->sibling->child);
+
+            if(searchArr->ele.data.arr.isDynamic == 1 || arr2->ele.data.arr.isDynamic == 1)
+            {
+                IRcode * ifcode1 = (IRcode *)malloc(sizeof(IRcode));
+                ifcode1->ele  = (quad *)malloc(sizeof(quad));
+                ifcode1->next = NULL;
+                strcpy(ifcode1->ele->op, "==\0");
+                initQuad(ifcode1->ele, searchArr->ele.data.arr.lowerIndex->lexeme,
+                arr2->ele.data.arr.lowerIndex->lexeme, "if\0");
+
+                IRcode * goto1 = (IRcode *)malloc(sizeof(IRcode));
+                goto1->ele = (quad *)malloc(sizeof(quad));
+                goto1->next = NULL;
+                strcpy(goto1->ele->op, "goto\0");
+                initQuad(goto1->ele, "\0", "\0", "\0");
+                getLabel(goto1->ele->arg1);
+
+                IRcode * goto2 = (IRcode *)malloc(sizeof(IRcode));
+                goto2->ele = (quad *)malloc(sizeof(quad));
+                goto2->next = NULL;
+                strcpy(goto2->ele->op, "goto\0");
+                initQuad(goto2->ele, "RUNTIME_ERROR_2", "\0", "\0");
+
+                IRcode * label1 = (IRcode *)malloc(sizeof(IRcode));
+                label1->ele = (quad *)malloc(sizeof(quad));
+                label1->next = NULL;
+                strcpy(label1->ele->op, ":\0");
+                initQuad(label1->ele, goto1->ele->arg1, "\0", "\0");
+
+                IRcode * ifcode2 = (IRcode *)malloc(sizeof(IRcode));
+                ifcode2->ele  = (quad *)malloc(sizeof(quad));
+                ifcode2->next = NULL;
+                strcpy(ifcode2->ele->op, "==\0");
+                initQuad(ifcode2->ele, searchArr->ele.data.arr.upperIndex->lexeme,
+                arr2->ele.data.arr.upperIndex->lexeme, "if\0");
+
+                IRcode * goto3 = (IRcode *)malloc(sizeof(IRcode));
+                goto3->ele = (quad *)malloc(sizeof(quad));
+                goto3->next = NULL;
+                strcpy(goto3->ele->op, "goto\0");
+                initQuad(goto3->ele, "\0", "\0", "\0");
+                getLabel(goto3->ele->arg1);
+
+                IRcode * goto4 = (IRcode *)malloc(sizeof(IRcode));
+                goto4->ele = (quad *)malloc(sizeof(quad));
+                goto4->next = NULL;
+                strcpy(goto4->ele->op, "goto\0");
+                initQuad(goto4->ele, "RUNTIME_ERROR_2", "\0", "\0");
+
+                IRcode * label2 = (IRcode *)malloc(sizeof(IRcode));
+                label2->ele = (quad *)malloc(sizeof(quad));
+                label2->next = NULL;
+                strcpy(label2->ele->op, ":\0");
+                initQuad(label2->ele, goto3->ele->arg1, "\0", "\0");
+
+                mergeCode(&(check), ifcode1);
+                mergeCode(&(check), goto1);
+                mergeCode(&(check), goto2);
+                mergeCode(&(check), label1);
+                mergeCode(&(check), ifcode2);
+                mergeCode(&(check), goto3);
+                mergeCode(&(check), goto4);
+                mergeCode(&(check), label2);
+            }
+        }
         // set tags for arg1 and arg2
         // RHS is some constant
         if(currentNode->child->sibling->node->tag == Leaf)
@@ -645,6 +715,8 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
         
         // right side expressions code first 
         // then the statement of assignment itself
+
+        mergeCode(&(rightchild->code), check);
         mergeCode(&(rightchild->code), final->code);
         final->code = rightchild->code;
         free(rightchild);
@@ -1835,7 +1907,7 @@ intermed * generateIRCode(astNode * currentNode, quad * labels, tableStack * tbS
                 pr->ele = (quad *)malloc(sizeof(quad));
                 pr->next = NULL;
 
-                strcpy(pr->ele->op, "print_output\0");
+                strcpy(pr->ele->op, "printf_output\0");
                 
                 //Code for printf, print(_t0)
                 IRcode *print = (IRcode *)malloc(sizeof(IRcode));
