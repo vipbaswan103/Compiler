@@ -131,7 +131,7 @@ int astcount(astNode * a)
 /*******************************************************************/
 int main(int argc, char * argv[])
 {
-    if(argc != 2)
+    if(argc != 3)
     {
         printf("Wrong number of args. Please give 2 file names. \n The first one should be the program and the other should be where you want to write the syntax tree output\n"); 
         return 0;
@@ -454,7 +454,7 @@ int main(int argc, char * argv[])
                     initializeErrorList();
                     
                     formulation(ast, NULL);
-                    activationRecordSize(symbolTableRoot,0);
+                    // activationRecordSize(symbolTableRoot,0);
 
                     //TO DO Activation Record Size from current offset 
 

@@ -484,72 +484,72 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         while(trav != NULL)
         {
             newNode = sym_hash_find(trav->node->ele.leafNode->lexeme, &(tbStack->top->ele->hashtb), 0, NULL);
-            if(type->node->tag == Internal)
-            {
-                newNode->ele.tag = Array;
-                newNode->ele.data.arr.lexeme = trav->node->ele.leafNode->lexeme;
-                newNode->ele.data.arr.type = type->child->sibling->node->ele.leafNode->type;
+            // if(type->node->tag == Internal)
+            // {
+            //     newNode->ele.tag = Array;
+            //     newNode->ele.data.arr.lexeme = trav->node->ele.leafNode->lexeme;
+            //     newNode->ele.data.arr.type = type->child->sibling->node->ele.leafNode->type;
 
-                newNode->ele.data.arr.lowerIndex = (identifier*)malloc(sizeof(identifier));
-                newNode->ele.data.arr.lowerIndex->lexeme = type->child->child->node->ele.leafNode->lexeme;
-                newNode->ele.data.arr.lowerIndex->type = type->child->child->node->ele.leafNode->type;
-                newNode->ele.data.arr.lowerIndex->value = type->child->child->node->ele.leafNode->value;
+            //     newNode->ele.data.arr.lowerIndex = (identifier*)malloc(sizeof(identifier));
+            //     newNode->ele.data.arr.lowerIndex->lexeme = type->child->child->node->ele.leafNode->lexeme;
+            //     newNode->ele.data.arr.lowerIndex->type = type->child->child->node->ele.leafNode->type;
+            //     newNode->ele.data.arr.lowerIndex->value = type->child->child->node->ele.leafNode->value;
 
-                newNode->ele.data.arr.upperIndex = (identifier*)malloc(sizeof(identifier));
-                newNode->ele.data.arr.upperIndex->lexeme = type->child->child->sibling->node->ele.leafNode->lexeme;
-                newNode->ele.data.arr.upperIndex->type = type->child->child->sibling->node->ele.leafNode->type;
-                newNode->ele.data.arr.upperIndex->value = type->child->child->sibling->node->ele.leafNode->value;
+            //     newNode->ele.data.arr.upperIndex = (identifier*)malloc(sizeof(identifier));
+            //     newNode->ele.data.arr.upperIndex->lexeme = type->child->child->sibling->node->ele.leafNode->lexeme;
+            //     newNode->ele.data.arr.upperIndex->type = type->child->child->sibling->node->ele.leafNode->type;
+            //     newNode->ele.data.arr.upperIndex->value = type->child->child->sibling->node->ele.leafNode->value;
                 
-                newNode->lineNum = trav->node->ele.leafNode->lineNum;
+            //     newNode->lineNum = trav->node->ele.leafNode->lineNum;
 
-                int tmp = 0;
-                if(!strcmp(type->child->sibling->node->ele.leafNode->type,"INTEGER"))
-                    tmp = INTEGER_SIZE;
-                else if(!strcmp(type->child->sibling->node->ele.leafNode->type,"REAL"))
-                    tmp = REAL_SIZE;
-                else if(!strcmp(type->child->sibling->node->ele.leafNode->type,"BOOLEAN"))
-                    tmp = BOOLEAN_SIZE;
+            //     int tmp = 0;
+            //     if(!strcmp(type->child->sibling->node->ele.leafNode->type,"INTEGER"))
+            //         tmp = INTEGER_SIZE;
+            //     else if(!strcmp(type->child->sibling->node->ele.leafNode->type,"REAL"))
+            //         tmp = REAL_SIZE;
+            //     else if(!strcmp(type->child->sibling->node->ele.leafNode->type,"BOOLEAN"))
+            //         tmp = BOOLEAN_SIZE;
                 
-                if( (!strcmp(newNode->ele.data.arr.lowerIndex->type,"ID")) || (!strcmp(newNode->ele.data.arr.upperIndex->type,"ID")) )
-                {
-                    //dynamic array
-                    // newNode->width = POINTER_SIZE;
-                    // newNode->offset = current->currentOffset;
-                    // current->currentOffset += POINTER_SIZE;
-                    newNode->ele.data.arr.isDynamic = 1;   
-                }
-                else    
-                {
-                    //static array
-                    newNode->ele.data.arr.isDynamic = 0;
-                    // int size = *(int *)newNode->ele.data.arr.upperIndex->value - *(int*)newNode->ele.data.arr.lowerIndex->value + 1;
-                    // newNode->offset = current->currentOffset;
-                    // newNode->width = tmp * size + POINTER_SIZE;
-                    // current->currentOffset += newNode->width;
-                }
-                // newNode->next = NULL;
-            }
-            //Its an ID
-            else
-            {
-                newNode->ele.tag = Identifier;
+            //     if( (!strcmp(newNode->ele.data.arr.lowerIndex->type,"ID")) || (!strcmp(newNode->ele.data.arr.upperIndex->type,"ID")) )
+            //     {
+            //         //dynamic array
+            //         // newNode->width = POINTER_SIZE;
+            //         // newNode->offset = current->currentOffset;
+            //         // current->currentOffset += POINTER_SIZE;
+            //         newNode->ele.data.arr.isDynamic = 1;   
+            //     }
+            //     else    
+            //     {
+            //         //static array
+            //         newNode->ele.data.arr.isDynamic = 0;
+            //         // int size = *(int *)newNode->ele.data.arr.upperIndex->value - *(int*)newNode->ele.data.arr.lowerIndex->value + 1;
+            //         // newNode->offset = current->currentOffset;
+            //         // newNode->width = tmp * size + POINTER_SIZE;
+            //         // current->currentOffset += newNode->width;
+            //     }
+            //     // newNode->next = NULL;
+            // }
+            // //Its an ID
+            // else
+            // {
+            //     newNode->ele.tag = Identifier;
 
-                newNode->ele.data.id.lexeme = trav->node->ele.leafNode->lexeme;
-                newNode->ele.data.id.type = type->node->ele.leafNode->type;
-                newNode->ele.data.id.value = trav->node->ele.leafNode->value;
-                newNode->lineNum = trav->node->ele.leafNode->lineNum;
+            //     newNode->ele.data.id.lexeme = trav->node->ele.leafNode->lexeme;
+            //     newNode->ele.data.id.type = type->node->ele.leafNode->type;
+            //     newNode->ele.data.id.value = trav->node->ele.leafNode->value;
+            //     newNode->lineNum = trav->node->ele.leafNode->lineNum;
                 
-                // if(!strcmp(type->node->ele.leafNode->type,"INTEGER"))
-                //     newNode->width = INTEGER_SIZE;
-                // else if(!strcmp(type->node->ele.leafNode->type,"REAL"))
-                //     newNode->width = REAL_SIZE;
-                // else if(!strcmp(type->node->ele.leafNode->type,"BOOLEAN"))
-                //     newNode->width = BOOLEAN_SIZE;
+            //     // if(!strcmp(type->node->ele.leafNode->type,"INTEGER"))
+            //     //     newNode->width = INTEGER_SIZE;
+            //     // else if(!strcmp(type->node->ele.leafNode->type,"REAL"))
+            //     //     newNode->width = REAL_SIZE;
+            //     // else if(!strcmp(type->node->ele.leafNode->type,"BOOLEAN"))
+            //     //     newNode->width = BOOLEAN_SIZE;
                     
-                // newNode->next = NULL;
-                // newNode->offset = current->currentOffset;
-                // current->currentOffset += newNode->width;
-            }
+            //     // newNode->next = NULL;
+            //     // newNode->offset = current->currentOffset;
+            //     // current->currentOffset += newNode->width;
+            // }
             newNode->aux = 1;
             trav = trav->sibling;   
         }

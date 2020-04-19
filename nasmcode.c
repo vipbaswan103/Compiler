@@ -54,8 +54,8 @@ void pre_process(FILE * fp)
     fprintf(fp,"\t_percentS: db \"%%s\", 10, 0\n");
     fprintf(fp,"\t_percentD_array: db \"%%d \", 0\n");
     fprintf(fp,"\t_percentS_array: db \"%%s \", 0\n");
-    fprintf(fp,"\t_true: db \"true\", 10, 0\n");
-    fprintf(fp,"\t_false: db \"false\", 10, 0\n");
+    fprintf(fp,"\t_true: db \"true\", 0\n");
+    fprintf(fp,"\t_false: db \"false\", 0\n");
     fprintf(fp, "\t_integerType: db \"integer\", 0\n");
     fprintf(fp, "\t_booleanType: db \"boolean\", 0\n");
     fprintf(fp, "\t_newline: db \"\", 10, 0\n");
