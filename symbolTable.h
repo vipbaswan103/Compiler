@@ -11,12 +11,11 @@ hashSym *rehash(hashSym *oldTable);
 void initializeHashSym(hashSym *hash_tb);
 symbolTable* initializeSymbolTable(char *str, int lineNumStart, int lineNumEnd);
 void formulation(astNode* astRoot, symbolTable * current);
-void printSymbolTable(symbolTable *root, int level);
-void printSymTableNode(symbolTable *ST, int level);
-void printHashTable(hashSym hashtb, int level, char* scopename, int linestart, int lineend);
+void printSymbolTable();
+void printSymTableNode(symbolTable *ST);
+void printHashTable(hashSym hashtb);
 void initializeErrorList();
 void insertSemError(semanticErrorNode *errNode);
 void printSemanticErrors();
 int gimme_module(char*str, char*name);
-void activationRecordSize(symbolTable *root, int level);
 #endif
