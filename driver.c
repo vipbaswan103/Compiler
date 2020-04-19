@@ -126,6 +126,8 @@ int astcount(astNode * a)
     return sum;
 }
 
+
+
 /*******************************************************************/
 int main(int argc, char * argv[])
 {
@@ -245,6 +247,7 @@ int main(int argc, char * argv[])
                     {
                         printf("Parsing was successfull......!\n");
                     }
+                    break;
                     
             case 3: // AST print
                     populate_keyhash();
@@ -400,10 +403,61 @@ int main(int argc, char * argv[])
                     ast = createAST(parseTree, NULL, NULL);
                     
                     initializeErrorList();
-                    symbolTable *table = NULL;
-                    formulation(ast, table);
-                    printSymbolTable(symbolTableRoot);
+                    formulation(ast, NULL);
+                    printSymbolTable(symbolTableRoot,-1);
                     
+                    break;
+
+            case 6: //Activation Record Size
+                    
+                    populate_keyhash();
+                    initializeLexer(argv[1]);
+                    initializeParser();
+                    
+                    grammar = read_grammar("grammar.txt");
+                    map(grammar);
+
+                    firstSet = initializeFirst();
+                    followSet = initializeFollow();
+                    calculateFirstEquations(grammar, firstSet, firstEquations);
+                    calculateFirstSet(grammar, firstSet, firstEquations);
+
+                    calculateFollowEquations(grammar, followSet, firstSet, followEquations);
+                    calculateFollowSet(grammar, followSet, followEquations);
+                    
+                    parseTable = intializeParseTable();
+                    createParseTable(grammar,parseTable,firstSet,followSet);
+                    parseTree = parser(grammar, parseTable);
+                    
+                    if(LexHead != NULL)
+                    {
+                        printf("Lexical Errors:\n");
+                        printErrorList(1);
+                    }
+                    else
+                    {
+                        printf("No lexical errors!\n");
+                    }
+                    
+                    if(SynHead != NULL)
+                    {
+                        printf("Syntax Errors:\n");
+                        printErrorList(2);
+                    }
+                    else
+                    {
+                        printf("Parsing was successfull......!\n");
+                    }
+                    
+                    ast = createAST(parseTree, NULL, NULL);
+                    
+                    initializeErrorList();
+                    
+                    formulation(ast, NULL);
+                    activationRecordSize(symbolTableRoot,0);
+
+                    //TO DO Activation Record Size from current offset 
+
                     break;
 
             // case 3: //Parsing Tree and Output
@@ -492,7 +546,7 @@ int main(int argc, char * argv[])
             //         // freegrammar(grammar);
             //         break;
 
-            case 10: //Time analysis
+            case 8: //Time analysis
                     start_time= clock();
                     //invoke lexer and parser here
                     populate_keyhash();

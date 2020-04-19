@@ -4,6 +4,17 @@ takes input [x:integer, y:array[5..10] of boolean];
 returns [value:real];
 start
 	value:= x*x;
+	declare aryan:integer;
+	for(aryan in 10..15)
+	start
+		declare vipin:integer;
+
+		for(vipin in 2..4)
+		start
+			declare akshit:integer;
+		end
+	end
+
 end
 
 <<<driver program>>>
@@ -14,7 +25,6 @@ start
 	declare m,n:integer;
 	declare y: array[m..n] of integer;
 	declare result_:real;
-	**[result_]:=use module square with parameters v_1_2_3;**
 	print(result_);
 end
 

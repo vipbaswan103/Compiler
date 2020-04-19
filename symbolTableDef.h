@@ -84,7 +84,6 @@ typedef struct symbolTableNode
 {
     elementSym ele;
     int aux;
-    int scope;      //Depicts the nesting level, TODO (yet to be populated)
     int lineNum;
     int offset;
     int width;
@@ -117,7 +116,8 @@ typedef struct symbolTable{
     int lineNumStart;
     int lineNumEnd;
     hashSym hashtb;
-    int currentOffset;
+    int currentOffset; // used for setting temporaries
+    int dummyCurrentOffset;
     // int sizeActivationRecord;
     struct symbolTable *child;
     struct symbolTable *sibling;
