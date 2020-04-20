@@ -1528,7 +1528,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         checkAssignment(currentNode->child, tbStack, &error, prevValues, &index);
 
         //No variable in Expr_node has been assigned in the body of while
-        if(error == 1)
+        if(error == 1 && checkallconstants(currentNode->child)!=1)
         {
             //Error
             
@@ -2435,8 +2435,37 @@ void traverseAndMark(astNode * root, tableStack * tbStack, int * prevValues, int
     }
 }
 
+int checkallconstants(astNode* root)
+{
+    if(root==NULL)
+    {
+        return 0;
+    }
+    else if(root->node->tag==Leaf)
+    {
+        if(!strcmp(root->node->ele.leafNode->type,"ID"))
+        return 0;
+    }
+    else 
+    {
+        astNode* trav = root->child;
+        
+        while(trav!=NULL)
+        {
+            
+            if(checkallconstants(trav)==0)
+            return 0;
+            trav=trav->sibling;
+
+        }
+    }
+
+    return 1;
+}
+
 void checkAssignment(astNode *root, tableStack *tbStack, int *error, int *prevValues, int *index)
 {
+    
     //root is the expresssion node of while's condition
     if(root->node->tag == Leaf)
     {
@@ -2491,6 +2520,13 @@ void checkAssignment(astNode *root, tableStack *tbStack, int *error, int *prevVa
                 *index = *index + 1;
             }
         }
+        // else if(!strcmp(root->node->ele.leafNode->type,"NUM") 
+        // || !strcmp(root->node->ele.leafNode->type,"RNUM")
+        // || !strcmp(root->node->ele.leafNode->type,"BOOLEAN"))
+        // {
+        //     if(*error!=0)
+        //     *error=2;
+        // }
         return;
     }
     
