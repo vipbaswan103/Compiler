@@ -16,11 +16,6 @@
 #include "codegen.h"
 #include "nasmcode.h"
 
-
-
-
-
-
 void seeTokenization()
 {
     Token * tkn = NULL;
@@ -351,6 +346,7 @@ int main(int argc, char * argv[])
                         printf("Syntactical Errors (lexical and syntax related):\n");
                         printErrorList(1);
                         printErrorList(2);
+                        printf("\nNOTE: Since there are lexical/syntax errors, no further processing takes place.\n");
                         printf("----------------------------------------------------------------------------------------------\n");
                         printf("\nOptions:\n");
                         printf("Press 0 : Exit \n");
@@ -408,6 +404,7 @@ int main(int argc, char * argv[])
                         printf("Syntactical Errors (lexical and syntax related):\n");
                         printErrorList(1);
                         printErrorList(2);
+                        printf("\nNOTE: Since there are lexical/syntax errors, no further processing takes place.\n");
                         printf("----------------------------------------------------------------------------------------------\n");
                         printf("\nOptions:\n");
                         printf("Press 0 : Exit \n");
@@ -468,6 +465,7 @@ int main(int argc, char * argv[])
                         printf("Syntactical Errors (lexical and syntax related):\n");
                         printErrorList(1);
                         printErrorList(2);
+                        printf("\nNOTE: Since there are lexical/syntax errors, no further processing takes place.\n");
                         printf("----------------------------------------------------------------------------------------------\n");
                         printf("\nOptions:\n");
                         printf("Press 0 : Exit \n");
@@ -525,6 +523,7 @@ int main(int argc, char * argv[])
                         printf("Syntactical Errors (lexical and syntax related):\n");
                         printErrorList(1);
                         printErrorList(2);
+                        printf("\nNOTE: Since there are lexical/syntax errors, no further processing takes place.\n");
                         printf("----------------------------------------------------------------------------------------------\n");
                         printf("\nOptions:\n");
                         printf("Press 0 : Exit \n");
@@ -576,6 +575,8 @@ int main(int argc, char * argv[])
                         printf("Syntactical Errors (lexical and syntax related):\n");
                         printErrorList(1);
                         printErrorList(2);
+
+                        printf("\nNOTE: Since there are lexical/syntax errors, no further processing takes place.\n");
                         printf("----------------------------------------------------------------------------------------------\n");
                         printf("\nOptions:\n");
                         printf("Press 0 : Exit \n");
@@ -607,8 +608,7 @@ int main(int argc, char * argv[])
 
             
 
-            case 8: 
-                    //Errors and Time Analysis // Time Analysis
+            case 8: //Errors and Time Analysis // Time Analysis
                     start_time= clock();
                     //invoke lexer and parser here
                     populate_keyhash();
@@ -634,6 +634,18 @@ int main(int argc, char * argv[])
                         printf("Syntactical Errors (lexical and syntax related):\n");
                         printErrorList(1);
                         printErrorList(2);
+                        printf("\nNOTE: Since there are lexical/syntax errors, no further processing takes place (hence no semantic errors are detected).\n");
+                        printf("----------------------------------------------------------------------------------------------\n");
+                        
+                        end_time= clock();
+                        total_CPU_time= (end_time-start_time);
+                        
+                        //time we get is in milliseconds
+                        total_CPU_time_in_seconds = total_CPU_time/CLOCKS_PER_SEC;
+                        
+                        printf("Total CPU Time taken by integrated compiler till here : %lf \n", total_CPU_time);
+                        printf("Total CPU Time for integrated compilation in seconds till here: %lf \n", total_CPU_time_in_seconds);
+                        
                         printf("----------------------------------------------------------------------------------------------\n");
                         printf("\nOptions:\n");
                         printf("Press 0 : Exit \n");
@@ -666,6 +678,17 @@ int main(int argc, char * argv[])
                     {
                         printf("\nWe found %d Semantic Errors:\n", semErrorList->numErrors);
                         printSemanticErrors();
+                        printf("\nNOTE: Since there are semantic errors, no further processing takes place.(code generation not taking place)\n");
+                        printf("----------------------------------------------------------------------------------------------\n");
+                        end_time= clock();
+                        total_CPU_time= (end_time-start_time);
+                        
+                        //time we get is in milliseconds
+                        total_CPU_time_in_seconds = total_CPU_time/CLOCKS_PER_SEC;
+                        
+                        printf("Total CPU Time taken by integrated compiler till here : %lf \n", total_CPU_time);
+                        printf("Total CPU Time for integrated compilation in seconds till here: %lf \n", total_CPU_time_in_seconds);
+                        
                         printf("----------------------------------------------------------------------------------------------\n");
                         printf("\nOptions:\n");
                         printf("Press 0 : Exit \n");
@@ -683,7 +706,6 @@ int main(int argc, char * argv[])
                         printf("----------------------------------------------------------------------------------------------\n");
                         continue;
                     }
-
                     tbStack->top = NULL; tbStack->size = 0; tbStack->bottom = NULL;
                     ircode = generateIRCode(ast, NULL, tbStack);
                     tbStack->top = NULL; tbStack->size = 0; tbStack->bottom = NULL;
@@ -702,8 +724,8 @@ int main(int argc, char * argv[])
                     //time we get is in milliseconds
                     total_CPU_time_in_seconds = total_CPU_time/CLOCKS_PER_SEC;
                     
-                    printf("Total CPU Time taken by integrated compiler : %lf \n", total_CPU_time);
-                    printf("Total CPU Time for integrated compilation in seconds: %lf \n", total_CPU_time_in_seconds);
+                    printf("Total CPU Time taken by integrated compiler (full compiler) : %lf \n", total_CPU_time);
+                    printf("Total CPU Time for integrated compilation in seconds (full compiler): %lf \n", total_CPU_time_in_seconds);
 
                     break;
             
@@ -789,6 +811,8 @@ int main(int argc, char * argv[])
                     
                     tbStack->top = NULL; tbStack->size = 0; tbStack->bottom = NULL;
                     ircode = generateIRCode(ast, NULL, tbStack);
+                    printCode(ircode->code);
+
                     tbStack->top = NULL; tbStack->size = 0; tbStack->bottom = NULL;
                     newNode = (tableStackEle *)malloc(sizeof(tableStackEle));
                     newNode->ele = symbolTableRoot;
