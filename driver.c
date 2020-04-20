@@ -717,8 +717,8 @@ int main(int argc, char * argv[])
                     fpx = fopen(argv[2], "w");
                     pre_process(fpx);
                     nasmRecur(ircode->code, tbStack, symT, fpx);
-
                     end_time= clock();
+                    fclose(fpx);
                     total_CPU_time= (end_time-start_time);
                     
                     //time we get is in milliseconds
@@ -824,7 +824,7 @@ int main(int argc, char * argv[])
                     fpx = fopen(argv[2], "w");
                     pre_process(fpx);
                     nasmRecur(ircode->code, tbStack, symT, fpx);
-                    
+                    fclose(fpx);
                     break;
                 
             

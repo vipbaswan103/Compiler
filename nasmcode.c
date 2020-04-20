@@ -27,7 +27,7 @@ symbolTableNode *searchScopeIRcode(tableStack *tbStack, char *key)
     int flag=0;
     
     //its not the scope of module declarations and I did not find anything, put it on the other stack
-    while(tbStack->size > 0 && (ret = sym_hash_find(key, &(tbStack->top->ele->hashtb), 0, NULL)) == NULL)
+    while(tbStack->size >= 2 && ((ret = sym_hash_find(key, &(tbStack->top->ele->hashtb), 0, NULL)) == NULL))
     {
         flag = 1;
         temp = sympop(tbStack);
@@ -35,22 +35,55 @@ symbolTableNode *searchScopeIRcode(tableStack *tbStack, char *key)
     }
     //Push everything in tempStack into the tbStack
 
-    //If key is found, check whether it exists 
-    if(ret != NULL && flag == 0 && key[0] != '_')
+    // if(ret != NULL && flag == 0 && key[0] != '_')
+    // {
+    //     if(ret->aux != 2)
+    //     {
+    //         symbolTableNode *tmp = (symbolTableNode *)malloc(sizeof(symbolTableNode));
+    //         *tmp = *ret;
+            
+    //         temp = sympop(tbStack);
+    //         sympush(tempStack, temp);
+            
+    //         while(tbStack->size >0 
+    //         && (ret = sym_hash_find(key, &(tbStack->top->ele->hashtb), 0, NULL)) == NULL)
+    //         {
+    //             temp = sympop(tbStack);
+    //             sympush(tempStack, temp);
+    //         }
+    //     }   
+    // }
+    
+    // If key is found, check whether it exists 
+    if(ret != NULL && key[0] != '_' && tbStack->size >= 3)
     {
         if(ret->aux != 2)
         {
-            symbolTableNode *tmp = (symbolTableNode *)malloc(sizeof(symbolTableNode));
-            *tmp = *ret;
-            
+            if(tbStack->size == 0)
+            {
+                return NULL;
+            }
             temp = sympop(tbStack);
             sympush(tempStack, temp);
-            
-            while(tbStack->size >0 
-            && (ret = sym_hash_find(key, &(tbStack->top->ele->hashtb), 0, NULL)) == NULL)
+
+            ret = sym_hash_find(key, &(tbStack->top->ele->hashtb), 0, NULL);
+        
+            while(tbStack->size >= 2)
             {
+                //i.e. you have searched in the moudle sym table, return whatever you found,
+                //you won't find anything useful if you haven't found anything useful yet
+                if(tbStack->size == 2)
+                    break;
+
+                //i.e. some chances of finding the correct variable
+                //If already found, i.e. declaration exists, simply break, restore the stack and return ret
+                if(ret != NULL && ret->aux == 2)
+                    break;
+
+                //i.e. haven't found anything yet, but not yet reached dead end, keep searching 
                 temp = sympop(tbStack);
                 sympush(tempStack, temp);
+                ret = sym_hash_find(key, &(tbStack->top->ele->hashtb), 0, NULL);
             }
         }   
     }
@@ -90,7 +123,7 @@ void pre_process(FILE * fp)
     fprintf(fp,"\t_percentD: db \"%%d\", 10, 0\n");
     fprintf(fp,"\t_percentS: db \"%%s\", 10, 0\n");
     fprintf(fp,"\t_percentF: db \"%%lf\", 10, 0\n");
-    fprintf(fp,"\t_percentF_array: db \"%%lf\",  0\n");
+    fprintf(fp,"\t_percentF_array: db \"%%lf \",  0\n");
     fprintf(fp,"\t_percentD_array: db \"%%d \", 0\n");
     fprintf(fp,"\t_percentS_array: db \"%%s \", 0\n");
     fprintf(fp,"\t_true: db \"true\", 0\n");
@@ -875,7 +908,7 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT, FILE * 
             else if(trav->ele->tag2 == RNUM)
             {
                 // instruction unknown
-                fprintf(fp, "\tMOV dword [num2], __float32__(%s)\n", trav->ele->arg1);
+                fprintf(fp, "\tMOV dword [num2], __float32__(%s)\n", trav->ele->arg2);
                 fprintf(fp, "\tFLD dword [num2]\n");
             }
             // else if(trav->ele->tag2 == BOOL)
@@ -2016,8 +2049,8 @@ IRcode* nasmRecur(IRcode* code, tableStack* tbStack, symbolTable * symT, FILE * 
             }
             else
             {
-                symbolTableNode * func = searchScopeIRcode(tbStack, trav->ele->arg1);
-                
+                // symbolTableNode * func = searchScopeIRcode(tbStack, trav->ele->arg1);
+                symbolTableNode * func = sym_hash_find(trav->ele->arg1, &(symbolTableRoot->hashtb), 0, NULL);
                 if(func != NULL && func->ele.tag == Module)
                 {
                     fprintf(fp, "\tSUB ESP, %dd\n", symT->currentOffset);

@@ -1,12 +1,18 @@
+<<module f1>>
+takes input [a:integer, b:integer];
+returns [c:integer];
+start
+	c := a + b;
+end
 
 <<<driver program>>>
 start
-	declare v_1_2_3:integer;
-    v_1_2_3 := 1 + 1;
-	get_value(v_1_2_3);
-	declare x: array[5..10] of integer;
-	declare m,n:integer;
-	declare y: array[m..n] of integer;
-	**[result_]:=use module square with parameters v_1_2_3;**
-	print(x);
+	declare a,b:real;
+	declare k:boolean;
+	get_value(a);
+	**get_value(b);**
+	print(a);
+	**print(b);**
+	k := a == 5.67;
+	print(k);
 end
