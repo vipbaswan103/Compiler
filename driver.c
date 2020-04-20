@@ -813,6 +813,8 @@ int main(int argc, char * argv[])
                     ircode = generateIRCode(ast, NULL, tbStack);
                     printCode(ircode->code);
 
+                    // printSymbolTable(symbolTableRoot,-1);
+
                     tbStack->top = NULL; tbStack->size = 0; tbStack->bottom = NULL;
                     newNode = (tableStackEle *)malloc(sizeof(tableStackEle));
                     newNode->ele = symbolTableRoot;

@@ -47,6 +47,7 @@ typedef struct array
     char *type;
     char *lexeme;
     int isDynamic;
+    int isAssigned;
     identifier * lowerIndex;
     identifier * upperIndex;
 }array;

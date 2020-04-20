@@ -713,7 +713,9 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         
         if(ret->ele.tag == Identifier)
             ret->ele.data.id.isAssigned = 1;    //ID_node has been assigned something
-
+        
+        if(ret->ele.tag == Array)
+            ret->ele.data.arr.isAssigned = 1;
         //Either there was an error in type calculation of rightExpression or the type is an arrayType or type doesn't match
         if(rightType == NULL)
         {
@@ -843,6 +845,8 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         // if(err!=NULL) free(err);
         if(ret->ele.tag == Identifier)
             ret->ele.data.id.isAssigned = 1;
+        if(ret->ele.tag == Array)
+            ret->ele.data.arr.isAssigned = 1;
         return NULL;
     } 
     
@@ -889,6 +893,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             // if(err!=NULL) free(err);
             return NULL;
         }
+
         else if(!strcmp(currentNode->child->sibling->node->ele.leafNode->type, "NUM"))
         {
             //Its OK to have a as index, but still check the bounds if the array is static
@@ -950,7 +955,6 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             }
             
         }
-        
         //Error while calculating type of the right side expression
         if(rightType == NULL)
         {
@@ -959,7 +963,7 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
             // if(err!=NULL) free(err);
             return NULL;
         }        
-        
+        leftType_id->ele.data.arr.isAssigned = 1;
         //RHS expression can't be of an array type
         if(rightType->tag == ArrayType)
         {
@@ -1811,7 +1815,12 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
         symbolTable *currentSTNode = tbStack->top->ele->child;
         tableStackEle *newTable = NULL;
         
-        astNode *trav = currentNode->child->sibling;
+        astNode *trav = NULL;
+
+        if(!strcmp(currentNode->node->ele.internalNode->label, "CASE"))
+            trav = currentNode->child->sibling;
+        else
+            trav = currentNode->child;
         while(trav != NULL)
         {
             if(!strcmp(trav->node->ele.internalNode->label, "FOR") 
@@ -2407,6 +2416,12 @@ void traverseAndMark(astNode * root, tableStack * tbStack, int * prevValues, int
                 prevValues[*index] = 1;
                 *index = *index + 1;
             }
+            else if(st->ele.tag == Array)
+            {
+                st->ele.data.arr.isAssigned = 0;
+                prevValues[*index] = 1;
+                *index = *index + 1;
+            }
         }
         return;
     }
@@ -2452,6 +2467,23 @@ void checkAssignment(astNode *root, tableStack *tbStack, int *error, int *prevVa
                 else
                 {
                     st->ele.data.id.isAssigned = prevValues[*index];
+                    // printf(" Not Changed \n");
+                    // getchar();
+                }    
+
+                *index = *index + 1;
+            }
+            else if(st->ele.tag == Array)
+            {
+                if(st->ele.data.arr.isAssigned == 1)
+                {
+                    *error = 0;
+                    // printf(" Changed \n");
+                    // getchar();
+                }    
+                else
+                {
+                    st->ele.data.arr.isAssigned = prevValues[*index];
                     // printf(" Not Changed \n");
                     // getchar();
                 }    
