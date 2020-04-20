@@ -333,11 +333,11 @@ void formulation(astNode *astRoot, symbolTable *current)
                 {
                     //dynamic array
                     newNode->width = POINTER_SIZE;
-                    newNode->offset = currentOffset;
+                    newNode->offset = currentOffset + newNode->width;
                     currentOffset += POINTER_SIZE;
                     newNode->ele.data.arr.isDynamic = 1;  
-                    newNode->dummyOffset = dummyCurrentOffset;
                     newNode->dummyWidth = DUMMY_POINTER_SIZE;
+                    newNode->dummyOffset = dummyCurrentOffset;
                     dummyCurrentOffset += newNode->dummyWidth; 
                 }
                 else    
@@ -345,8 +345,8 @@ void formulation(astNode *astRoot, symbolTable *current)
                     //static array
                     newNode->ele.data.arr.isDynamic = 0;
                     int size = *(int *)newNode->ele.data.arr.upperIndex->value - *(int*)newNode->ele.data.arr.lowerIndex->value + 1;
-                    newNode->offset = currentOffset;
                     newNode->width = tmp * size + POINTER_SIZE;
+                    newNode->offset = currentOffset + POINTER_SIZE;
                     currentOffset += newNode->width;
                     newNode->dummyOffset = dummyCurrentOffset;
                     newNode->dummyWidth = dummyTmp*size + DUMMY_POINTER_SIZE;
@@ -381,7 +381,7 @@ void formulation(astNode *astRoot, symbolTable *current)
                     newNode->dummyWidth = DUMMY_BOOLEAN_SIZE;
                 }
                     
-                newNode->offset = currentOffset;
+                newNode->offset = currentOffset + newNode->width;
                 currentOffset += newNode->width;
                 newNode->dummyOffset = dummyCurrentOffset;
                 dummyCurrentOffset += newNode->dummyWidth;
@@ -615,7 +615,6 @@ void formulation(astNode *astRoot, symbolTable *current)
 
                 node->lineNum = traveller->node->ele.leafNode->lineNum;
                 
-                node->offset = currentOffset;
                 // int tmp=0;
                 // if(!strcmp(traveller->sibling->child->sibling->node->ele.leafNode->type,"INTEGER"))
                 //     tmp = INTEGER_SIZE;
@@ -684,19 +683,19 @@ void formulation(astNode *astRoot, symbolTable *current)
                 node->width = POINTER_SIZE;
                 currentOffset += node->width;
 
-                lowerIndexNode->offset = currentOffset;
                 lowerIndexNode->width = INTEGER_SIZE;
+                lowerIndexNode->offset = currentOffset;
                 currentOffset += lowerIndexNode->width;
                         
-                upperIndexNode->offset = currentOffset;
                 upperIndexNode->width = INTEGER_SIZE;
+                upperIndexNode->offset = currentOffset;
                 currentOffset += upperIndexNode->width;
 
                 lowerIndexNode->isParameter = 2;
                 upperIndexNode->isParameter = 2;
                 node->isParameter = 1;
                 node->next = NULL;
-
+                
                 node->dummyOffset = dummyCurrentOffset;
                 node->dummyWidth = (2*DUMMY_INTEGER_SIZE) + DUMMY_POINTER_SIZE;
                 dummyCurrentOffset += node->dummyWidth;
@@ -868,12 +867,12 @@ void formulation(astNode *astRoot, symbolTable *current)
                 node->offset = currentOffset;
                 currentOffset += POINTER_SIZE;
 
-                lowerIndexNode->offset = currentOffset;
                 lowerIndexNode->width = INTEGER_SIZE;
+                lowerIndexNode->offset = currentOffset;
                 currentOffset += lowerIndexNode->width;
 
-                upperIndexNode->offset = currentOffset;
                 upperIndexNode->width = INTEGER_SIZE;
+                upperIndexNode->offset = currentOffset;
                 currentOffset += upperIndexNode->width;
 
                 lowerIndexNode->isParameter = 2;
@@ -1309,8 +1308,8 @@ void printHashTable(symbolTable* symT, int level, char* scopename, int linestart
             }
 
             printf("|| %-20s | %-20s | %-15s | %-8d | %-8s | %-15s | %-15s | %-10s | %-8d | %-10d ||\n", 
-            variable, scopename,scopeline, temp->dummyWidth, isarray, 
-            static_dynamic, range, type, temp->dummyOffset, level);
+            variable, scopename,scopeline, temp->width, isarray, 
+            static_dynamic, range, type, temp->offset, level);
     
 
             printf("\n");
