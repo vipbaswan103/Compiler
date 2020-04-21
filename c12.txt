@@ -1,0 +1,23 @@
+<<module f1>>
+takes input [a:real, b:real];
+returns [c:real];
+start
+	c := a + b;
+end
+
+<<<driver program>>>
+start
+	declare a,b,c:real;
+	declare k:boolean;
+	get_value(a);
+	get_value(b);
+	print(a);
+	print(b);
+	k := a == b;
+	print(k);
+
+	[c] := use module f1 with parameters a,b;
+	print(a);
+	print(b);
+	print(c);
+end
