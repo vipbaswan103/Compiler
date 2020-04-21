@@ -811,7 +811,7 @@ int main(int argc, char * argv[])
                     
                     tbStack->top = NULL; tbStack->size = 0; tbStack->bottom = NULL;
                     ircode = generateIRCode(ast, NULL, tbStack);
-                    printCode(ircode->code);
+                    // printCode(ircode->code);
 
                     // printSymbolTable(symbolTableRoot,-1);
 

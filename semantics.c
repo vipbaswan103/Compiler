@@ -134,7 +134,7 @@ symbolTableNode *searchScope(tableStack *tbStack, astNode *key)
         //TODO check if line number is the same for usage and declaration in the same/different scope, considering
         //everything is written in the same line 
     
-        if(ret->aux == 0)   //Variable hasn't been decalared
+        if(ret->aux == 0)   //Variable hasn't been decalared till now, but later
         {
             //ERROR
             symbolTableNode *tmp = (symbolTableNode *)malloc(sizeof(symbolTableNode));
@@ -143,9 +143,12 @@ symbolTableNode *searchScope(tableStack *tbStack, astNode *key)
             temp = sympop(tbStack);
             sympush(tempStack, temp);
             
-            while((strcmp(tbStack->top->ele->symLexeme, "Module Declarations"))
-            && (ret = sym_hash_find(key->node->ele.leafNode->lexeme, &(tbStack->top->ele->hashtb), 0, NULL)) == NULL)
+            while((strcmp(tbStack->top->ele->symLexeme, "Module Declarations")))
             {
+                if((ret = sym_hash_find(key->node->ele.leafNode->lexeme, &(tbStack->top->ele->hashtb), 0, NULL)) != NULL && ret->aux != 0)
+                {
+                    break;
+                }
                 temp = sympop(tbStack);
                 sympush(tempStack, temp);
             }
@@ -1282,10 +1285,9 @@ type * typeChecker(astNode * currentNode, tableStack * tbStack)
                         ret->ele.data.mod.outputList[i].data.id.lexeme, 
                         ret->ele.data.mod.outputList[i].data.id.type);
                         pushSemanticError(err);
-                        id_arr->ele.data.id.isAssigned = 1;
                         // return NULL;
                     }
-
+                    id_arr->ele.data.id.isAssigned = 1;
                     // Checking for index variable being assigned
                     if(id_arr->ele.data.id.isIndex == 1)
                     {
@@ -2444,7 +2446,7 @@ int checkallconstants(astNode* root)
     else if(root->node->tag==Leaf)
     {
         if(!strcmp(root->node->ele.leafNode->type,"ID"))
-        return 0;
+            return 0;
     }
     else 
     {
@@ -2454,7 +2456,7 @@ int checkallconstants(astNode* root)
         {
             
             if(checkallconstants(trav)==0)
-            return 0;
+                return 0;
             trav=trav->sibling;
 
         }
