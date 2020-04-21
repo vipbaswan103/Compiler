@@ -1,0 +1,47 @@
+<<module f1>>
+takes input [A:array[1..5] of real, n:integer];
+returns [sum: real];
+start
+    declare tmp:real;
+
+    tmp := 15.0;
+    
+    for (n in 1..5)
+    start
+        tmp := tmp / A[n]; 
+        print(tmp);
+    end
+
+    sum := tmp;
+    print(sum);
+    print(A);
+
+    declare m,n,p,q:real;
+    get_value(m);
+    get_value(n);
+
+    get_value(p);
+    get_value(q);
+
+    while (m<=p AND n>=q AND true)
+    start
+        print(true);
+        get_value(m);
+        get_value(n);
+        print(m);
+        print(n);
+    end
+    print(false);
+end
+
+<<<driver program>>>
+start
+	declare a:array[1..5] of real;
+	declare x:integer;
+	declare y:real;
+	declare n:integer;
+
+	get_value(a);
+	[y] := use module f1 with parameters a, n;
+    print(y);
+end

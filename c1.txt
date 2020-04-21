@@ -1,3 +1,6 @@
+**Code Generation test case 1: Computing expressions using integer data type**
+
+**Single driver module with single level nesting **
 
 <<<driver program>>>
 start
@@ -7,7 +10,20 @@ start
 	b:= 9;
 	get_value(x);
 	get_value(y);
-	z:= a*b + y*x;	
-    print(z);
+	z:= x + (y*b +(a-b)*y+ a*2) - b*x;	
+        print(z);
 end
+
+** On the console
+
+Input: Enter an integer value
+2
+Input: Enter an integer value
+3
+Output: 9
+
+Similarly run the generated assembly code for other input values and verify.
+
+**
+
 
