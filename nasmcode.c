@@ -26,43 +26,25 @@ symbolTableNode *searchScopeIRcode(tableStack *tbStack, char *key)
 
     int flag=0;
     
-    //its not the scope of module declarations and I did not find anything, put it on the other stack
+    //its not the scope of program and I did not find anything, put it on the other stack
     while(tbStack->size >= 2 && ((ret = sym_hash_find(key, &(tbStack->top->ele->hashtb), 0, NULL)) == NULL))
     {
         flag = 1;
         temp = sympop(tbStack);
         sympush(tempStack, temp);
     }
-    //Push everything in tempStack into the tbStack
 
-    // if(ret != NULL && flag == 0 && key[0] != '_')
-    // {
-    //     if(ret->aux != 2)
-    //     {
-    //         symbolTableNode *tmp = (symbolTableNode *)malloc(sizeof(symbolTableNode));
-    //         *tmp = *ret;
-            
-    //         temp = sympop(tbStack);
-    //         sympush(tempStack, temp);
-            
-    //         while(tbStack->size >0 
-    //         && (ret = sym_hash_find(key, &(tbStack->top->ele->hashtb), 0, NULL)) == NULL)
-    //         {
-    //             temp = sympop(tbStack);
-    //             sympush(tempStack, temp);
-    //         }
-    //     }   
-    // }
-    
-    // If key is found, check whether it exists 
+    //tbStack->top contains the scope where we have found the match
+    //If tbStack->size <= 2, then we have found the match in Module symbol table (no need to check anywhere else)
+
     if(ret != NULL && key[0] != '_' && tbStack->size >= 3)
     {
         if(ret->aux != 2)
         {
-            if(tbStack->size == 0)
-            {
-                return NULL;
-            }
+            // if(tbStack->size == 0)
+            // {
+            //     return NULL;
+            // }
             temp = sympop(tbStack);
             sympush(tempStack, temp);
 
