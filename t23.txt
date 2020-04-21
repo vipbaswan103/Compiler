@@ -1,0 +1,28 @@
+<<<driver program>>>
+start
+    declare aryan1:integer;
+    declare aryan2:integer;
+    aryan1 := 8;
+    aryan2 :=10;
+    
+    while(aryan1<aryan2)
+    start
+        aryan1 := 1;
+    end
+
+    while(aryan1<2)
+    start
+        aryan1:=3;
+    end
+
+    while(aryan1<2)
+    start
+        aryan2:=8;
+    end
+
+    while(5+7<2)
+    start
+        aryan1:=3;
+    end
+
+end
