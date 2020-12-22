@@ -2,6 +2,16 @@
 It is a compiler, completely written in C, for a toy language. This project was done as part of coursework of Compiler Construction course at BITS Pilani. The langugage (referred to as ERPLAG henceforth) specifications can be found at [Language Specifications](Language%20specifications.pdf).
 The input given is the program written in ERPLAG. The compiler's output is 32-bit assembly code. This assembly code is converted to machine code using NASM.
 
+## Index
+* [Motivation](#motivation)
+* [Directory Structure](#directory-structure)
+* [Understanding directory structure](#understanding-directory-structure)
+* [Tech used](#tech-used)
+* [Dev Setup](#dev-setup)
+* [How to run](#how-to-run)
+* [Credits](#credits)
+* [Disclaimer](#disclaimer)
+
 ## Motivation
 The aim of the project is to
 * understand the various stages of compilation in details
@@ -88,7 +98,7 @@ The aim of the project is to
     └── test_grammar.txt
 ```
 
-Note that after cloning the repository, you'll need to make certain changes to this directory structure (refer to step (1) in `How to run` for more details. The directory strcuture has been deliberately kept different for more wholesome understanding of the project structure.
+Note that after cloning the repository, you'll need to make certain changes to this directory structure (refer to step (1) in [How to run](#how-to-run)) for more details. The directory strcuture has been deliberately kept different for more wholesome understanding of the project structure.
 
 ## Understanding directory structure
 * The grammar given in [Language Specifications](Language%20specifications.pdf) isn't LL(1). It has been made LL(1) and written in [grammar.txt](grammar.txt) file.
@@ -144,6 +154,6 @@ This was a group project. Other contributors are:
 * [Aryan Mehra](https://github.com/aryanmehra1999)
 * [Swadesh Vaibhav](https://github.com/swadesh-vaibhav)
 
-## Important Note
+## Disclaimer
 The code present here is just for aiding the understanding of students pursuing this course in the future. This repository is not supposed to be used for any unfair means by the readers. The author is not responsible for any unfair use of the code present here.
 
