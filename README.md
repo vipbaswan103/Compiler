@@ -3,7 +3,7 @@ It is a compiler, completely written in C, for a toy language. This project was 
 The input given is the program written in ERPLAG. The compiler's output is 32-bit assembly code. This assembly code is converted to machine code using NASM.
 
 ## Index
-* [Motivation](#motivation)
+* [Motivation](#motivation-xyz)
 * [Directory Structure](#directory-structure)
 * [Understanding directory structure](#understanding-directory-structure)
 * [Tech used](#tech-used)
@@ -12,7 +12,8 @@ The input given is the program written in ERPLAG. The compiler's output is 32-bi
 * [Credits](#credits)
 * [Disclaimer](#disclaimer)
 
-## Motivation [[Index](#index)]
+## Motivation [xyz]
+[[Index](#index)]
 The aim of the project is to
 * understand the various stages of compilation in details
 * implement every stage from scratch using C
