@@ -12,13 +12,13 @@ The input given is the program written in ERPLAG. The compiler's output is 32-bi
 * [Credits](#credits)
 * [Disclaimer](#disclaimer)
 
-## Motivation
+## Motivation [[Index](#index)]
 The aim of the project is to
 * understand the various stages of compilation in details
 * implement every stage from scratch using C
 * understand how code generation and optimization takes place
 
-## Directory structure
+## Directory structure [[Index](#index)]
 ```bash
 .
 ├── Coding Intricacies and Details.pdf
@@ -100,7 +100,7 @@ The aim of the project is to
 
 Note that after cloning the repository, you'll need to make certain changes to this directory structure (refer to step (1) in [How to run](#how-to-run)) for more details. The directory strcuture has been deliberately kept different for more wholesome understanding of the project structure.
 
-## Understanding directory structure
+## Understanding directory structure [[Index](#index)]
 * The grammar given in [Language Specifications](Language%20specifications.pdf) isn't LL(1). It has been made LL(1) and written in [grammar.txt](grammar.txt) file.
 * [AST Rules](Group%2033%20-%20Compiler%20AST%20rules.pdf) contains all the AST rules that have been used for AST creation. It also contains all the updated grammar rules.
 * The names of the files in `src` and `headers` folder are self explanatory and each name represents a particular part of the compiler being implemented. Thus, the implementation has been divided into following parts:
@@ -117,18 +117,18 @@ Note that after cloning the repository, you'll need to make certain changes to t
 * `sampleOutputs` folder contains sample symbol table and AST that is created by the compiler.
 * Refer to the [Coding Details - 1](Coding%20Intricacies%20and%20Details.pdf) and [Coding Details - 2](Coding_Details_Stage1.pdf) files for understanding how each part of compiler has been implemented.
 
-## Tech used
+## Tech used [[Index](#index)]
 * Code is completely written in C
 * `gcc` and `multilib` library of `gcc` must be installed
 
-## Dev Setup
+## Dev Setup [[Index](#index)]
 Install gcc, gcc-multilib and g++-multilib using:
 ```
 sudo apt-get update
 sudo apt install gcc gcc-multilib g++-multilib
 ```
 
-## How to run
+## How to run [[Index](#index)]
 **1.** Clone the repository. **Before moving onto the next step, please ensure that all files in `headers` and `src` folders are present in one single folder (i.e. at same hierarchy). `makefile` and `grammar.txt` should also be present in the same folder.**
 
 **2.** Copy the program that you want to compile (the one that would be written in ERPLAG) into the folder created in step (1). 
@@ -148,12 +148,12 @@ gcc -m32 code.o -o code
 ./code
 ```
 
-## Credits
+## Credits [[Index](#index)]
 This was a group project. Other contributors are:
 * [Akshit Khanna](https://github.com/ra1ph2)
 * [Aryan Mehra](https://github.com/aryanmehra1999)
 * [Swadesh Vaibhav](https://github.com/swadesh-vaibhav)
 
-## Disclaimer
+## Disclaimer [[Index](#index)]
 The code present here is just for aiding the understanding of students pursuing this course in the future. This repository is not supposed to be used for any unfair means by the readers. The author is not responsible for any unfair use of the code present here.
 
