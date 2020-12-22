@@ -3,17 +3,16 @@ It is a compiler, completely written in C, for a toy language. This project was 
 The input given is the program written in ERPLAG. The compiler's output is 32-bit assembly code. This assembly code is converted to machine code using NASM.
 
 ## Index
-* [Motivation](#motivation-xyz)
-* [Directory Structure](#directory-structure)
-* [Understanding directory structure](#understanding-directory-structure)
-* [Tech used](#tech-used)
-* [Dev Setup](#dev-setup)
-* [How to run](#how-to-run)
-* [Credits](#credits)
-* [Disclaimer](#disclaimer)
+* [Motivation](#motivation-index)
+* [Directory Structure](#directory-structure-index)
+* [Understanding directory structure](#understanding-directory-structure-index)
+* [Tech used](#tech-used-index)
+* [Dev Setup](#dev-setup-index)
+* [How to run](#how-to-run-index)
+* [Credits](#credits-index)
+* [Disclaimer](#disclaimer-index)
 
-## Motivation [xyz]
-[[Index](#index)]
+## Motivation [[Index](#index)]
 The aim of the project is to
 * understand the various stages of compilation in details
 * implement every stage from scratch using C
